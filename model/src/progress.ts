@@ -1,0 +1,1 @@
+export const ProgressPrefix = 'mixcr-amplicon-alignment'; 

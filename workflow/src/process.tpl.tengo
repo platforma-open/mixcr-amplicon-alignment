@@ -1,0 +1,256 @@
+// process
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+
+ll := import("@platforma-sdk/workflow-tengo:ll")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+pframes := import("@platforma-sdk/workflow-tengo:pframes")
+slices := import("@platforma-sdk/workflow-tengo:slices")
+maps := import("@platforma-sdk/workflow-tengo:maps")
+
+json := import("json")
+text := import("text")
+
+mixcrAnalyzeTpl := assets.importTemplate(":mixcr-analyze")
+mixcrExportTpl := assets.importTemplate(":mixcr-export")
+aggregateByClonotypeKeyTpl := assets.importTemplate(":aggregate-by-clonotype-key")
+calculateExportSpecs := import(":calculate-export-specs")
+
+self.awaitState("InputsLocked")
+self.awaitState("params", "ResourceReady")
+self.awaitState("inputSpec", "ResourceReady")
+self.awaitState("referenceLibrary", "ResourceReady")
+
+self.body(func(inputs) {
+
+	inputSpec := inputs.inputSpec
+	params := inputs.params
+	blockId := params.blockId
+	referenceLibrary := inputs.referenceLibrary
+
+	fileExtension := inputSpec.domain["pl7.app/fileExtension"]
+
+	// Use calculateExportSpecs for output columns
+	presetSpecForBack := {
+		assemblingFeature: ["VDJRegion"],
+		splitByC: true,
+		umiTags: undefined,
+		cellTags: undefined
+	}
+
+	exportSpecs := calculateExportSpecs(presetSpecForBack, blockId)
+
+	columnsSpecPerSample := exportSpecs.columnsSpecPerSample
+	columnsSpecPerClonotypeNoAggregates := exportSpecs.columnsSpecPerClonotypeNoAggregates
+	clonotypeKeyColumns := exportSpecs.clonotypeKeyColumns
+	clonotypeKeyArgs := exportSpecs.clonotypeKeyArgs
+	exportArgs := exportSpecs.exportArgs
+	mainAbundanceColumnNormalized := exportSpecs.mainAbundanceColumnNormalized
+	mainAbundanceColumnUnnormalized := exportSpecs.mainAbundanceColumnUnnormalized
+	mainIsProductiveColumn := exportSpecs.mainIsProductiveColumn
+	axesByClonotypeKey := exportSpecs.axesByClonotypeKey
+
+
+    clnsAnnotations := {
+		"mixcr.com/assemblingFeature": "VDJRegion",
+		"pl7.app/label": "MiXCR Amplicon Alignment Clonesets"
+	}
+
+	// Create target outputs
+	targetOutputs := [ {
+		type: "Resource",
+		spec: {
+			kind: "PColumn",
+			valueType: "File",
+			name: "mixcr.com/qc",
+			domain: {
+				"pl7.app/vdj/clonotypingRunId": blockId
+			}
+		},
+		name: "qc"
+	}, {
+		type: "Resource",
+		spec: {
+			kind: "PColumn",
+			name: "pl7.app/log",
+			domain: {
+				"pl7.app/vdj/clonotypingRunId": blockId
+			},
+			valueType: "Log"
+		},
+		name: "log"
+	}, {
+		type: "Resource",
+		spec: {
+			kind: "PColumn",
+			name: "mixcr.com/clns",
+			domain: {
+				"pl7.app/vdj/clonotypingRunId": blockId
+			},
+			annotations: clnsAnnotations,
+			valueType: "File"
+		},
+		name: "clns"
+	}, {
+		type: "ResourceMap",
+		name: "reports",
+		spec: {
+			kind: "PColumn",
+			name: "mixcr.com/report",
+			domain: {
+				"pl7.app/vdj/clonotypingRunId": blockId
+			},
+			valueType: "File",
+			axesSpec: [ {
+				type: "String",
+				name: "mixcr.com/report/source",
+				annotations: {
+					"pl7.app/label": "Source MiXCR stage"
+				}
+			}, {
+				type: "String",
+				name: "mixcr.com/report/format",
+				annotations: {
+					"pl7.app/label": "Report format"
+				},
+				domain: {
+					"pl7.app/dense": string(json.encode(["json", "txt"]))
+				}
+			} ]
+		}
+	}]
+
+	// Run MiXCR analysis
+	mixcrResults := pframes.processColumn(
+		{ spec: inputSpec, data: inputs.inputData },
+		mixcrAnalyzeTpl,
+		targetOutputs,
+		{
+			aggregate: [{
+				name: "pl7.app/sequencing/lane",
+				optional: true
+			}, {
+				name: "pl7.app/sequencing/readIndex",
+				optional: true
+			}],
+
+			passAggregationAxesNames: true,
+
+			traceSteps: [{type: "milaboratories.mixcr-amplicon-alignment", id: blockId, importance: 20, label: "MiXCR generic amplicon"}],
+
+			extra: {
+				params: {
+					fileExtension: fileExtension,
+					referenceLibrary: referenceLibrary
+				}
+			}
+		}
+	)
+
+	exportOutputs := [ {
+		type: "Resource",
+		spec: {
+			kind: "PColumn",
+			name: "mixcr.com/clonotypeTable",
+			domain: {
+				"pl7.app/vdj/clonotypingRunId": blockId
+			},
+			valueType: "File"
+		},
+		name: "clonotypeTable",
+		path: ["tsv"]
+	}, {
+		type: "Xsv",
+		xsvType: "tsv",
+		settings: {
+			axes: axesByClonotypeKey,
+			columns: columnsSpecPerSample,
+			storageFormat: "Binary",
+			partitionKeyLength: 0
+		},
+		name: "byCloneKeyBySample",
+		path: ["tsv"]
+	}]
+
+	exportResults := pframes.processColumn(
+		mixcrResults.output("clns"),
+		mixcrExportTpl,
+		exportOutputs,
+		{
+			extra: {
+				params: {
+					clonotypeKeyColumns: clonotypeKeyColumns,
+					exportArgs: exportArgs,
+					referenceLibrary: referenceLibrary
+				}
+			}
+		}
+	)
+
+	// Aggregate by clonotype key
+	aggregationOutputs := [ {
+		type: "Resource",
+		spec: {
+			kind: "PColumn",
+			name: "mixcr.com/clonotypeProperties",
+			domain: {
+				"pl7.app/vdj/clonotypingRunId": blockId
+			},
+			valueType: "File"
+		},
+		name: "clonotypeProperties",
+		path: ["tsv"]
+	}, {
+		type: "Xsv",
+		xsvType: "tsv",
+		settings: {
+			axes: axesByClonotypeKey,
+			columns: columnsSpecPerClonotypeNoAggregates,
+			storageFormat: "Binary"
+		},
+		name: "aggregates",
+		path: ["tsv"]
+	} ]
+
+	aggregationResults := pframes.processColumn(
+		exportResults.output("clonotypeTable"),
+		aggregateByClonotypeKeyTpl,
+		aggregationOutputs,
+		{
+			aggregate: ["pl7.app/sampleId"],
+			traceSteps: [{type: "milaboratories.mixcr-amplicon-alignment.aggregate", id: blockId + ".IGH", importance: 90, label: "Aggregate IGH"}],
+
+			extra: {
+				params: {
+					mainAbundanceColumnNormalized: mainAbundanceColumnNormalized,
+					mainAbundanceColumnUnnormalized: mainAbundanceColumnUnnormalized,
+					schemaPerClonotypeNoAggregates: columnsSpecPerClonotypeNoAggregates,
+					schemaPerSample: columnsSpecPerSample
+				}
+			}
+		}
+	)
+
+	//Build final output
+	clones := pframes.pFrameBuilder()
+	exportResults.addXsvOutputToBuilder(clones, "byCloneKeyBySample", "clonotypeProperties/bySample/IGH/")
+	aggregationResults.addXsvOutputToBuilder(clones, "aggregates", "clonotypeProperties/aggregates/IGH/")
+
+	return {
+		"qc.spec": mixcrResults.outputSpec("qc"),
+		"qc.data": mixcrResults.outputData("qc"),
+
+		"logs.spec": mixcrResults.outputSpec("log"),
+		"logs.data": mixcrResults.outputData("log"),
+
+		"reports.spec": mixcrResults.outputSpec("reports"),
+		"reports.data": mixcrResults.outputData("reports"),
+
+		"clns.spec": mixcrResults.outputSpec("clns"),
+		"clns.data": mixcrResults.outputData("clns"),
+
+		"progress.data": mixcrResults.outputData("log"),
+
+		clones: clones.build()
+	}
+}) 
