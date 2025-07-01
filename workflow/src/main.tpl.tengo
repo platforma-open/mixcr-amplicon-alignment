@@ -26,6 +26,9 @@ wf.body(func(args) {
 
 	input := wf.resolve(inputRef)
 
+	threePrimePrimer := args.threePrimePrimer
+	fivePrimePrimer := args.fivePrimePrimer
+
 	// Create V and J gene FASTA files
 	
 	fastaFileCmdBuilder := exec.builder().cmd("/usr/bin/env").arg("bash")
@@ -64,7 +67,9 @@ wf.body(func(args) {
 		referenceLibrary: referenceLibrary,
 
 		params: smart.createJsonResource({
-			blockId: blockId
+			blockId: blockId,
+			threePrimePrimer: threePrimePrimer,
+			fivePrimePrimer: fivePrimePrimer
 		})
 	})
 

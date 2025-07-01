@@ -1,37 +1,52 @@
 // This utility is adapted from other blocks in the repository
 // It can be moved to a shared SDK package in the future
 
-// Extracts structured information from a MiXCR progress string.
-// e.g. "[2/10, 20%, ETA 10m] Aligning" -> { stage: "Aligning", ... }
-export function parseProgressString(progress: string) {
-  if (!progress) {
-    return {
-      stage: 'Unknown',
-      current: undefined,
-      total: undefined,
-      percentage: undefined,
-      etaLabel: undefined,
-    };
+import { ProgressPattern } from "@platforma-open/milaboratories.mixcr-amplicon-alignment.model";
+
+type ParsedProgress = {
+  raw?: string;
+  stage?: string;
+  percentage?: string;
+  eta?: string;
+  etaLabel?: string;
+};
+
+// Progress string examples:
+// 'Final sorting: 95.2%'
+// 'Building pre-clones from tag groups: 92.9%  ETA: 00:00:00'
+// 'Initialization: progress unknown'
+// 'Applying correction & sorting alignments by UMI'
+// 'Alignment: 60.4%  ETA: 00:00:01'
+// 'Exporting clones: 11.1%'
+// 'Queued'
+// 'Done'
+export function parseProgressString(
+  progressString: string | undefined | null
+): ParsedProgress {
+  const raw = progressString ?? "Unknown";
+
+  const res: ParsedProgress = {
+    raw,
+  };
+
+  if (!raw) {
+    return res;
   }
 
-  const stageMatch = progress.match(/\]\s*([\w\s]+)$/);
-  const stage = stageMatch ? stageMatch[1].trim() : progress;
+  const match = raw.match(ProgressPattern);
 
-  const numbersMatch = progress.match(/\[([\d\.\s\w\/,]+)\]/);
-  if (!numbersMatch) {
-    return { stage, current: undefined, total: undefined, percentage: undefined, etaLabel: undefined };
+  if (match) {
+    const { stage, progress, eta } = match.groups!;
+    res.stage = stage;
+    res.percentage = progress;
+    res.eta = eta;
+  } else {
+    res.stage = raw;
   }
-  const stats = numbersMatch[1];
 
-  const ofMatch = stats.match(/(\d+)\/(\d+)/);
-  const current = ofMatch ? parseInt(ofMatch[1], 10) : undefined;
-  const total = ofMatch ? parseInt(ofMatch[2], 10) : undefined;
+  if (res.eta) {
+    res.etaLabel = `ETA: ${res.eta}`;
+  }
 
-  const percentageMatch = stats.match(/(\d+(\.\d+)?)%/);
-  const percentage = percentageMatch ? parseFloat(percentageMatch[1]) : undefined;
-
-  const etaMatch = stats.match(/(ETA\s+[\w\d\s]+)/);
-  const etaLabel = etaMatch ? etaMatch[1].trim() : undefined;
-
-  return { stage, current, total, percentage, etaLabel };
-} 
+  return res;
+}

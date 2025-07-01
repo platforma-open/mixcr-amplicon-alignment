@@ -42,6 +42,9 @@ catalogs:
     '@vitejs/plugin-vue':
       specifier: ^5.2.1
       version: 5.2.4
+    '@vueuse/core':
+      specifier: ^13.4.0
+      version: 13.4.0
     ag-grid-enterprise:
       specifier: ^33.3.2
       version: 33.3.2
@@ -161,6 +164,9 @@ importers:
       '@platforma-sdk/ui-vue':
         specifier: 'catalog:'
         version: 1.37.7(d3-dispatch@3.0.1)(d3-path@3.1.0)(d3-scale-chromatic@3.1.0)(typescript@5.5.4)
+      '@vueuse/core':
+        specifier: 'catalog:'
+        version: 13.4.0(vue@3.5.17(typescript@5.5.4))
       ag-grid-enterprise:
         specifier: 'catalog:'
         version: 33.3.2

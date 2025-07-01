@@ -16,7 +16,8 @@
     "@platforma-open/milaboratories.mixcr-amplicon-alignment.model": "workspace:*",
     "@platforma-sdk/model": "catalog:",
     "@platforma-sdk/ui-vue": "catalog:",
-    "vue": "catalog:"
+    "vue": "catalog:",
+    "@vueuse/core": "catalog:"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "catalog:",

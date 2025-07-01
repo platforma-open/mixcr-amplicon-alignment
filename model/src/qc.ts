@@ -1,6 +1,10 @@
-import { z } from 'zod';
+import { z } from "zod";
 
-export const QcStatus = z.union([z.literal('OK'), z.literal('WARN'), z.literal('ALERT')]);
+export const QcStatus = z.union([
+  z.literal("OK"),
+  z.literal("WARN"),
+  z.literal("ALERT"),
+]);
 
 export const QcCheck = z.object({
   type: z.string(),
@@ -23,4 +27,4 @@ export const QcCheckResult = z.object({
 export type QcCheckResult = z.infer<typeof QcCheckResult>;
 
 export const Qc = z.array(QcCheckResult);
-export type Qc = z.infer<typeof Qc>; 
+export type Qc = z.infer<typeof Qc>;

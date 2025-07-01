@@ -27,6 +27,8 @@ self.body(func(inputs) {
 	params := inputs.params
 	blockId := params.blockId
 	referenceLibrary := inputs.referenceLibrary
+	threePrimePrimer := params.threePrimePrimer
+	fivePrimePrimer := params.fivePrimePrimer
 
 	fileExtension := inputSpec.domain["pl7.app/fileExtension"]
 
@@ -143,7 +145,9 @@ self.body(func(inputs) {
 					fileExtension: fileExtension,
 					referenceLibrary: referenceLibrary
 				}
-			}
+			},
+			threePrimePrimer: threePrimePrimer,
+			fivePrimePrimer: fivePrimePrimer
 		}
 	)
 

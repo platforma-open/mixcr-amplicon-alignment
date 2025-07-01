@@ -1,11 +1,10 @@
-import { PlRef } from '@platforma-sdk/model';
-import { z } from 'zod';
+import { PlRef } from "@platforma-sdk/model";
+import { z } from "zod";
 
 export const BlockArgsValid = z.object({
   input: PlRef,
   title: z.string().optional(),
-  libraryName: z.string().optional(),
-  librarySequence: z.string().optional(),
+  librarySequence: z.string(),
   threePrimePrimer: z.string().optional(),
   fivePrimePrimer: z.string().optional(),
   vGene: z.string().optional(),
@@ -14,4 +13,4 @@ export const BlockArgsValid = z.object({
 export type BlockArgsValid = z.infer<typeof BlockArgsValid>;
 
 export const BlockArgs = BlockArgsValid.partial({ input: true });
-export type BlockArgs = z.infer<typeof BlockArgs>; 
+export type BlockArgs = z.infer<typeof BlockArgs>;

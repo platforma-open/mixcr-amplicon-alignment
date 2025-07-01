@@ -26,6 +26,8 @@ self.body(func(inputs) {
 
 	params := inputs.params
 	fileExtension := params.fileExtension
+	threePrimePrimer := inputs.threePrimePrimer
+	fivePrimePrimer := inputs.fivePrimePrimer
 
 	inputDataMeta := inputData.getDataAsJson()
 
@@ -46,7 +48,7 @@ self.body(func(inputs) {
 
 	// Build MiXCR command
 	mixcrCmdBuilder := exec.builder().
-		//printErrStreamToStdout().
+		printErrStreamToStdout().
 		env("MI_PROGRESS_PREFIX", progressPrefix).
 		software(mixcrSw).
 		secret("MI_LICENSE", "MI_LICENSE").
@@ -57,9 +59,19 @@ self.body(func(inputs) {
 		arg("--library").arg("library.json").
 		addFile("library.json", params.referenceLibrary).
         arg("--rna").
-        arg("--rigid-left-alignment-boundary").
-        arg("--rigid-right-alignment-boundary").arg("J").
 		arg("--force-overwrite")
+
+		if (!is_undefined(threePrimePrimer)) {
+			mixcrCmdBuilder.arg("--floating-left-alignment-boundary")
+		} else {
+			mixcrCmdBuilder.arg("--rigid-left-alignment-boundary")
+		}
+
+		if (!is_undefined(fivePrimePrimer)) {
+			mixcrCmdBuilder.arg("--floating-right-alignment-boundary").arg("J")
+		} else {
+			mixcrCmdBuilder.arg("--rigid-right-alignment-boundary").arg("J")
+		}
 
 	// Handle input files
 	inputMap := inputData.inputs()
