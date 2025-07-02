@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { PlLogView } from "@platforma-sdk/ui-vue";
-import type { AmpliconAlignmentResult } from "../results";
+import { PlLogView } from '@platforma-sdk/ui-vue';
+import type { AmpliconAlignmentResult } from '../results';
 
 defineProps<{
   sampleData: AmpliconAlignmentResult;

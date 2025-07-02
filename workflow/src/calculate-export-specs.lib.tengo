@@ -221,94 +221,95 @@ calculateExportSpecs := func(presetSpecForBack, blockId) {
 	// aaAnnotationOfSegmentsForVDJRegionInFrame
 	annotationTypes := ["CDRs", "Segments"]
 
-	for isImputed in [false] {
-		imputedU := isImputed ? "Imputed" : ""
-		imputedL := text.to_lower(imputedU)
-		for featureU in features {
-			featureL := text.to_lower(formatId(featureU))
-			for isAminoAcid in [true, false] {
-				featureInFrameU := isAminoAcid ? inFrameFeatures[featureU] : featureU
-				if is_undefined(featureInFrameU) {
-					featureInFrameU = featureU
-				}
-				featureInFrameL := text.to_lower(formatId(featureInFrameU))
+	inFrameFeatures := {
+		"FR4": "FR4InFrame",
+		"VDJRegion": "VDJRegionInFrame"
+	}
 
-				alphabet := isAminoAcid ? "aminoacid" : "nucleotide"
-				alphabetShort := isAminoAcid ? "aa" : "nt"
-				alphabetShortMixcr := isAminoAcid ? "aa" : "n"
-				columnName := alphabetShortMixcr + "Seq" + imputedU + featureInFrameU
-				visibility := featureU == "VDJRegion" || featureU == "CDR3"
-				columnsSpecPerClonotypeNoAggregates += [ {
+	for featureU in features {
+		featureL := text.to_lower(formatId(featureU))
+		for isAminoAcid in [true, false] {
+			featureInFrameU := isAminoAcid ? inFrameFeatures[featureU] : featureU
+			if is_undefined(featureInFrameU) {
+				featureInFrameU = featureU
+			}
+			featureInFrameL := text.to_lower(formatId(featureInFrameU))
+
+			alphabet := isAminoAcid ? "aminoacid" : "nucleotide"
+			alphabetShort := isAminoAcid ? "aa" : "nt"
+			alphabetShortMixcr := isAminoAcid ? "aa" : "n"
+			columnName := alphabetShortMixcr + "Seq" + featureInFrameU
+			visibility := featureU == "VDJRegion" || featureU == "CDR3"
+			columnsSpecPerClonotypeNoAggregates += [ {
+					column: columnName,
+					id: alphabetShortMixcr + "-seq-" + featureInFrameL,
+					naRegex: "region_not_covered",
+					spec: {
+						name: "pl7.app/vdj/sequence",
+						valueType: "String",
+						domain: {
+							"pl7.app/vdj/feature": featureInFrameU,
+							"pl7.app/alphabet": alphabet
+						},
+						annotations: a(orderP, visibility, {
+							"pl7.app/vdj/isAssemblingFeature": featureU == anchorFeature ? "true" : "false",
+							"pl7.app/vdj/isMainSequence": featureU == anchorFeature ? "true" : "false",
+							"pl7.app/vdj/imputed": "false",
+							"pl7.app/table/fontFamily": "monospace",
+							"pl7.app/label": featureInFrameU + " " + alphabetShort
+						})
+					}
+				} ]
+			exportArgs += [ [ "-" + alphabetShortMixcr + "Feature", featureInFrameU ] ]
+			orderP -= 100
+
+			// Adding sequence annotation columns for assembling feature
+			if featureU == assemblingFeature {
+				for annotationType in annotationTypes {
+					columnName := alphabetShortMixcr + "AnnotationOf" + annotationType + "For" + featureInFrameU
+					columnsSpecPerClonotypeNoAggregates += [ {
 						column: columnName,
-						id: alphabetShortMixcr + "-seq-" + featureInFrameL + (isImputed ? "-imputed" : ""),
+						id: alphabetShortMixcr + "-annotation-" + annotationType + "-" + featureInFrameL,
 						naRegex: "region_not_covered",
 						spec: {
-							name: "pl7.app/vdj/sequence",
+							name: "pl7.app/vdj/sequence/annotation",
 							valueType: "String",
 							domain: {
 								"pl7.app/vdj/feature": featureInFrameU,
-								"pl7.app/alphabet": alphabet
+								"pl7.app/alphabet": alphabet,
+								"pl7.app/sequence/annotation/type": annotationType
 							},
-							annotations: a(orderP, visibility, {
-								"pl7.app/vdj/isAssemblingFeature": featureU == anchorFeature ? "true" : "false",
-								"pl7.app/vdj/isMainSequence": featureU == anchorFeature ? "true" : "false",
-								"pl7.app/vdj/imputed": string(isImputed),
-								"pl7.app/table/fontFamily": "monospace",
-								"pl7.app/label": featureInFrameU + " " + alphabetShort
+							annotations: a(orderP, undefined, {
+								"pl7.app/label": annotationType + " annotation for " + featureInFrameU + " " + alphabetShort,
+								"pl7.app/sequence/annotation/mapping": annotationMappings[annotationType],
+								"pl7.app/sequence/isAnnotation": "true"
 							})
 						}
 					} ]
-				exportArgs += [ [ "-" + alphabetShortMixcr + "Feature" + imputedU, featureInFrameU ] ]
-				orderP -= 100
+					exportArgs += [ [ "-" + alphabetShortMixcr + "AnnotationString", annotationType, featureInFrameU ] ]
+					orderP -= 100
+				}
+			}
 
-				// Adding sequence annotation columns for assembling feature
-				if !isImputed && featureU == assemblingFeature {
-					for annotationType in annotationTypes {
-						columnName := alphabetShortMixcr + "AnnotationOf" + annotationType + "For" + featureInFrameU
-						columnsSpecPerClonotypeNoAggregates += [ {
-							column: columnName,
-							id: alphabetShortMixcr + "-annotation-" + annotationType + "-" + featureInFrameL,
-							naRegex: "region_not_covered",
-							spec: {
-								name: "pl7.app/vdj/sequence/annotation",
-								valueType: "String",
-								domain: {
-									"pl7.app/vdj/feature": featureInFrameU,
-									"pl7.app/alphabet": alphabet,
-									"pl7.app/sequence/annotation/type": annotationType
-								},
-								annotations: a(orderP, undefined, {
-									"pl7.app/label": annotationType + " annotation for " + featureInFrameU + " " + alphabetShort,
-									"pl7.app/sequence/annotation/mapping": annotationMappings[annotationType],
-									"pl7.app/sequence/isAnnotation": "true"
-								})
-							}
-						} ]
-						exportArgs += [ [ "-" + alphabetShortMixcr + "AnnotationString", annotationType, featureInFrameU ] ]
-						orderP -= 100
+			// For now calculate length only for CDR3 to keep the number of columns manageable
+			if featureU == "CDR3" {
+				columnsSpecPerClonotypeNoAggregates += [ {
+					column: alphabetShortMixcr + "Length" + featureU,
+					id: alphabetShortMixcr + "-length-" + featureL,
+					naRegex: "region_not_covered",
+					spec: {
+						name: "pl7.app/vdj/sequenceLength",
+						valueType: "Int",
+						domain: {
+							"pl7.app/vdj/feature": featureU,
+							"pl7.app/alphabet": alphabet
+						},
+						annotations: a(orderP, false, {
+							"pl7.app/label": "Length of " + featureU + " " + alphabetShort
+						})
 					}
-				}
-
-				// For now calculate length only for CDR3 to keep the number of columns manageable
-				if featureU == "CDR3" {
-					columnsSpecPerClonotypeNoAggregates += [ {
-						column: alphabetShortMixcr + "Length" + featureU,
-						id: alphabetShortMixcr + "-length-" + featureL,
-						naRegex: "region_not_covered",
-						spec: {
-							name: "pl7.app/vdj/sequenceLength",
-							valueType: "Int",
-							domain: {
-								"pl7.app/vdj/feature": featureU,
-								"pl7.app/alphabet": alphabet
-							},
-							annotations: a(orderP, false, {
-								"pl7.app/label": "Length of " + featureU + " " + alphabetShort
-							})
-						}
-					} ]
-					exportArgs += [ [ "-" + alphabetShortMixcr + "Length", featureU ] ]
-				}
+				} ]
+				exportArgs += [ [ "-" + alphabetShortMixcr + "Length", featureU ] ]
 			}
 		}
 	}

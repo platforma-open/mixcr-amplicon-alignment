@@ -1,18 +1,17 @@
 <script setup lang="ts">
-import type { PlRef } from "@platforma-sdk/model";
+import type { PlRef } from '@platforma-sdk/model';
 import {
   PlDropdownRef,
-  PlTextField,
   PlSectionSeparator,
   PlTextArea,
-} from "@platforma-sdk/ui-vue";
-import { computed, ref, watch } from "vue";
-import { useApp } from "../app";
-import { retentive } from "../retentive";
+} from '@platforma-sdk/ui-vue';
+import { computed, ref, watch } from 'vue';
+import { useApp } from '../app';
+import { retentive } from '../retentive';
 import {
   validateLibrarySequence,
   type SequenceValidationResult,
-} from "../utils/sequenceValidator";
+} from '../utils/sequenceValidator';
 
 const app = useApp();
 const inputOptions = retentive(computed(() => app.model.outputs.inputOptions));
@@ -24,7 +23,7 @@ function setInput(inputRef: PlRef | undefined) {
   app.model.args.input = inputRef;
   if (inputRef)
     app.model.args.title = inputOptions.value?.find(
-      (o) => o.ref.blockId === inputRef.blockId && o.ref.name === inputRef.name
+      (o) => o.ref.blockId === inputRef.blockId && o.ref.name === inputRef.name,
     )?.label;
   else app.model.args.title = undefined;
 }
@@ -38,15 +37,15 @@ const librarySequence = computed({
   },
 });
 
-const fivePrimePrimer = computed({
-  get: () => app.model.args.fivePrimePrimer || "",
+const _fivePrimePrimer = computed({
+  get: () => app.model.args.fivePrimePrimer || '',
   set: (value: string) => {
     app.model.args.fivePrimePrimer = value;
   },
 });
 
-const threePrimePrimer = computed({
-  get: () => app.model.args.threePrimePrimer || "",
+const _threePrimePrimer = computed({
+  get: () => app.model.args.threePrimePrimer || '',
   set: (value: string) => {
     app.model.args.threePrimePrimer = value;
   },
@@ -54,15 +53,15 @@ const threePrimePrimer = computed({
 
 // Check if library sequence is provided
 const hasLibrarySequence = computed(() => {
-  return (librarySequence.value || "").trim().length > 0;
+  return (librarySequence.value || '').trim().length > 0;
 });
 
 // Watch for sequence changes and validate
 watch(
   librarySequence,
   (newSequence) => {
-    if ((newSequence || "").trim()) {
-      sequenceValidation.value = validateLibrarySequence(newSequence || "");
+    if ((newSequence || '').trim()) {
+      sequenceValidation.value = validateLibrarySequence(newSequence || '');
 
       // If validation is successful, save the extracted sequences to args
       if (sequenceValidation.value?.isValid) {
@@ -79,82 +78,77 @@ watch(
       app.model.args.jGene = undefined;
     }
   },
-  { immediate: true }
+  { immediate: true },
 );
 
-// Helper functions for validation display
-const getSequenceError = (): string | undefined => {
-  return sequenceValidation.value?.isValid === false
-    ? sequenceValidation.value.error
-    : undefined;
-};
+// Validation rules for PlTextArea
+const sequenceValidationRules = [
+  // Rule 1: Check if sequence is not empty
+  (value: string): boolean | string => {
+    if (!value || !value.trim()) {
+      return 'Sequence is required';
+    }
+    return true;
+  },
+
+  // Rule 2: Check if sequence contains only valid DNA characters
+  (value: string): boolean | string => {
+    if (!value) return true; // Skip if empty (handled by first rule)
+    const cleanSequence = value.toUpperCase().replace(/\s/g, '');
+    const validDNACars = /^[ACGT]+$/;
+    if (!validDNACars.test(cleanSequence)) {
+      const invalidChars = cleanSequence.match(/[^ACGTN]/g);
+      return `Invalid DNA characters found: ${invalidChars?.join(', ')}`;
+    }
+    return true;
+  },
+
+  // Rule 3: Check minimum length
+  (value: string): boolean | string => {
+    if (!value) return true; // Skip if empty (handled by first rule)
+    const cleanSequence = value.toUpperCase().replace(/\s/g, '');
+    if (cleanSequence.length < 250) {
+      return 'Sequence has to cover VDJRegion';
+    }
+    return true;
+  },
+
+  // Rule 5: Check if sequence passes the complex validation pattern
+  (value: string): boolean | string => {
+    if (!value) return true; // Skip if empty (handled by first rule)
+
+    // Use the existing validation function for complex pattern matching
+    const validation = validateLibrarySequence(value);
+    if (!validation.isValid) {
+      return 'Sequence should contain V and J genes';
+    }
+    return true;
+  },
+];
 </script>
 
 <template>
-  <div style="display: flex; flex-direction: column; gap: 16px">
-    <PlSectionSeparator>Reference library options</PlSectionSeparator>
-    <div
-      style="
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-        padding-top: 16px;
-      "
-    >
-      <PlTextArea
-        v-model="librarySequence"
-        label="Library sequence"
-        placeholder="Paste DNA sequence here"
-        :rows="5"
-        :required="true"
-      />
-
-      <!-- Validation messages -->
-      <div
-        v-if="getSequenceError()"
-        style="
-          color: red;
-          font-weight: bold;
-          margin: 5px 0;
-          padding: 5px;
-          background: #fee;
-          border: 1px solid #fcc;
-        "
-      >
-        Error: {{ getSequenceError() }}
-      </div>
-    </div>
-
-    <PlSectionSeparator>MiXCR options</PlSectionSeparator>
-    <div
-      style="
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-        padding-top: 16px;
-      "
-    >
-      <PlDropdownRef
-        :options="inputOptions"
-        :model-value="app.model.args.input"
-        label="Select dataset"
-        clearable
-        :disabled="!hasLibrarySequence || !sequenceValidation?.isValid"
-        :required="true"
-        @update:model-value="setInput"
-      />
-      <PlTextField
-        v-model="fivePrimePrimer"
-        label="5' primer sequence"
-        clearable
-        :disabled="!hasLibrarySequence || !sequenceValidation?.isValid"
-      />
-      <PlTextField
-        v-model="threePrimePrimer"
-        label="3' primer sequence"
-        clearable
-        :disabled="!hasLibrarySequence || !sequenceValidation?.isValid"
-      />
-    </div>
-  </div>
+  <PlSectionSeparator>Reference library options</PlSectionSeparator>
+  <PlTextArea
+    v-model="librarySequence"
+    label="Reference sequence"
+    placeholder="Paste nucleotide sequence here"
+    :rows="5"
+    :required="true"
+    :rules="sequenceValidationRules"
+  >
+    <template #tooltip>
+      Paste the nucleotide sequence of the reference library. It has to cover VDJRegion.
+    </template>
+  </PlTextArea>
+  <PlSectionSeparator>MiXCR options</PlSectionSeparator>
+  <PlDropdownRef
+    :options="inputOptions"
+    :model-value="app.model.args.input"
+    label="Select dataset"
+    clearable
+    :disabled="!hasLibrarySequence || !sequenceValidationRules.every((rule) => rule(librarySequence || '') === true)"
+    :required="true"
+    @update:model-value="setInput"
+  />
 </template>

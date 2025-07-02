@@ -1,7 +1,7 @@
 // This file is intentionally left empty.
 // The results logic was removed as the table was removed from the UI.
 
-import type { AlignReport as ModelAlignReport } from "@platforma-open/milaboratories.mixcr-amplicon-alignment.model";
+import type { AlignReport as ModelAlignReport } from '@platforma-open/milaboratories.mixcr-amplicon-alignment.model';
 import type { AnyLogHandle } from "@platforma-sdk/model";
 import { ReactiveFileContent } from "@platforma-sdk/ui-vue";
 import { computed } from "vue";

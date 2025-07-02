@@ -1,5 +1,5 @@
-import { PlRef } from "@platforma-sdk/model";
-import { z } from "zod";
+import { PlRef } from '@platforma-sdk/model';
+import { z } from 'zod';
 
 export const BlockArgsValid = z.object({
   input: PlRef,

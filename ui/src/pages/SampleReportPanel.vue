@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { computed, reactive } from "vue";
-import type { SimpleOption } from "@platforma-sdk/ui-vue";
-import { PlBtnGroup } from "@platforma-sdk/ui-vue";
-import { resultMap } from "../results";
-import SampleReportPanelLog from "./SampleReportPanelLog.vue";
-import SampleReportPanelReports from "./SampleReportPanelReports.vue";
-import SampleReportPanelVisualReport from "./SampleReportPanelVisualReport.vue";
+import { computed, reactive } from 'vue';
+import type { SimpleOption } from '@platforma-sdk/ui-vue';
+import { PlBtnGroup } from '@platforma-sdk/ui-vue';
+import { resultMap } from '../results';
+import SampleReportPanelLog from './SampleReportPanelLog.vue';
+import SampleReportPanelReports from './SampleReportPanelReports.vue';
+import SampleReportPanelVisualReport from './SampleReportPanelVisualReport.vue';
 
 const sampleId = defineModel<string | undefined>();
 
@@ -15,18 +15,18 @@ const sampleData = computed(() => {
   return resultMap.value.get(sampleId.value);
 });
 
-type TabId = "visualReport" | "reports" | "logs";
+type TabId = 'visualReport' | 'reports' | 'logs';
 
 const data = reactive<{
   currentTab: TabId;
 }>({
-  currentTab: "visualReport",
+  currentTab: 'visualReport',
 });
 
 const tabOptions: SimpleOption<TabId>[] = [
-  { value: "visualReport", text: "Visual Report" },
-  { value: "reports", text: "Reports" },
-  { value: "logs", text: "Log" },
+  { value: 'visualReport', text: 'Visual Report' },
+  { value: 'reports', text: 'Reports' },
+  { value: 'logs', text: 'Log' },
 ];
 </script>
 

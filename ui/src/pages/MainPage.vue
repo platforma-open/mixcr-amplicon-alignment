@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { AgGridVue } from "ag-grid-vue3";
+import { AgGridVue } from 'ag-grid-vue3';
 
-import type { PlAgHeaderComponentParams } from "@platforma-sdk/ui-vue";
+import type { PlAgHeaderComponentParams } from '@platforma-sdk/ui-vue';
 import {
   AgGridTheme,
   PlAgChartStackedBarCell,
@@ -15,24 +15,24 @@ import {
   autoSizeRowNumberColumn,
   createAgGridColDef,
   makeRowNumberColDef,
-} from "@platforma-sdk/ui-vue";
+} from '@platforma-sdk/ui-vue';
 import type {
   ColDef,
   GridApi,
   GridOptions,
   GridReadyEvent,
-} from "ag-grid-enterprise";
-import { ClientSideRowModelModule, ModuleRegistry } from "ag-grid-enterprise";
-import { computed, reactive, shallowRef, watch } from "vue";
-import { whenever } from "@vueuse/core";
-import { getAlignmentChartSettings } from "../charts/alignmentChartSettings";
-import { useApp } from "../app";
-import { parseProgressString } from "../parseProgress";
-import type { AmpliconAlignmentResult } from "../results";
-import { resultMap } from "../results";
-import SampleReportPanel from "./SampleReportPanel.vue";
-import SettingsPanel from "./SettingsPanel.vue";
-import LogsPanel from "./LogsPanel.vue";
+} from 'ag-grid-enterprise';
+import { ClientSideRowModelModule, ModuleRegistry } from 'ag-grid-enterprise';
+import { computed, reactive, shallowRef, watch } from 'vue';
+import { whenever } from '@vueuse/core';
+import { getAlignmentChartSettings } from '../charts/alignmentChartSettings';
+import { useApp } from '../app';
+import { parseProgressString } from '../parseProgress';
+import type { AmpliconAlignmentResult } from '../results';
+import { resultMap } from '../results';
+import SampleReportPanel from './SampleReportPanel.vue';
+import SettingsPanel from './SettingsPanel.vue';
+import LogsPanel from './LogsPanel.vue';
 
 const app = useApp();
 
@@ -86,11 +86,11 @@ const defaultColumnDef: ColDef = {
 const columnDefs: ColDef<AmpliconAlignmentResult>[] = [
   makeRowNumberColDef(),
   createAgGridColDef<AmpliconAlignmentResult, string>({
-    colId: "label",
-    field: "label",
-    headerName: "Sample",
-    headerComponentParams: { type: "Text" } satisfies PlAgHeaderComponentParams,
-    pinned: "left",
+    colId: 'label',
+    field: 'label',
+    headerName: 'Sample',
+    headerComponentParams: { type: 'Text' } satisfies PlAgHeaderComponentParams,
+    pinned: 'left',
     lockPinned: true,
     sortable: true,
     cellRenderer: PlAgTextAndButtonCell,
@@ -99,37 +99,37 @@ const columnDefs: ColDef<AmpliconAlignmentResult>[] = [
     },
   }),
   createAgGridColDef<AmpliconAlignmentResult, string>({
-    colId: "progress",
-    field: "progress",
-    headerName: "Progress",
+    colId: 'progress',
+    field: 'progress',
+    headerName: 'Progress',
     headerComponentParams: {
-      type: "Progress",
+      type: 'Progress',
     } satisfies PlAgHeaderComponentParams,
     progress(cellData) {
       const parsed = parseProgressString(cellData);
 
-      if (parsed.stage === "Queued") {
+      if (parsed.stage === 'Queued') {
         return {
-          status: "not_started",
+          status: 'not_started',
           text: parsed.stage,
         };
       }
 
       return {
-        status: parsed.stage === "Done" ? "done" : "running",
+        status: parsed.stage === 'Done' ? 'done' : 'running',
         percent: parsed.percentage,
         text: parsed.stage,
-        suffix: parsed.etaLabel ?? "",
+        suffix: parsed.etaLabel ?? '',
       };
     },
   }),
   createAgGridColDef<AmpliconAlignmentResult, string>({
-    colId: "alignmentStats",
-    headerName: "Alignments",
-    headerComponentParams: { type: "Text" } satisfies PlAgHeaderComponentParams,
+    colId: 'alignmentStats',
+    headerName: 'Alignments',
+    headerComponentParams: { type: 'Text' } satisfies PlAgHeaderComponentParams,
     flex: 1,
     cellStyle: {
-      "--ag-cell-horizontal-padding": "12px",
+      '--ag-cell-horizontal-padding': '12px',
     },
     cellRendererSelector: (cellData) => {
       const value = getAlignmentChartSettings(cellData.data?.alignReport);
@@ -226,7 +226,3 @@ const showLogs = () => {
     <SampleReportPanel v-model="data.selectedSample" />
   </PlSlideModal>
 </template>
-
-<style scoped>
-/* No specific styles needed here as AG Grid handles the table styling */
-</style>
