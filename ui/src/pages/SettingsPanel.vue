@@ -4,6 +4,7 @@ import {
   PlDropdownRef,
   PlSectionSeparator,
   PlTextArea,
+  PlDropdown,
 } from '@platforma-sdk/ui-vue';
 import { computed, ref, watch } from 'vue';
 import { useApp } from '../app';
@@ -125,6 +126,22 @@ const sequenceValidationRules = [
     return true;
   },
 ];
+
+const chainOptions = [
+  { value: 'IGHeavy', label: 'IG Heavy' },
+  { value: 'IGLight', label: 'IG Light' },
+  { value: 'TCRAlpha', label: 'TCR-α' },
+  { value: 'TCRBeta', label: 'TCR-β' },
+  { value: 'TCRGamma', label: 'TCR-ɣ' },
+  { value: 'TCRDelta', label: 'TCR-δ' },
+];
+
+const chains = computed({
+  get: () => app.model.args.chains ?? 'IGHeavy',
+  set: (value: string) => {
+    app.model.args.chains = value;
+  },
+});
 </script>
 
 <template>
@@ -141,6 +158,12 @@ const sequenceValidationRules = [
       Paste the nucleotide sequence of the reference library. It has to cover VDJRegion.
     </template>
   </PlTextArea>
+  <PlDropdown
+    v-model="chains"
+    :options="chainOptions"
+    label="Chains"
+    :required="true"
+  />
   <PlSectionSeparator>MiXCR options</PlSectionSeparator>
   <PlDropdownRef
     :options="inputOptions"

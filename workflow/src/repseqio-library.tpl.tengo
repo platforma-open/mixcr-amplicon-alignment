@@ -20,7 +20,7 @@ self.body(func(inputs) {
 	repseqioVgeneCmd := exec.builder().
 		software(repseqioSw).
 		arg("fromFasta").
-		arg("--chain").arg("IGH").
+		arg("--chain").arg(inputs.chains).
 		arg("--gene-type").arg("V").
 		arg("--species-name").arg("custom").
 		arg("--taxon-id").arg("1111").
@@ -38,7 +38,7 @@ self.body(func(inputs) {
 	repseqioJgeneCmd := exec.builder().
 		software(repseqioSw).
 		arg("fromFasta").
-		arg("--chain").arg("IGH").
+		arg("--chain").arg(inputs.chains).
 		arg("--gene-type").arg("J").
 		arg("--species-name").arg("custom").
 		arg("--taxon-id").arg("1111").

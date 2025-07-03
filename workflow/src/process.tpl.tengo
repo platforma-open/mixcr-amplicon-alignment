@@ -29,7 +29,8 @@ self.body(func(inputs) {
 	referenceLibrary := inputs.referenceLibrary
 	threePrimePrimer := params.threePrimePrimer
 	fivePrimePrimer := params.fivePrimePrimer
-
+	chains := params.chains
+	mixcrChains := params.mixcrChains
 	fileExtension := inputSpec.domain["pl7.app/fileExtension"]
 
 	// Use calculateExportSpecs for output columns
@@ -185,7 +186,8 @@ self.body(func(inputs) {
 				params: {
 					clonotypeKeyColumns: clonotypeKeyColumns,
 					exportArgs: exportArgs,
-					referenceLibrary: referenceLibrary
+					referenceLibrary: referenceLibrary,
+					mixcrChains: mixcrChains
 				}
 			}
 		}
@@ -222,7 +224,7 @@ self.body(func(inputs) {
 		aggregationOutputs,
 		{
 			aggregate: ["pl7.app/sampleId"],
-			traceSteps: [{type: "milaboratories.mixcr-amplicon-alignment.aggregate", id: blockId + ".IGH", importance: 90, label: "Aggregate IGH"}],
+			traceSteps: [{type: "milaboratories.mixcr-amplicon-alignment.aggregate", id: blockId + "." + chains, importance: 150, label: "Aggregate " + chains}],
 
 			extra: {
 				params: {
@@ -237,8 +239,8 @@ self.body(func(inputs) {
 
 	//Build final output
 	clones := pframes.pFrameBuilder()
-	exportResults.addXsvOutputToBuilder(clones, "byCloneKeyBySample", "clonotypeProperties/bySample/IGH/")
-	aggregationResults.addXsvOutputToBuilder(clones, "aggregates", "clonotypeProperties/aggregates/IGH/")
+	exportResults.addXsvOutputToBuilder(clones, "byCloneKeyBySample", "clonotypeProperties/bySample/" + chains + "/")
+	aggregationResults.addXsvOutputToBuilder(clones, "aggregates", "clonotypeProperties/aggregates/" + chains + "/")
 
 	return {
 		"qc.spec": mixcrResults.outputSpec("qc"),

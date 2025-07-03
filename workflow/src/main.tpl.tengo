@@ -28,6 +28,7 @@ wf.body(func(args) {
 
 	threePrimePrimer := args.threePrimePrimer
 	fivePrimePrimer := args.fivePrimePrimer
+	chains := args.chains
 
 	// Create V and J gene FASTA files
 	
@@ -50,11 +51,21 @@ wf.body(func(args) {
     vGeneFasta := fastaFileCmd.getFile("vGene.fasta")
     jGeneFasta := fastaFileCmd.getFile("jGene.fasta")
 
+	chainInfos := {
+		"IGHeavy": { mixcrFilter: "IGH", name: "IG Heavy", shortName: "Heavy" },
+		"IGLight": { mixcrFilter: "IGK,IGL", name: "IG Light", shortName: "Light" },
+		"TCRAlpha": { mixcrFilter: "TRA", name: "TCR Alpha", shortName: "Alpha" },
+		"TCRBeta": { mixcrFilter: "TRB", name: "TCR Beta", shortName: "Beta" },
+		"TCRGamma": { mixcrFilter: "TRD", name: "TCR Gamma", shortName: "Gamma" },
+		"TCRDelta": { mixcrFilter: "TRG", name: "TCR Delta", shortName: "Delta" }
+}
+
     // Generate reference library using repseqio if both V and J genes are available
   
 	repseqioResults := render.create(repseqioLibraryTpl, {
 		vGeneFasta: vGeneFasta,
-		jGeneFasta: jGeneFasta
+		jGeneFasta: jGeneFasta,
+		chains: chainInfos[chains].mixcrFilter
 	})
 	
 	referenceLibrary := repseqioResults.output("referenceLibrary")
@@ -69,7 +80,9 @@ wf.body(func(args) {
 		params: smart.createJsonResource({
 			blockId: blockId,
 			threePrimePrimer: threePrimePrimer,
-			fivePrimePrimer: fivePrimePrimer
+			fivePrimePrimer: fivePrimePrimer,
+			chains: chains,
+			mixcrChains: chainInfos[chains].mixcrFilter
 		})
 	})
 

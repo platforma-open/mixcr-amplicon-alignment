@@ -52,6 +52,8 @@ const data = reactive<{
   selectedSample: undefined,
 });
 
+ModuleRegistry.registerModules([ClientSideRowModelModule]);
+
 watch(
   () => app.model.outputs.started,
   (newVal, oldVal) => {
@@ -68,8 +70,6 @@ whenever(
   () => data.sampleReportOpen,
   () => (data.settingsOpen = false)
 );
-
-ModuleRegistry.registerModules([ClientSideRowModelModule]);
 
 const gridApi = shallowRef<GridApi>();
 const onGridReady = (params: GridReadyEvent) => {

@@ -39,7 +39,8 @@ self.body(func(inputs) {
 			arg("exportClones").
 			arg("--dont-split-files").
 			arg("--drop-default-fields").
-			arg("--reset-export-clone-table-splitting")
+			arg("--reset-export-clone-table-splitting").
+			arg("--chains").arg(params.mixcrChains)
 			//arg("--export-productive-clones-only")
 
 		additionalAction(mixcrCmdBuilder)

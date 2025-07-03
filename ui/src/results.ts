@@ -9,12 +9,6 @@ import { useApp } from "./app";
 
 export type AlignReport = ModelAlignReport;
 export type AssembleReport = Record<string, unknown>;
-export type QcItem = {
-  status: "OK" | "WARN" | "ALERT";
-  title: string;
-  message: string;
-};
-export type Qc = QcItem[];
 
 export type AmpliconAlignmentResult = {
   label: string;
@@ -23,7 +17,6 @@ export type AmpliconAlignmentResult = {
   logHandle?: AnyLogHandle;
   alignReport?: AlignReport;
   assembleReport?: AssembleReport;
-  qc?: Qc;
 };
 
 /** Relatively rarely changing part of the results */
@@ -43,21 +36,6 @@ export const AmpliconAlignmentResultsMap = computed(() => {
       label: sampleLabels[sampleId] ?? `<no label / ${sampleId}>`,
     };
     resultMap.set(sampleId, result);
-  }
-
-  // Add QC data if available
-  const qc = app.model.outputs.qc;
-  if (qc) {
-    for (const qcData of qc.data) {
-      const sampleId = qcData.key[0] as string;
-      const existingResult = resultMap.get(sampleId);
-      if (existingResult && qcData.value !== undefined) {
-        // globally cached
-        existingResult.qc = ReactiveFileContent.getContentJson(
-          qcData.value.handle
-        )?.value as Qc | undefined;
-      }
-    }
   }
 
   const logs = app.model.outputs.logs;

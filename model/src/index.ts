@@ -10,7 +10,7 @@ import { ProgressPrefix } from './progress';
 
 export const platforma = BlockModel.create('Heavy')
 
-  .withArgs<BlockArgs>({ librarySequence: '' })
+  .withArgs<BlockArgs>({ librarySequence: '', chains: 'IGHeavy' })
 
   .output('qc', (ctx) =>
     parseResourceMap(
@@ -71,10 +71,10 @@ export const platforma = BlockModel.create('Heavy')
       if (!isPColumnSpec(v)) return false;
       const domain = v.domain;
       return (
-        v.name === 'pl7.app/sequencing/data' &&
-        (v.valueType as string) === 'File' &&
-        domain !== undefined &&
-        (domain['pl7.app/fileExtension'] === 'fasta'
+        v.name === 'pl7.app/sequencing/data'
+        && (v.valueType as string) === 'File'
+        && domain !== undefined
+        && (domain['pl7.app/fileExtension'] === 'fasta'
           || domain['pl7.app/fileExtension'] === 'fasta.gz'
           || domain['pl7.app/fileExtension'] === 'fastq'
           || domain['pl7.app/fileExtension'] === 'fastq.gz')
@@ -85,44 +85,11 @@ export const platforma = BlockModel.create('Heavy')
   .output('sampleLabels', (ctx): Record<string, string> | undefined => {
     const inputRef = ctx.args.input;
     if (inputRef === undefined) return undefined;
-    const inputSpec = ctx.resultPool
-      .getSpecs()
-      .entries.find(
-        (obj) =>
-          obj.ref.blockId === inputRef.blockId && obj.ref.name === inputRef.name
-      )?.obj;
-    if (inputSpec === undefined || !isPColumnSpec(inputSpec)) return undefined;
-    const sampleAxisSpec = inputSpec.axesSpec[0];
 
-    const sampleLabelsObj = ctx.resultPool.getData().entries.find((f) => {
-      const spec = f.obj.spec;
-      if (!isPColumnSpec(spec)) return false;
-      if (spec.name !== 'pl7.app/label' || spec.axesSpec.length !== 1)
-        return false;
-      const axisSpec = spec.axesSpec[0];
-      if (axisSpec.name !== sampleAxisSpec.name) return false;
-      if (
-        sampleAxisSpec.domain === undefined ||
-        Object.keys(sampleAxisSpec.domain).length === 0
-      )
-        return true;
-      if (axisSpec.domain === undefined) return false;
-      for (const [domainName, domainValue] of Object.entries(
-        sampleAxisSpec.domain
-      ))
-        if (axisSpec.domain[domainName] !== domainValue) return false;
-      return true;
-    });
+    const spec = ctx.resultPool.getPColumnSpecByRef(inputRef);
+    if (spec === undefined) return undefined;
 
-    if (sampleLabelsObj === undefined) return undefined;
-
-    return Object.fromEntries(
-      Object.entries(
-        sampleLabelsObj.obj.data.getDataAsJson<{
-          data: Record<string, string>;
-        }>().data
-      ).map((e) => [JSON.parse(e[0] as string)[0] as string, e[1]])
-    ) as Record<string, string>;
+    return ctx.resultPool.findLabelsForColumnAxis(spec, 0);
   })
 
   .sections((_ctx) => {

@@ -3,6 +3,7 @@ import { z } from 'zod';
 
 export const BlockArgsValid = z.object({
   input: PlRef,
+  chains: z.string().default('IGHeavy'),
   title: z.string().optional(),
   librarySequence: z.string(),
   threePrimePrimer: z.string().optional(),
