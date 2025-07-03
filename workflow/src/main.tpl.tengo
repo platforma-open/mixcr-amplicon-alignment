@@ -53,7 +53,7 @@ wf.body(func(args) {
 
 	chainInfos := {
 		"IGHeavy": { mixcrFilter: "IGH", name: "IG Heavy", shortName: "Heavy" },
-		"IGLight": { mixcrFilter: "IGK,IGL", name: "IG Light", shortName: "Light" },
+		"IGLight": { mixcrFilter: "IGK", name: "IG Light", shortName: "Light" },
 		"TCRAlpha": { mixcrFilter: "TRA", name: "TCR Alpha", shortName: "Alpha" },
 		"TCRBeta": { mixcrFilter: "TRB", name: "TCR Beta", shortName: "Beta" },
 		"TCRGamma": { mixcrFilter: "TRD", name: "TCR Gamma", shortName: "Gamma" },
