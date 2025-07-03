@@ -45,6 +45,7 @@ self.body(func(inputs) {
 
 	columnsSpecPerSample := exportSpecs.columnsSpecPerSample
 	columnsSpecPerClonotypeNoAggregates := exportSpecs.columnsSpecPerClonotypeNoAggregates
+	columnsSpecPerClonotypeAggregates := exportSpecs.columnsSpecPerClonotypeAggregates
 	clonotypeKeyColumns := exportSpecs.clonotypeKeyColumns
 	clonotypeKeyArgs := exportSpecs.clonotypeKeyArgs
 	exportArgs := exportSpecs.exportArgs
@@ -52,6 +53,18 @@ self.body(func(inputs) {
 	mainAbundanceColumnUnnormalized := exportSpecs.mainAbundanceColumnUnnormalized
 	mainIsProductiveColumn := exportSpecs.mainIsProductiveColumn
 	axesByClonotypeKey := exportSpecs.axesByClonotypeKey
+
+	columnsToSchema := func(columns) {
+		schema := []
+		columnsAdded := {}
+		for col in columns {
+			if !columnsAdded[col.column] {
+				schema += [ { column: col.column, type: col.spec.valueType } ]
+				columnsAdded[col.column] = true
+			}
+		}
+		return schema
+	}
 
 
     clnsAnnotations := {
@@ -152,6 +165,10 @@ self.body(func(inputs) {
 		}
 	)
 
+	axesByClonotypeKeyWithChain := [ maps.deepTransform(axesByClonotypeKey[0], {
+			spec: { domain: { "pl7.app/vdj/chain": chains } }
+		}) ]
+
 	exportOutputs := [ {
 		type: "Resource",
 		spec: {
@@ -168,7 +185,7 @@ self.body(func(inputs) {
 		type: "Xsv",
 		xsvType: "tsv",
 		settings: {
-			axes: axesByClonotypeKey,
+			axes: axesByClonotypeKeyWithChain,
 			columns: columnsSpecPerSample,
 			storageFormat: "Binary",
 			partitionKeyLength: 0
@@ -210,8 +227,8 @@ self.body(func(inputs) {
 		type: "Xsv",
 		xsvType: "tsv",
 		settings: {
-			axes: axesByClonotypeKey,
-			columns: columnsSpecPerClonotypeNoAggregates,
+			axes: axesByClonotypeKeyWithChain,
+			columns: columnsSpecPerClonotypeNoAggregates + columnsSpecPerClonotypeAggregates,
 			storageFormat: "Binary"
 		},
 		name: "aggregates",
@@ -230,8 +247,9 @@ self.body(func(inputs) {
 				params: {
 					mainAbundanceColumnNormalized: mainAbundanceColumnNormalized,
 					mainAbundanceColumnUnnormalized: mainAbundanceColumnUnnormalized,
-					schemaPerClonotypeNoAggregates: columnsSpecPerClonotypeNoAggregates,
-					schemaPerSample: columnsSpecPerSample
+					schemaPerClonotypeNoAggregates: columnsToSchema(columnsSpecPerClonotypeNoAggregates),
+					schemaPerClonotypeAggregates: columnsToSchema(columnsSpecPerClonotypeAggregates),
+					schemaPerSample: columnsToSchema(columnsSpecPerSample)
 				}
 			}
 		}
