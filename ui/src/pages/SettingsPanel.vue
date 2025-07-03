@@ -161,7 +161,7 @@ const chains = computed({
   <PlDropdown
     v-model="chains"
     :options="chainOptions"
-    label="Chains"
+    label="Chain selection"
     :required="true"
   />
   <PlSectionSeparator>MiXCR options</PlSectionSeparator>
