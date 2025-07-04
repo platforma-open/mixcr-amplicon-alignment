@@ -1,0 +1,51 @@
+{
+  "name": "@platforma-open/milaboratories.mixcr-amplicon-alignment",
+  "version": "1.0.0",
+  "scripts": {
+    "pretty": "prettier --write \"./**/*.{js,jsx,mjs,cjs,ts,tsx,json,vue}\"",
+    "build": "rm -rf ./block-pack && block-tools pack",
+    "mark-stable": "block-tools mark-stable -r 's3://milab-euce1-prod-pkgs-s3-block-registry/pub/releases/?region=eu-central-1'",
+    "prepublishOnly": "block-tools pack && block-tools publish -r 's3://milab-euce1-prod-pkgs-s3-block-registry/pub/releases/?region=eu-central-1'",
+    "do-pack": "rm -f *.tgz && block-tools pack && pnpm pack && mv *.tgz package.tgz"
+  },
+  "files": [
+    "index.d.ts",
+    "index.js"
+  ],
+  "dependencies": {
+    "@platforma-sdk/model": "catalog:",
+    "@platforma-open/milaboratories.mixcr-amplicon-alignment.workflow": "workspace:*",
+    "@platforma-open/milaboratories.mixcr-amplicon-alignment.model": "workspace:*",
+    "@platforma-open/milaboratories.mixcr-amplicon-alignment.ui": "workspace:*"
+  },
+  "block": {
+    "components": {
+      "workflow": "@platforma-open/milaboratories.mixcr-amplicon-alignment.workflow/dist/tengo/tpl/main.plj.gz",
+      "model": "@platforma-open/milaboratories.mixcr-amplicon-alignment.model/dist/model.json",
+      "ui": "@platforma-open/milaboratories.mixcr-amplicon-alignment.ui/dist"
+    },
+    "meta": {
+      "title": "MiXCR Amplicon Alignment",
+      "logo": "file:../logos/block-logo.png",
+      "url": "https://github.com/platforma-open/mixcr-amplicon-alignment",
+      "support": "mailto:support@milaboratories.com",
+      "description": "Align amplicon sequences using MiXCR",
+      "longDescription": "file:../docs/description.md",
+      "changelog": "file:./CHANGELOG.md",
+      "tags": [
+        "upstream",
+        "amplicon",
+        "alignment"
+      ],
+      "organization": {
+        "name": "MiLaboratories Inc",
+        "url": "https://milaboratories.com/",
+        "logo": "file:../logos/organization-logo.png"
+      },
+      "marketplaceRanking": 16900
+    }
+  },
+  "devDependencies": {
+    "@platforma-sdk/block-tools": "catalog:"
+  }
+}

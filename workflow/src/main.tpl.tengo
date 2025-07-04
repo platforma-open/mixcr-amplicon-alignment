@@ -1,0 +1,120 @@
+// "hello world"
+wf := import("@platforma-sdk/workflow-tengo:workflow")
+
+render := import("@platforma-sdk/workflow-tengo:render")
+
+maps := import("@platforma-sdk/workflow-tengo:maps")
+ll := import("@platforma-sdk/workflow-tengo:ll")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+smart := import("@platforma-sdk/workflow-tengo:smart")
+file := import("@platforma-sdk/workflow-tengo:file")
+pframes := import("@platforma-sdk/workflow-tengo:pframes")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+json := import("json")
+
+processTpl := assets.importTemplate(":process")
+repseqioLibraryTpl := assets.importTemplate(":repseqio-library")
+
+wf.prepare(func(args){
+	return {}
+})
+
+wf.body(func(args) {
+	blockId := wf.blockId().getDataAsJson()
+
+	inputRef := args.input
+
+	input := wf.resolve(inputRef)
+
+	threePrimePrimer := args.threePrimePrimer
+	fivePrimePrimer := args.fivePrimePrimer
+	chains := args.chains
+
+	// Create V and J gene FASTA files
+	
+	fastaFileCmdBuilder := exec.builder().cmd("/usr/bin/env").arg("bash")
+	
+	// Save vGene to FASTA file if available
+	if args.vGene != "" {
+		fastaFileCmdBuilder.writeFile("vGene.fasta", args.vGene).
+            saveFile("vGene.fasta")
+	}
+	
+	// Save jGene to FASTA file if available
+	if args.jGene != "" {
+		fastaFileCmdBuilder.writeFile("jGene.fasta", args.jGene).
+            saveFile("jGene.fasta")
+	}
+
+    fastaFileCmd := fastaFileCmdBuilder.run()
+
+    vGeneFasta := fastaFileCmd.getFile("vGene.fasta")
+    jGeneFasta := fastaFileCmd.getFile("jGene.fasta")
+
+	chainInfos := {
+		"IGHeavy": { mixcrFilter: "IGH", name: "IG Heavy", shortName: "Heavy" },
+		"IGLight": { mixcrFilter: "IGK", name: "IG Light", shortName: "Light" },
+		"TCRAlpha": { mixcrFilter: "TRA", name: "TCR Alpha", shortName: "Alpha" },
+		"TCRBeta": { mixcrFilter: "TRB", name: "TCR Beta", shortName: "Beta" },
+		"TCRGamma": { mixcrFilter: "TRD", name: "TCR Gamma", shortName: "Gamma" },
+		"TCRDelta": { mixcrFilter: "TRG", name: "TCR Delta", shortName: "Delta" }
+}
+
+    // Generate reference library using repseqio if both V and J genes are available
+  
+	repseqioResults := render.create(repseqioLibraryTpl, {
+		vGeneFasta: vGeneFasta,
+		jGeneFasta: jGeneFasta,
+		chains: chainInfos[chains].mixcrFilter
+	})
+	
+	referenceLibrary := repseqioResults.output("referenceLibrary")
+	debugOutput := repseqioResults.output("debugOutput")
+    
+
+	runMixcr := render.createEphemeral(processTpl, {
+		inputSpec: input.getFutureInputField("spec"),
+		inputData: input.getFutureInputField("data"),
+		referenceLibrary: referenceLibrary,
+
+		params: smart.createJsonResource({
+			blockId: blockId,
+			threePrimePrimer: threePrimePrimer,
+			fivePrimePrimer: fivePrimePrimer,
+			chains: chains,
+			mixcrChains: chainInfos[chains].mixcrFilter
+		})
+	})
+
+	exports := {
+		qc: {
+			spec: runMixcr.output("qc.spec"),
+			data: runMixcr.output("qc.data")
+		},
+		reports: {
+			spec: runMixcr.output("reports.spec"),
+			data: runMixcr.output("reports.data")
+		},
+		clones: runMixcr.output("clones"),
+		clns: {
+			spec: runMixcr.output("clns.spec"),
+			data: runMixcr.output("clns.data")
+		}
+	}
+
+	outputs := {
+		qc: pframes.exportColumnData(runMixcr.output("qc.data")),
+		reports: pframes.exportColumnData(runMixcr.output("reports.data")),
+		logs: runMixcr.output("logs.data"),
+		clones: pframes.exportFrame(runMixcr.output("clones")),
+		clns: runMixcr.output("clns.data"),
+		progress: runMixcr.output("progress.data"),
+		debugOutput: debugOutput
+	}
+
+	return {
+		outputs: outputs,
+		exports: exports
+	}
+})
+
