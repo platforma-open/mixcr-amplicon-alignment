@@ -1,0 +1,20 @@
+{
+  "name": "@platforma-open/milaboratories.mixcr-amplicon-alignment.test",
+  "private": true,
+  "version": "1.0.0",
+  "description": "MiXCR Amplicon Alignment Tests",
+  "type": "module",
+  "scripts": {
+    "test": "vitest --passWithNoTests"
+  },
+  "files": [],
+  "keywords": [],
+  "dependencies": {
+    "this-block": "workspace:@platforma-open/milaboratories.mixcr-amplicon-alignment@*"
+  },
+  "devDependencies": {
+    "@platforma-sdk/test": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

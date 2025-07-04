@@ -1,0 +1,124 @@
+// repseqio-library template for generating reference library from V and J FASTA files
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+
+repseqioSw := assets.importSoftware("@platforma-open/milaboratories.software-repseqio:main")
+
+//self.awaitState("vGeneFasta", "ResourceReady")
+//self.awaitState("jGeneFasta", "ResourceReady")
+
+self.defineOutputs("referenceLibrary", "debugOutput")
+
+self.body(func(inputs) {
+	// Get V and J gene FASTA files from prerun
+	vGeneFasta := inputs.vGeneFasta
+	jGeneFasta := inputs.jGeneFasta
+	
+	// Create repseqio command to generate reference library
+	repseqioVgeneCmd := exec.builder().
+		software(repseqioSw).
+		arg("fromFasta").
+		arg("--chain").arg(inputs.chains).
+		arg("--gene-type").arg("V").
+		arg("--species-name").arg("custom").
+		arg("--taxon-id").arg("1111").
+		arg("--gene-feature").arg("VRegion").
+		arg("--name-index").arg("0").
+		arg("vGene.fasta").addFile("vGene.fasta", vGeneFasta).
+		arg("vGene.json").saveFile("vGene.json")
+	
+	// Run repseqio command
+	repseqioVgeneResult := repseqioVgeneCmd.run()
+	
+	// Get the generated reference library file
+	referenceLibraryVgene := repseqioVgeneResult.getFile("vGene.json")
+
+	repseqioJgeneCmd := exec.builder().
+		software(repseqioSw).
+		arg("fromFasta").
+		arg("--chain").arg(inputs.chains).
+		arg("--gene-type").arg("J").
+		arg("--species-name").arg("custom").
+		arg("--taxon-id").arg("1111").
+		arg("--gene-feature").arg("JRegion").
+		arg("--name-index").arg("0").
+		arg("jGene.fasta").addFile("jGene.fasta", jGeneFasta).
+		arg("jGene.json").saveFile("jGene.json")
+	
+	repseqioJgeneResult := repseqioJgeneCmd.run()
+	referenceLibraryJgene := repseqioJgeneResult.getFile("jGene.json")
+
+	repseqioMergeCmd := exec.builder().
+		software(repseqioSw).
+		arg("merge").
+		addFile("vGene.json", referenceLibraryVgene).
+		addFile("jGene.json", referenceLibraryJgene).
+		arg("vGene.json").
+		arg("jGene.json").
+		arg("referenceLibrary.json").
+		saveFile("referenceLibrary.json")
+	
+	repseqioMergeResult := repseqioMergeCmd.run()
+	referenceLibrary := repseqioMergeResult.getFile("referenceLibrary.json")
+
+	repseqioInferPointsVCmd := exec.builder().
+		software(repseqioSw).
+		arg("inferPoints").
+		arg("--gene-feature").arg("VRegion").
+		arg("--min-score").arg("150").
+		arg("--force").
+		addFile("referenceLibrary.json", referenceLibrary).
+		arg("referenceLibrary.json").
+		arg("referenceLibrary.json").
+		saveFile("referenceLibrary.json").
+		addFile("vGene.fasta", vGeneFasta)
+	
+	repseqioInferPointsVResult := repseqioInferPointsVCmd.run()
+	referenceLibraryV := repseqioInferPointsVResult.getFile("referenceLibrary.json")
+	
+	repseqioInferPointsJCmd := exec.builder().
+		software(repseqioSw).
+		arg("inferPoints").
+		arg("--gene-feature").arg("JRegion").
+		arg("--min-score").arg("30").
+		arg("--force").
+		addFile("referenceLibrary.json", referenceLibraryV).
+		arg("referenceLibrary.json").
+		arg("referenceLibrary.json").
+		saveFile("referenceLibrary.json").
+		addFile("jGene.fasta", jGeneFasta)
+	
+	repseqioInferPointsJResult := repseqioInferPointsJCmd.run()
+	referenceLibraryJ := repseqioInferPointsJResult.getFile("referenceLibrary.json")
+
+	repseqioCompileCmd := exec.builder().
+		software(repseqioSw).
+		arg("compile").
+		arg("--force").
+		addFile("referenceLibrary.json", referenceLibraryJ).
+		arg("referenceLibrary.json").
+		arg("referenceLibrary.json").
+		saveFile("referenceLibrary.json").
+		addFile("vGene.fasta", vGeneFasta).
+		addFile("jGene.fasta", jGeneFasta)
+	
+	repseqioCompileResult := repseqioCompileCmd.run()
+	referenceLibraryCompiled := repseqioCompileResult.getFile("referenceLibrary.json")
+	
+	repseqioDebugCmd := exec.builder().
+		software(repseqioSw).
+		arg("debug").
+		addFile("referenceLibrary.json", referenceLibraryCompiled).
+		arg("referenceLibrary.json").
+		addFile("vGene.fasta", vGeneFasta).
+		addFile("jGene.fasta", jGeneFasta)
+	
+	repseqioDebugResult := repseqioDebugCmd.run()
+	debugOutput := repseqioDebugResult.getStdoutStream()
+	return {
+		referenceLibrary: referenceLibraryCompiled,
+		debugOutput: debugOutput
+	}
+}) 

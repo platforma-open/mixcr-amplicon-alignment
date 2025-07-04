@@ -1,0 +1,131 @@
+//tengo:hash_override D70EDB25-6FF6-4615-966D-B79B04B5751C
+
+// mixcr analyze
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+smart := import("@platforma-sdk/workflow-tengo:smart")
+pConstants := import("@platforma-sdk/workflow-tengo:pframes.constants")
+ll := import("@platforma-sdk/workflow-tengo:ll")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+pcolumn := import("@platforma-sdk/workflow-tengo:pframes.pcolumn")
+times := import("times")
+maps := import("@platforma-sdk/workflow-tengo:maps")
+
+json := import("json")
+
+mixcrSw := assets.importSoftware("@platforma-open/milaboratories.software-mixcr:main")
+
+self.defineOutputs("qc", "reports", "log", "clns")
+
+progressPrefix := "[==PROGRESS==]"
+
+self.body(func(inputs) {
+	inputData := inputs[pConstants.VALUE_FIELD_NAME]
+	aggregationAxesNames := inputs[pConstants.AGGREGATION_AXES_NAMES_FIELD_NAME]
+
+	params := inputs.params
+	fileExtension := params.fileExtension
+	threePrimePrimer := inputs.threePrimePrimer
+	fivePrimePrimer := inputs.fivePrimePrimer
+
+	inputDataMeta := inputData.getDataAsJson()
+
+	clnsFileName := "result.clns"
+
+    reports := [
+		{
+			id: "align",
+			fileJson: "result.align.report.json",
+			fileTxt: "result.align.report.txt"
+		},
+		{
+			id: "assemble",
+			fileJson: "result.assemble.report.json",
+			fileTxt: "result.assemble.report.txt"
+		}
+	]
+
+	// Build MiXCR command
+	mixcrCmdBuilder := exec.builder().
+		printErrStreamToStdout().
+		env("MI_PROGRESS_PREFIX", progressPrefix).
+		software(mixcrSw).
+		secret("MI_LICENSE", "MI_LICENSE").
+		arg("analyze").
+        arg("generic-amplicon").
+        arg("--assemble-clonotypes-by").arg("VDJRegion").
+        arg("--species").arg("custom").
+		arg("--library").arg("library.json").
+		addFile("library.json", params.referenceLibrary).
+        arg("--rna").
+		arg("--force-overwrite")
+
+		if (!is_undefined(threePrimePrimer)) {
+			mixcrCmdBuilder.arg("--floating-left-alignment-boundary")
+		} else {
+			mixcrCmdBuilder.arg("--rigid-left-alignment-boundary")
+		}
+
+		if (!is_undefined(fivePrimePrimer)) {
+			mixcrCmdBuilder.arg("--floating-right-alignment-boundary").arg("J")
+		} else {
+			mixcrCmdBuilder.arg("--rigid-right-alignment-boundary").arg("J")
+		}
+
+	// Handle input files
+	inputMap := inputData.inputs()
+	if inputDataMeta.keyLength == 0 {
+		ll.assert(aggregationAxesNames == [], "unexpected aggregation axes names")
+		// Assuming only one key "[]" exists here, no need for sorted iteration
+		inputFile := inputMap["[]"]
+		ll.assert(!is_undefined(inputFile), "unexpected agg group structure")
+		inputFileName := "input." + fileExtension
+		mixcrCmdBuilder.addFile(inputFileName, inputFile)
+		mixcrCmdBuilder.arg(inputFileName)
+	} else if inputDataMeta.keyLength == 1 {
+		ll.assert(aggregationAxesNames == ["pl7.app/sequencing/readIndex"], "unexpected aggregation axes names")
+		for sKey in maps.getKeys(inputMap) {
+			inputFile := inputMap[sKey]
+			key := json.decode(sKey)
+			if len(key) != 1 {
+				ll.panic("malformed key: %v", sKey)
+			}
+			r := key[0]
+			if (r[0] != 'R' && r[0] != "I") || (r[1] != '1' && r[1] != '2') || len(r) != 2 {
+				ll.panic("malformed read index: %v", r)
+			}
+			mixcrCmdBuilder.addFile("input_" + r + "." + fileExtension, inputFile)
+		}
+		mixcrCmdBuilder.arg("input_{{R}}." + fileExtension)
+	} else {
+		ll.panic("unsupported key length: %v", inputDataMeta.keyLength)
+	}
+
+    mixcrCmdBuilder.arg("result")
+	mixcrCmdBuilder.saveFile("result.qc.json")
+
+    mixcrCmdBuilder.saveFile(clnsFileName)
+
+	for report in reports {
+		mixcrCmdBuilder.saveFile(report.fileJson)
+		mixcrCmdBuilder.saveFile(report.fileTxt)
+	}
+
+	mixcrCmd := mixcrCmdBuilder.run()
+
+	// Create reports data
+	reportsMap := pcolumn.resourceMapBuilder( /* keyLength */ 2 )
+		for report in reports {
+			reportsMap.add([report.id, "json"], mixcrCmd.getFile(report.fileJson))
+			reportsMap.add([report.id, "txt"], mixcrCmd.getFile(report.fileTxt))
+		}
+
+
+	return {
+		qc: mixcrCmd.getFile("result.qc.json"),
+		log: mixcrCmd.getStdoutStream(),
+		reports: reportsMap.build(),
+		clns: mixcrCmd.getFile(clnsFileName)
+	}
+}) 
