@@ -31,6 +31,7 @@ self.body(func(inputs) {
 	fivePrimePrimer := params.fivePrimePrimer
 	chains := params.chains
 	mixcrChains := params.mixcrChains
+	limitInput := inputs.limitInput
 	fileExtension := inputSpec.domain["pl7.app/fileExtension"]
 
 	// Use calculateExportSpecs for output columns
@@ -158,10 +159,9 @@ self.body(func(inputs) {
 				params: {
 					fileExtension: fileExtension,
 					referenceLibrary: referenceLibrary
-				}
-			},
-			threePrimePrimer: threePrimePrimer,
-			fivePrimePrimer: fivePrimePrimer
+				},
+				limitInput: limitInput
+			}
 		}
 	)
 

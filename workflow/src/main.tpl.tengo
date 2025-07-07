@@ -29,6 +29,7 @@ wf.body(func(args) {
 	threePrimePrimer := args.threePrimePrimer
 	fivePrimePrimer := args.fivePrimePrimer
 	chains := args.chains
+	limitInput := args.limitInput
 
 	// Create V and J gene FASTA files
 	
@@ -76,6 +77,7 @@ wf.body(func(args) {
 		inputSpec: input.getFutureInputField("spec"),
 		inputData: input.getFutureInputField("data"),
 		referenceLibrary: referenceLibrary,
+		limitInput: limitInput,
 
 		params: smart.createJsonResource({
 			blockId: blockId,
