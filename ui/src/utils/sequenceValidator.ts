@@ -122,13 +122,16 @@ export function validateLibrarySequence(
     };
   }
 
-  // Clean the sequence (remove whitespace and convert to uppercase)
-  const cleanSequence = sequence.toUpperCase().replace(/\s/g, '');
+  // Clean the sequence (remove whitespace, convert to uppercase, and replace IUPAC wildcards with A)
+  const cleanSequence = sequence
+    .toUpperCase()
+    .replace(/\s/g, '')
+    .replace(/[NRYWSKMBDHV]/g, 'A'); // Replace all IUPAC wildcards with A
 
-  // Check if sequence contains only valid DNA characters
-  const validDNACars = /^[ACGTN]+$/;
+  // Check if sequence contains only valid DNA characters (excluding wildcards which we already replaced)
+  const validDNACars = /^[ACGT]+$/;
   if (!validDNACars.test(cleanSequence)) {
-    const invalidChars = cleanSequence.match(/[^ACGTN]/g);
+    const invalidChars = cleanSequence.match(/[^ACGT]/g);
     return {
       isValid: false,
       error: `Invalid DNA characters found: ${invalidChars?.join(', ')}`,
