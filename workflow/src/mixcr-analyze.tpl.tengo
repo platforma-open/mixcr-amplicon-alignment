@@ -26,6 +26,9 @@ self.body(func(inputs) {
 
 	params := inputs.params
 	fileExtension := params.fileExtension
+	limitInput := inputs.limitInput
+	ll.print("__THE_LOG__" + string(limitInput))
+
 	threePrimePrimer := inputs.threePrimePrimer
 	fivePrimePrimer := inputs.fivePrimePrimer
 
@@ -59,19 +62,25 @@ self.body(func(inputs) {
 		arg("--library").arg("library.json").
 		addFile("library.json", params.referenceLibrary).
         arg("--rna").
-		arg("--force-overwrite")
+		arg("--force-overwrite").
+		arg("--rigid-left-alignment-boundary").
+		arg("--rigid-right-alignment-boundary").arg("J")
 
-		if (!is_undefined(threePrimePrimer)) {
-			mixcrCmdBuilder.arg("--floating-left-alignment-boundary")
-		} else {
-			mixcrCmdBuilder.arg("--rigid-left-alignment-boundary")
-		}
+		// if (!is_undefined(threePrimePrimer)) {
+		// 	mixcrCmdBuilder.arg("--floating-left-alignment-boundary")
+		// } else {
+		// 	mixcrCmdBuilder.arg("--rigid-left-alignment-boundary")
+		// }
 
-		if (!is_undefined(fivePrimePrimer)) {
-			mixcrCmdBuilder.arg("--floating-right-alignment-boundary").arg("J")
-		} else {
-			mixcrCmdBuilder.arg("--rigid-right-alignment-boundary").arg("J")
-		}
+		// if (!is_undefined(fivePrimePrimer)) {
+		// 	mixcrCmdBuilder.arg("--floating-right-alignment-boundary").arg("J")
+		// } else {
+		// 	mixcrCmdBuilder.arg("--rigid-right-alignment-boundary").arg("J")
+		// }
+
+	if !is_undefined(limitInput) {
+		mixcrCmdBuilder.arg("--limit-input").arg(string(limitInput))
+	}
 
 	// Handle input files
 	inputMap := inputData.inputs()

@@ -10,6 +10,7 @@ export const BlockArgsValid = z.object({
   fivePrimePrimer: z.string().optional(),
   vGene: z.string().optional(),
   jGene: z.string().optional(),
+  limitInput: z.number().int().optional(),
 });
 export type BlockArgsValid = z.infer<typeof BlockArgsValid>;
 

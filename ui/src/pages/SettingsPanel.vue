@@ -5,6 +5,8 @@ import {
   PlSectionSeparator,
   PlTextArea,
   PlDropdown,
+  PlAccordionSection,
+  PlTextField,
 } from '@platforma-sdk/ui-vue';
 import { computed, ref, watch } from 'vue';
 import { useApp } from '../app';
@@ -92,14 +94,15 @@ const sequenceValidationRules = [
     return true;
   },
 
-  // Rule 2: Check if sequence contains only valid DNA characters
+  // Rule 2: Check if sequence contains only valid DNA nucleotides (ACGT) and IUPAC wildcards
   (value: string): boolean | string => {
     if (!value) return true; // Skip if empty (handled by first rule)
     const cleanSequence = value.toUpperCase().replace(/\s/g, '');
-    const validDNACars = /^[ACGT]+$/;
-    if (!validDNACars.test(cleanSequence)) {
-      const invalidChars = cleanSequence.match(/[^ACGTN]/g);
-      return `Invalid DNA characters found: ${invalidChars?.join(', ')}`;
+    // Only allow ACGT (standard DNA) and NRYWSKMBDHV (IUPAC wildcards)
+    const validChars = /^[ACGTNRYWSKMBDHV]+$/;
+    if (!validChars.test(cleanSequence)) {
+      const invalidChars = cleanSequence.match(/[^ACGTNRYWSKMBDHV]/g);
+      return `Only DNA nucleotides (ACGT) and IUPAC wildcards (NRYWSKMBDHV) are allowed. Invalid characters: ${invalidChars?.join(', ')}`;
     }
     return true;
   },
@@ -142,6 +145,20 @@ const chains = computed({
     app.model.args.chains = value;
   },
 });
+
+function parseNumber(v: string): number | undefined {
+  if (!v || v.trim() === '') {
+    return undefined;
+  }
+
+  const parsed = Number(v);
+
+  if (!Number.isFinite(parsed)) {
+    throw Error('Not a number');
+  }
+
+  return parsed;
+}
 </script>
 
 <template>
@@ -174,4 +191,10 @@ const chains = computed({
     :required="true"
     @update:model-value="setInput"
   />
+  <PlAccordionSection label="Advanced Settings">
+    <PlTextField
+      v-model="app.model.args.limitInput" :parse="parseNumber" :clearable="() => undefined"
+      label="Take only this number of reads into analysis"
+    />
+  </PlAccordionSection>
 </template>
