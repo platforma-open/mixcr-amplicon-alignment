@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow
 
+## 1.1.0
+
+### Minor Changes
+
+- 2ac7c87: Wildcards in reference sequence and --limit-input option in MiXCR
+
 ## 1.0.1
 
 ### Patch Changes
