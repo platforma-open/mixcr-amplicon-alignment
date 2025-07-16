@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow
 
+## 1.2.0
+
+### Minor Changes
+
+- 86528bc: add only productive option to mixcr export
+
 ## 1.1.0
 
 ### Minor Changes
