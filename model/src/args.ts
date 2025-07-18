@@ -8,8 +8,8 @@ export const BlockArgsValid = z.object({
   librarySequence: z.string(),
   threePrimePrimer: z.string().optional(),
   fivePrimePrimer: z.string().optional(),
-  vGene: z.string().optional(),
-  jGene: z.string().optional(),
+  vGenes: z.string().optional(), // now a single FASTA string
+  jGenes: z.string().optional(), // now a single FASTA string
   limitInput: z.number().int().optional(),
 });
 export type BlockArgsValid = z.infer<typeof BlockArgsValid>;

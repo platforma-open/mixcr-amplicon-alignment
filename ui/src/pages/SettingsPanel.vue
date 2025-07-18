@@ -12,15 +12,15 @@ import { computed, ref, watch } from 'vue';
 import { useApp } from '../app';
 import { retentive } from '../retentive';
 import {
-  validateLibrarySequence,
-  type SequenceValidationResult,
-} from '../utils/sequenceValidator';
+  validateFastaSequence,
+  type FastaValidationResult,
+} from '../utils/fastaValidator';
 
 const app = useApp();
 const inputOptions = retentive(computed(() => app.model.outputs.inputOptions));
 
 // Validation state management
-const sequenceValidation = ref<SequenceValidationResult | undefined>();
+const fastaValidation = ref<FastaValidationResult | undefined>();
 
 function setInput(inputRef: PlRef | undefined) {
   app.model.args.input = inputRef;
@@ -64,67 +64,111 @@ watch(
   librarySequence,
   (newSequence) => {
     if ((newSequence || '').trim()) {
-      sequenceValidation.value = validateLibrarySequence(newSequence || '');
+      fastaValidation.value = validateFastaSequence(newSequence || '');
 
       // If validation is successful, save the extracted sequences to args
-      if (sequenceValidation.value?.isValid) {
-        app.model.args.vGene = sequenceValidation.value.vGene;
-        app.model.args.jGene = sequenceValidation.value.jGene;
+      if (fastaValidation.value?.isValid) {
+        app.model.args.vGenes = fastaValidation.value.vGenes;
+        app.model.args.jGenes = fastaValidation.value.jGenes;
       } else {
         // Clear sequences if validation fails
-        app.model.args.vGene = undefined;
-        app.model.args.jGene = undefined;
+        app.model.args.vGenes = undefined;
+        app.model.args.jGenes = undefined;
       }
     } else {
-      sequenceValidation.value = undefined;
-      app.model.args.vGene = undefined;
-      app.model.args.jGene = undefined;
+      fastaValidation.value = undefined;
+      app.model.args.vGenes = undefined;
+      app.model.args.jGenes = undefined;
     }
   },
   { immediate: true },
 );
 
 // Validation rules for PlTextArea
-const sequenceValidationRules = [
+const fastaValidationRules = [
   // Rule 1: Check if sequence is not empty
   (value: string): boolean | string => {
     if (!value || !value.trim()) {
-      return 'Sequence is required';
+      return 'FASTA sequence is required';
     }
     return true;
   },
 
-  // Rule 2: Check if sequence contains only valid DNA nucleotides (ACGT) and IUPAC wildcards
+  // Rule 2: Check if content looks like FASTA format
   (value: string): boolean | string => {
     if (!value) return true; // Skip if empty (handled by first rule)
-    const cleanSequence = value.toUpperCase().replace(/\s/g, '');
-    // Only allow ACGT (standard DNA) and NRYWSKMBDHV (IUPAC wildcards)
-    const validChars = /^[ACGTNRYWSKMBDHV]+$/;
-    if (!validChars.test(cleanSequence)) {
-      const invalidChars = cleanSequence.match(/[^ACGTNRYWSKMBDHV]/g);
-      return `Only DNA nucleotides (ACGT) and IUPAC wildcards (NRYWSKMBDHV) are allowed. Invalid characters: ${invalidChars?.join(', ')}`;
+
+    const lines = value.trim().split('\n');
+    let hasHeader = false;
+    let hasSequence = false;
+    let sequenceCount = 0;
+    let headerCount = 0;
+    let lastLineWasHeader = false;
+
+    for (const line of lines) {
+      const trimmedLine = line.trim();
+      if (!trimmedLine) continue;
+
+      if (trimmedLine.startsWith('>')) {
+        // Found a header - check if it's not empty
+        if (trimmedLine.length === 1) {
+          return 'Headers cannot be empty. Please provide a name after ">" (e.g., ">gene_name").';
+        }
+        hasHeader = true;
+        headerCount++;
+        lastLineWasHeader = true;
+      } else {
+        // Found a sequence line
+        hasSequence = true;
+        sequenceCount++;
+        lastLineWasHeader = false;
+      }
     }
+
+    if (!hasSequence) {
+      return 'FASTA content must contain sequence data';
+    }
+
+    // If we have headers, ensure every sequence has a header
+    if (hasHeader) {
+      if (headerCount !== sequenceCount) {
+        return 'All sequences must have headers starting with ">". Found sequences without headers.';
+      }
+    } else {
+      // No headers - ensure only single sequence
+      if (sequenceCount > 1) {
+        return 'Multiple sequences without headers detected. Please use FASTA format with headers (">sequence_name") or provide a single sequence.';
+      }
+    }
+
+    // If the last line was a header, that's invalid (header without sequence)
+    if (lastLineWasHeader) {
+      return 'FASTA content ends with a header but no sequence. Each header must be followed by sequence data.';
+    }
+
     return true;
   },
 
-  // Rule 3: Check minimum length
-  (value: string): boolean | string => {
-    if (!value) return true; // Skip if empty (handled by first rule)
-    const cleanSequence = value.toUpperCase().replace(/\s/g, '');
-    if (cleanSequence.length < 250) {
-      return 'Sequence has to cover VDJRegion';
-    }
-    return true;
-  },
-
-  // Rule 5: Check if sequence passes the complex validation pattern
+  // Rule 3: Use the comprehensive validation function for all other checks
   (value: string): boolean | string => {
     if (!value) return true; // Skip if empty (handled by first rule)
 
-    // Use the existing validation function for complex pattern matching
-    const validation = validateLibrarySequence(value);
+    // Use the existing validation function for all complex validation
+    const validation = validateFastaSequence(value);
     if (!validation.isValid) {
-      return 'Sequence should contain V and J genes';
+      // Provide detailed error information
+      let errorMessage = validation.error || 'Sequence validation failed';
+
+      // Add specific error details if available
+      if (validation.errors && validation.errors.length > 0) {
+        if (validation.errors.length === 1) {
+          errorMessage = validation.errors[0];
+        } else {
+          errorMessage = `Multiple validation errors:\n${validation.errors.join('\n')}`;
+        }
+      }
+
+      return errorMessage;
     }
     return true;
   },
@@ -165,14 +209,15 @@ function parseNumber(v: string): number | undefined {
   <PlSectionSeparator>Reference library options</PlSectionSeparator>
   <PlTextArea
     v-model="librarySequence"
-    label="Reference sequence"
-    placeholder="Paste nucleotide sequence here"
-    :rows="5"
+    label="Reference sequence (FASTA format)"
+    placeholder=">gene_name
+ATCGATCGATCG..."
+    :rows="8"
     :required="true"
-    :rules="sequenceValidationRules"
+    :rules="fastaValidationRules"
   >
     <template #tooltip>
-      Paste the nucleotide sequence of the reference library. It has to cover VDJRegion.
+      Paste the nucleotide sequence(s) in FASTA format. Multiple FASTA records are supported. The header will be used as part of V and J gene names (e.g., header_Vgene, header_Jgene). The sequence must cover VDJRegion.
     </template>
   </PlTextArea>
   <PlDropdown
@@ -187,7 +232,7 @@ function parseNumber(v: string): number | undefined {
     :model-value="app.model.args.input"
     label="Select dataset"
     clearable
-    :disabled="!hasLibrarySequence || !sequenceValidationRules.every((rule) => rule(librarySequence || '') === true)"
+    :disabled="!hasLibrarySequence || !fastaValidation?.isValid"
     :required="true"
     @update:model-value="setInput"
   />
