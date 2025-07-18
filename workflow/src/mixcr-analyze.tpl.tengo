@@ -107,8 +107,27 @@ self.body(func(inputs) {
 			mixcrCmdBuilder.addFile("input_" + r + "." + fileExtension, inputFile)
 		}
 		mixcrCmdBuilder.arg("input_{{R}}." + fileExtension)
+	} else if inputDataMeta.keyLength == 2 {
+		ll.assert(aggregationAxesNames == ["pl7.app/sequencing/lane", "pl7.app/sequencing/readIndex"], "unexpected aggregation axes names")
+		for sKey in maps.getKeys(inputMap) {
+			inputFile := inputMap[sKey]
+			key := json.decode(sKey)
+			if len(key) != 2 {
+				ll.panic("malformed key: %v", sKey)
+			}
+			lane := key[0]
+			r := key[1]
+			if (r[0] != 'R' && r[0] != "I") || (r[1] != '1' && r[1] != '2') || len(r) != 2 {
+				ll.panic("malformed read index: %v", r)
+			}
+			if is_undefined(int(lane)) {
+				ll.panic("malformed lane: %v", lane)
+			}
+			mixcrCmdBuilder.addFile("input_L" + lane + "_" + r + "." + fileExtension, inputFile)
+		}
+		mixcrCmdBuilder.arg("input_L{{n}}_{{R}}." + fileExtension)
 	} else {
-		ll.panic("unsupported key length: %v", inputDataMeta.keyLength)
+		ll.panic("too many axes / not supported")
 	}
 
     mixcrCmdBuilder.arg("result")
