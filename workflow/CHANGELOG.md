@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow
 
+## 1.3.0
+
+### Minor Changes
+
+- b3bcb06: support lanes and index read
+
 ## 1.2.0
 
 ### Minor Changes
