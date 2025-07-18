@@ -36,14 +36,14 @@ wf.body(func(args) {
 	fastaFileCmdBuilder := exec.builder().cmd("/usr/bin/env").arg("bash")
 	
 	// Save vGene to FASTA file if available
-	if args.vGene != "" {
-		fastaFileCmdBuilder.writeFile("vGene.fasta", args.vGene).
+	if args.vGenes != "" {
+		fastaFileCmdBuilder.writeFile("vGene.fasta", args.vGenes).
             saveFile("vGene.fasta")
 	}
 	
 	// Save jGene to FASTA file if available
-	if args.jGene != "" {
-		fastaFileCmdBuilder.writeFile("jGene.fasta", args.jGene).
+	if args.jGenes != "" {
+		fastaFileCmdBuilder.writeFile("jGene.fasta", args.jGenes).
             saveFile("jGene.fasta")
 	}
 
