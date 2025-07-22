@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow
 
+## 1.4.0
+
+### Minor Changes
+
+- d17799a: support multiple sequences in fasta format as reference
+
 ## 1.3.0
 
 ### Minor Changes
