@@ -1,5 +1,16 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment.ui
 
+## 1.2.0
+
+### Minor Changes
+
+- d17799a: support multiple sequences in fasta format as reference
+
+### Patch Changes
+
+- Updated dependencies [d17799a]
+  - @platforma-open/milaboratories.mixcr-amplicon-alignment.model@1.2.0
+
 ## 1.1.0
 
 ### Minor Changes
