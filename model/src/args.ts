@@ -11,6 +11,8 @@ export const BlockArgsValid = z.object({
   vGenes: z.string().optional(), // now a single FASTA string
   jGenes: z.string().optional(), // now a single FASTA string
   limitInput: z.number().int().optional(),
+  perProcessMemGB: z.number().int().gte(1, '1GB or more required').optional(),
+  perProcessCPUs: z.number().int().gte(1, '1 or more required').optional(),
 });
 export type BlockArgsValid = z.infer<typeof BlockArgsValid>;
 

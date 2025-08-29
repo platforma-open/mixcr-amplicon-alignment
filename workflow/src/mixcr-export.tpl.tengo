@@ -32,6 +32,8 @@ self.body(func(inputs) {
 	createExport := func(additionalAction) {
 		mixcrCmdBuilder := exec.builder().
 			inMediumQueue().
+			mem("12GB").
+		    cpu(2).
 			printErrStreamToStdout().
 			dontSaveStdoutOrStderr().
 			software(mixcrSw).
@@ -70,7 +72,11 @@ self.body(func(inputs) {
 	}
 
 	// Simplified PTabler processing for main TSV output
-	wfMain := pt.workflow()
+	wfMain := pt.workflow().
+		inMediumQueue().
+		mem("8GB").
+		cpu(2)
+		
 	frameInputMap := {
 		file: unprocessedTsv,
 		xsvType: "tsv",
