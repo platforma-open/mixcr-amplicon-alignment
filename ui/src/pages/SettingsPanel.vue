@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import type { PlRef } from '@platforma-sdk/model';
 import {
+  PlAccordionSection,
+  PlDropdown,
   PlDropdownRef,
+  PlNumberField,
   PlSectionSeparator,
   PlTextArea,
-  PlDropdown,
-  PlAccordionSection,
   PlTextField,
 } from '@platforma-sdk/ui-vue';
 import { computed, ref, watch } from 'vue';
@@ -240,6 +241,19 @@ ATCGATCGATCG..."
     <PlTextField
       v-model="app.model.args.limitInput" :parse="parseNumber" :clearable="() => undefined"
       label="Take only this number of reads into analysis"
+    />
+    <PlNumberField
+      v-model="app.model.args.perProcessMemGB"
+      label="Set memory per every sample process (GB)"
+      :minValue="1"
+      :maxValue="999999"
+    />
+
+    <PlNumberField
+      v-model="app.model.args.perProcessCPUs"
+      label="Set CPUs number per every sample process"
+      :minValue="1"
+      :maxValue="999999"
     />
   </PlAccordionSection>
 </template>
