@@ -32,6 +32,8 @@ self.body(func(inputs) {
 	chains := params.chains
 	mixcrChains := params.mixcrChains
 	limitInput := inputs.limitInput
+	perProcessMemGB := params.perProcessMemGB
+	perProcessCPUs := params.perProcessCPUs
 	fileExtension := inputSpec.domain["pl7.app/fileExtension"]
 
 	// Use calculateExportSpecs for output columns
@@ -161,7 +163,14 @@ self.body(func(inputs) {
 					referenceLibrary: referenceLibrary
 				},
 				limitInput: limitInput
-			}
+			},
+
+			// by passing those parameters as meta fields we allow for recovery and deduplication mechanisms
+			// to pick up the results from executions with different values for CPU and Memory overrides
+            metaExtra: {
+                perProcessMemGB: perProcessMemGB,
+                perProcessCPUs: perProcessCPUs
+            }
 		}
 	)
 
@@ -190,6 +199,8 @@ self.body(func(inputs) {
 			storageFormat: "Binary",
 			partitionKeyLength: 0
 		},
+		mem: "16GB",
+		cpu: 2,
 		name: "byCloneKeyBySample",
 		path: ["tsv"]
 	}]
@@ -231,6 +242,8 @@ self.body(func(inputs) {
 			columns: columnsSpecPerClonotypeNoAggregates + columnsSpecPerClonotypeAggregates,
 			storageFormat: "Binary"
 		},
+		mem: "12GB",
+		cpu: 2,
 		name: "aggregates",
 		path: ["tsv"]
 	} ]

@@ -27,6 +27,8 @@ self.body(func(inputs) {
 	params := inputs.params
 	fileExtension := params.fileExtension
 	limitInput := inputs.limitInput
+	perProcessMemGB := inputs.perProcessMemGB
+	perProcessCPUs := inputs.perProcessCPUs
 	ll.print("__THE_LOG__" + string(limitInput))
 
 	threePrimePrimer := inputs.threePrimePrimer
@@ -77,6 +79,20 @@ self.body(func(inputs) {
 		// } else {
 		// 	mixcrCmdBuilder.arg("--rigid-right-alignment-boundary").arg("J")
 		// }
+
+	// CPUs number per process
+	if !is_undefined(perProcessCPUs) {
+	    mixcrCmdBuilder.cpu(perProcessCPUs)
+	} else {
+	    mixcrCmdBuilder.cpu(16)     // default CPUs number per sample
+	}
+	// Memory limit per process
+    if !is_undefined(perProcessMemGB) {
+        // memory per process was set in "Advanced Settings" block directly
+		mixcrCmdBuilder.mem(string(perProcessMemGB) + "GB")
+	} else {
+		mixcrCmdBuilder.mem("64GB")
+	}
 
 	if !is_undefined(limitInput) {
 		mixcrCmdBuilder.arg("--limit-input").arg(string(limitInput))
