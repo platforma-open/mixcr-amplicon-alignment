@@ -30,6 +30,8 @@ wf.body(func(args) {
 	fivePrimePrimer := args.fivePrimePrimer
 	chains := args.chains
 	limitInput := args.limitInput
+	perProcessMemGB := args.perProcessMemGB
+	perProcessCPUs := args.perProcessCPUs
 
 	// Create V and J gene FASTA files
 	
@@ -81,6 +83,8 @@ wf.body(func(args) {
 
 		params: smart.createJsonResource({
 			blockId: blockId,
+			perProcessMemGB: perProcessMemGB,
+			perProcessCPUs: perProcessCPUs,
 			threePrimePrimer: threePrimePrimer,
 			fivePrimePrimer: fivePrimePrimer,
 			chains: chains,
