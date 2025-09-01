@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment.model
 
+## 1.3.0
+
+### Minor Changes
+
+- af0cbb1: Support batch system
+
 ## 1.2.0
 
 ### Minor Changes
