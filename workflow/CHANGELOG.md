@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow
 
+## 1.5.0
+
+### Minor Changes
+
+- af0cbb1: Support batch system
+
 ## 1.4.0
 
 ### Minor Changes
