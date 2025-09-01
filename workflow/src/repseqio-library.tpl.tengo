@@ -27,7 +27,8 @@ self.body(func(inputs) {
 		arg("--gene-feature").arg("VRegion").
 		arg("--name-index").arg("0").
 		arg("vGene.fasta").addFile("vGene.fasta", vGeneFasta).
-		arg("vGene.json").saveFile("vGene.json")
+		arg("vGene.json").saveFile("vGene.json").
+		cpu(1).mem("4GB")
 	
 	// Run repseqio command
 	repseqioVgeneResult := repseqioVgeneCmd.run()
@@ -45,7 +46,8 @@ self.body(func(inputs) {
 		arg("--gene-feature").arg("JRegion").
 		arg("--name-index").arg("0").
 		arg("jGene.fasta").addFile("jGene.fasta", jGeneFasta).
-		arg("jGene.json").saveFile("jGene.json")
+		arg("jGene.json").saveFile("jGene.json").
+		cpu(1).mem("4GB")
 	
 	repseqioJgeneResult := repseqioJgeneCmd.run()
 	referenceLibraryJgene := repseqioJgeneResult.getFile("jGene.json")
@@ -58,7 +60,8 @@ self.body(func(inputs) {
 		arg("vGene.json").
 		arg("jGene.json").
 		arg("referenceLibrary.json").
-		saveFile("referenceLibrary.json")
+		saveFile("referenceLibrary.json").
+		cpu(1).mem("4GB")
 	
 	repseqioMergeResult := repseqioMergeCmd.run()
 	referenceLibrary := repseqioMergeResult.getFile("referenceLibrary.json")
@@ -73,7 +76,8 @@ self.body(func(inputs) {
 		arg("referenceLibrary.json").
 		arg("referenceLibrary.json").
 		saveFile("referenceLibrary.json").
-		addFile("vGene.fasta", vGeneFasta)
+		addFile("vGene.fasta", vGeneFasta).
+		cpu(1).mem("4GB")
 	
 	repseqioInferPointsVResult := repseqioInferPointsVCmd.run()
 	referenceLibraryV := repseqioInferPointsVResult.getFile("referenceLibrary.json")
@@ -88,7 +92,8 @@ self.body(func(inputs) {
 		arg("referenceLibrary.json").
 		arg("referenceLibrary.json").
 		saveFile("referenceLibrary.json").
-		addFile("jGene.fasta", jGeneFasta)
+		addFile("jGene.fasta", jGeneFasta).
+		cpu(1).mem("4GB")
 	
 	repseqioInferPointsJResult := repseqioInferPointsJCmd.run()
 	referenceLibraryJ := repseqioInferPointsJResult.getFile("referenceLibrary.json")
@@ -102,7 +107,8 @@ self.body(func(inputs) {
 		arg("referenceLibrary.json").
 		saveFile("referenceLibrary.json").
 		addFile("vGene.fasta", vGeneFasta).
-		addFile("jGene.fasta", jGeneFasta)
+		addFile("jGene.fasta", jGeneFasta).
+		cpu(1).mem("4GB")
 	
 	repseqioCompileResult := repseqioCompileCmd.run()
 	referenceLibraryCompiled := repseqioCompileResult.getFile("referenceLibrary.json")
@@ -113,7 +119,8 @@ self.body(func(inputs) {
 		addFile("referenceLibrary.json", referenceLibraryCompiled).
 		arg("referenceLibrary.json").
 		addFile("vGene.fasta", vGeneFasta).
-		addFile("jGene.fasta", jGeneFasta)
+		addFile("jGene.fasta", jGeneFasta).
+		cpu(1).mem("4GB")
 	
 	repseqioDebugResult := repseqioDebugCmd.run()
 	debugOutput := repseqioDebugResult.getStdoutStream()
