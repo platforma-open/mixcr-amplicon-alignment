@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow
 
+## 1.6.0
+
+### Minor Changes
+
+- 2af4406: Removed unused software import
+
 ## 1.5.0
 
 ### Minor Changes
