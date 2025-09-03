@@ -10,7 +10,6 @@ pt := import("@platforma-sdk/workflow-tengo:pt")
 json := import("json")
 
 mixcrSw := assets.importSoftware("@platforma-open/milaboratories.software-mixcr:main")
-ptablerSw := assets.importSoftware("@platforma-open/milaboratories.software-ptabler:main")
 
 self.defineOutputs("tsv")
 
