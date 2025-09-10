@@ -32,6 +32,7 @@ wf.body(func(args) {
 	limitInput := args.limitInput
 	perProcessMemGB := args.perProcessMemGB
 	perProcessCPUs := args.perProcessCPUs
+	cloneClusteringMode := args.cloneClusteringMode
 
 	// Create V and J gene FASTA files
 	
@@ -88,7 +89,8 @@ wf.body(func(args) {
 			threePrimePrimer: threePrimePrimer,
 			fivePrimePrimer: fivePrimePrimer,
 			chains: chains,
-			mixcrChains: chainInfos[chains].mixcrFilter
+			mixcrChains: chainInfos[chains].mixcrFilter,
+			cloneClusteringMode: cloneClusteringMode
 		})
 	})
 

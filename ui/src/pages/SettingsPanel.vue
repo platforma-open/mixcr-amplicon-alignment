@@ -191,6 +191,20 @@ const chains = computed({
   },
 });
 
+const clusteringOptions = [
+  { value: 'none', label: 'None' },
+  { value: 'decrease', label: 'Decrease clustering sensitivity' },
+  { value: 'off', label: 'Turn off clustering' },
+] as const;
+
+const cloneClusteringMode = computed({
+  get: () =>
+    app.model.args.cloneClusteringMode ?? 'none',
+  set: (value) => {
+    app.model.args.cloneClusteringMode = value;
+  },
+});
+
 function parseNumber(v: string): number | undefined {
   if (!v || v.trim() === '') {
     return undefined;
@@ -238,15 +252,27 @@ ATCGATCGATCG..."
     @update:model-value="setInput"
   />
   <PlAccordionSection label="Advanced Settings">
+    <PlSectionSeparator>MiXCR options</PlSectionSeparator>
+    <PlDropdown
+      v-model="cloneClusteringMode"
+      :options="clusteringOptions"
+      label="MiXCR clone clustering parameters"
+    >
+      <template #tooltip>
+        None is the default clustering mode.
+        Decrease clustering sensitivity relaxes the fuzzy matching criteria used for clone clustering, which can substantially speed up the assembly step.
+        Turn off clustering can accelerate assembly even further, but this disables error correction.
+      </template>
+    </PlDropdown>
     <PlTextField
       v-model="app.model.args.limitInput" :parse="parseNumber" :clearable="() => undefined"
       label="Take only this number of reads into analysis"
     />
+    <PlSectionSeparator>Resource Allocation</PlSectionSeparator>
     <PlNumberField
       v-model="app.model.args.perProcessMemGB"
       label="Set memory per every sample process (GB)"
       :minValue="1"
-      :maxValue="999999"
     />
 
     <PlNumberField

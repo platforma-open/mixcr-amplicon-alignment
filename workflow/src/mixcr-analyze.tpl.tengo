@@ -29,6 +29,7 @@ self.body(func(inputs) {
 	limitInput := inputs.limitInput
 	perProcessMemGB := inputs.perProcessMemGB
 	perProcessCPUs := inputs.perProcessCPUs
+	cloneClusteringMode := params.cloneClusteringMode
 	ll.print("__THE_LOG__" + string(limitInput))
 
 	threePrimePrimer := inputs.threePrimePrimer
@@ -67,6 +68,13 @@ self.body(func(inputs) {
 		arg("--force-overwrite").
 		arg("--rigid-left-alignment-boundary").
 		arg("--rigid-right-alignment-boundary").arg("J")
+
+	// Clone clustering tuning
+	if cloneClusteringMode == "decrease" {
+		mixcrCmdBuilder.arg("-Massemble.cloneAssemblerParameters.cloneClusteringParameters.searchParameters=oneMismatchOrIndel")
+	} else if cloneClusteringMode == "off" {
+		mixcrCmdBuilder.arg("-Massemble.cloneAssemblerParameters.cloneClusteringParameters=null")
+	}
 
 		// if (!is_undefined(threePrimePrimer)) {
 		// 	mixcrCmdBuilder.arg("--floating-left-alignment-boundary")
