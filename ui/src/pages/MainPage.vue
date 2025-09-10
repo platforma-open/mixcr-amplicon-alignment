@@ -37,7 +37,7 @@ import LogsPanel from './LogsPanel.vue';
 const app = useApp();
 
 const result = computed(() =>
-  resultMap.value ? [...resultMap.value.values()] : []
+  resultMap.value ? [...resultMap.value.values()] : [],
 );
 
 const data = reactive<{
@@ -59,16 +59,16 @@ watch(
   (newVal, oldVal) => {
     if (oldVal === false && newVal === true) data.settingsOpen = false;
     if (oldVal === true && newVal === false) data.settingsOpen = true;
-  }
+  },
 );
 
 whenever(
   () => data.settingsOpen,
-  () => (data.sampleReportOpen = false)
+  () => (data.sampleReportOpen = false),
 );
 whenever(
   () => data.sampleReportOpen,
-  () => (data.settingsOpen = false)
+  () => (data.settingsOpen = false),
 );
 
 const gridApi = shallowRef<GridApi>();
@@ -164,7 +164,7 @@ const showLogs = () => {
       <PlBtnGhost @click.stop="showLogs">
         Reference Library Generation Logs
         <template #append>
-          <PlMaskIcon24 name="error" />
+          <PlMaskIcon24 name="file-logs" />
         </template>
       </PlBtnGhost>
       <PlBtnGhost @click.stop="() => (data.settingsOpen = true)">

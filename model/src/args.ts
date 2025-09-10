@@ -13,6 +13,7 @@ export const BlockArgsValid = z.object({
   limitInput: z.number().int().optional(),
   perProcessMemGB: z.number().int().gte(1, '1GB or more required').optional(),
   perProcessCPUs: z.number().int().gte(1, '1 or more required').optional(),
+  cloneClusteringMode: z.enum(['none', 'decrease', 'off']).default('none').optional(),
 });
 export type BlockArgsValid = z.infer<typeof BlockArgsValid>;
 
