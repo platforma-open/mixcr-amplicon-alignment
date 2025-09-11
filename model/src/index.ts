@@ -10,30 +10,30 @@ import { ProgressPrefix } from './progress';
 
 export const platforma = BlockModel.create('Heavy')
 
-  .withArgs<BlockArgs>({ librarySequence: '', chains: 'IGHeavy' })
+  .withArgs<BlockArgs>({ librarySequence: '', chains: 'IGHeavy', cloneClusteringMode: 'none' })
 
   .output('qc', (ctx) =>
     parseResourceMap(
       ctx.outputs?.resolve('qc'),
       (acc) => acc.getFileHandle(),
-      true
-    )
+      true,
+    ),
   )
 
   .output('reports', (ctx) =>
     parseResourceMap(
       ctx.outputs?.resolve('reports'),
       (acc) => acc.getFileHandle(),
-      false
-    )
+      false,
+    ),
   )
-  
+
   .output('logs', (ctx) => {
     return ctx.outputs !== undefined
       ? parseResourceMap(
           ctx.outputs?.resolve('logs'),
           (acc) => acc.getLogHandle(),
-          false
+          false,
         )
       : undefined;
   })
@@ -43,7 +43,7 @@ export const platforma = BlockModel.create('Heavy')
       ? parseResourceMap(
           ctx.outputs?.resolve('logs'),
           (acc) => acc.getProgressLog(ProgressPrefix),
-          false
+          false,
         )
       : undefined;
   })
@@ -61,7 +61,7 @@ export const platforma = BlockModel.create('Heavy')
       ? parseResourceMap(
           ctx.outputs?.resolve('clns'),
           (_acc) => true,
-          false
+          false,
         ).data.map((e) => e.key[0] as string)
       : undefined;
   })

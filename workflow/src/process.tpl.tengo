@@ -31,6 +31,7 @@ self.body(func(inputs) {
 	fivePrimePrimer := params.fivePrimePrimer
 	chains := params.chains
 	mixcrChains := params.mixcrChains
+	cloneClusteringMode := params.cloneClusteringMode
 	limitInput := inputs.limitInput
 	perProcessMemGB := params.perProcessMemGB
 	perProcessCPUs := params.perProcessCPUs
@@ -160,7 +161,8 @@ self.body(func(inputs) {
 			extra: {
 				params: {
 					fileExtension: fileExtension,
-					referenceLibrary: referenceLibrary
+					referenceLibrary: referenceLibrary,
+					cloneClusteringMode: cloneClusteringMode
 				},
 				limitInput: limitInput
 			},
