@@ -191,6 +191,20 @@ const chains = computed({
   },
 });
 
+const clusteringOptions = [
+  { value: 'none', label: 'Default assembly (standard clustering)' },
+  { value: 'decrease', label: 'Faster assembly (relaxed matching)' },
+  { value: 'off', label: 'Fastest assembly (no error correction)' },
+] as const;
+
+const cloneClusteringMode = computed({
+  get: () =>
+    app.model.args.cloneClusteringMode ?? 'none',
+  set: (value) => {
+    app.model.args.cloneClusteringMode = value;
+  },
+});
+
 function parseNumber(v: string): number | undefined {
   if (!v || v.trim() === '') {
     return undefined;
@@ -238,15 +252,28 @@ ATCGATCGATCG..."
     @update:model-value="setInput"
   />
   <PlAccordionSection label="Advanced Settings">
+    <PlSectionSeparator>MiXCR options</PlSectionSeparator>
+    <PlDropdown
+      v-model="cloneClusteringMode"
+      :options="clusteringOptions"
+      label="Clustering presets"
+    >
+      <template #tooltip>
+        'Default assembly' is the standard MiXCR clustering
+        mode. 'Faster assembly' relaxes fuzzy matching
+        criteria, speeding up assembly. 'Fastest assembly' further accelerates the process but disables error
+        correction.
+      </template>
+    </PlDropdown>
     <PlTextField
       v-model="app.model.args.limitInput" :parse="parseNumber" :clearable="() => undefined"
       label="Take only this number of reads into analysis"
     />
+    <PlSectionSeparator>Resource Allocation</PlSectionSeparator>
     <PlNumberField
       v-model="app.model.args.perProcessMemGB"
       label="Set memory per every sample process (GB)"
       :minValue="1"
-      :maxValue="999999"
     />
 
     <PlNumberField
