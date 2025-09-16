@@ -90,7 +90,9 @@ wf.body(func(args) {
 			fivePrimePrimer: fivePrimePrimer,
 			chains: chains,
 			mixcrChains: chainInfos[chains].mixcrFilter,
-			cloneClusteringMode: cloneClusteringMode
+			cloneClusteringMode: cloneClusteringMode,
+			hasUMI: args.hasUMI,
+			fullPattern: args.fullPattern
 		})
 	})
 
