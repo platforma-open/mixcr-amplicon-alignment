@@ -112,7 +112,9 @@ calculateExportSpecs := func(presetSpecForBack, blockId) {
 	// array of array of arg groups
 	exportArgs := []
 
-	// Abundance - only read counts and fractions
+	// Abundance - reads by default; switch to UMI columns if umiTags are present
+
+	hasUmi := !is_undefined(presetSpecForBack) && !is_undefined(presetSpecForBack.umiTags) && len(presetSpecForBack.umiTags) > 0
 
 	columnsSpecPerSample += [ {
 		column: "readCount",
@@ -121,13 +123,13 @@ calculateExportSpecs := func(presetSpecForBack, blockId) {
 		spec: {
 			name: "pl7.app/vdj/readCount",
 			valueType: "Long",
-			annotations: a(90000, true, {
+			annotations: a(90000, !hasUmi, {
 				"pl7.app/min": "1",
 				"pl7.app/isAbundance": "true",
 				"pl7.app/abundance/unit": "reads",
 				"pl7.app/abundance/normalized": "false",
-				"pl7.app/abundance/isPrimary": "true",
-				"pl7.app/isAnchor": "true",
+				"pl7.app/abundance/isPrimary": !hasUmi ? "true" : undefined,
+				"pl7.app/isAnchor": !hasUmi ? "true" : undefined,
 				"pl7.app/label": "Number Of Reads"
 			})
 		}
@@ -138,13 +140,13 @@ calculateExportSpecs := func(presetSpecForBack, blockId) {
 		spec: {
 			name: "pl7.app/vdj/readFraction",
 			valueType: "Double",
-			annotations: a(89000, true, {
+			annotations: a(89000, !hasUmi, {
 				"pl7.app/min": "0",
 				"pl7.app/max": "1",
 				"pl7.app/isAbundance": "true",
 				"pl7.app/abundance/unit": "reads",
 				"pl7.app/abundance/normalized": "true",
-				"pl7.app/abundance/isPrimary": "true",
+				"pl7.app/abundance/isPrimary": !hasUmi ? "true" : undefined,
 				"pl7.app/label": "Fraction of reads",
 				"pl7.app/format": ".2p"
 			})
@@ -193,6 +195,88 @@ calculateExportSpecs := func(presetSpecForBack, blockId) {
 			})
 		}
 	}]
+
+	if hasUmi {
+		columnsSpecPerSample += [ {
+				column: "uniqueMoleculeCount",
+				id: "umi-count",
+				allowNA: false,
+				spec: {
+					name: "pl7.app/vdj/uniqueMoleculeCount",
+					valueType: "Long",
+					annotations: a(88000, true, {
+						"pl7.app/min": "1",
+						"pl7.app/isAbundance": "true",
+						"pl7.app/abundance/unit": "molecules",
+						"pl7.app/abundance/normalized": "false",
+						"pl7.app/abundance/isPrimary": "true",
+						"pl7.app/isAnchor": "true",
+						"pl7.app/label": "Number of UMIs"
+					})
+				}
+			}, {
+				column: "uniqueMoleculeFraction",
+				id: "umi-fraction",
+				allowNA: false,
+				spec: {
+					name: "pl7.app/vdj/uniqueMoleculeFraction",
+					valueType: "Double",
+					annotations: a(87500, true, {
+						"pl7.app/min": "0",
+						"pl7.app/max": "1",
+						"pl7.app/isAbundance": "true",
+						"pl7.app/abundance/unit": "molecules",
+						"pl7.app/abundance/normalized": "true",
+						"pl7.app/abundance/isPrimary": "true",
+						"pl7.app/label": "Fraction of UMIs",
+						"pl7.app/format": ".2p"
+					})
+				}
+			} ]
+		exportArgs += [
+			[ "-uniqueTagCount", "Molecule" ],
+			[ "-uniqueTagFraction", "Molecule" ]
+		]
+
+		mainAbundanceColumnNormalized = "uniqueMoleculeFraction"
+		mainAbundanceColumnUnnormalized = "uniqueMoleculeCount"
+		mainAbundanceColumnNormalizedArgs = [ [ "-uniqueTagFraction", "Molecule" ] ]
+		mainAbundanceColumnUnnormalizedArgs = [ [ "-uniqueTagCount", "Molecule" ] ]
+
+		columnsSpecPerClonotypeAggregates = [ {
+			column: mainAbundanceColumnUnnormalized + "Sum",
+			id: "umi-count-total",
+			allowNA: false,
+			spec: {
+				name: "pl7.app/vdj/uniqueMoleculeCountTotal",
+				valueType: "Long",
+				annotations: a(87120, true, {
+					"pl7.app/min": "1",
+					"pl7.app/isAbundance": "true",
+					"pl7.app/abundance/unit": "molecules",
+					"pl7.app/abundance/normalized": "false",
+					"pl7.app/label": "Supporting UMIs"
+				})
+			}
+		}, {
+			column: mainAbundanceColumnNormalized + "Mean",
+			id: "umi-fraction-mean",
+			allowNA: false,
+			spec: {
+				name: "pl7.app/vdj/uniqueMoleculeFractionMean",
+				valueType: "Double",
+				annotations: a(87130, true, {
+					"pl7.app/min": "0",
+					"pl7.app/max": "1",
+					"pl7.app/isAbundance": "true",
+					"pl7.app/abundance/unit": "molecules",
+					"pl7.app/abundance/normalized": "true",
+					"pl7.app/label": "Mean Fraction of UMIs",
+					"pl7.app/format": ".2p"
+				})
+			}
+		} ]
+	}
 
 	sampleCountColumn := {
 		column: "sampleCount",
@@ -262,7 +346,7 @@ calculateExportSpecs := func(presetSpecForBack, blockId) {
 				} ]
 			exportArgs += [ [ "-" + alphabetShortMixcr + "Feature", featureInFrameU ] ]
 			orderP -= 100
-
+			
 			// Adding sequence annotation columns for assembling feature
 			if featureU == assemblingFeature {
 				for annotationType in annotationTypes {
@@ -290,7 +374,7 @@ calculateExportSpecs := func(presetSpecForBack, blockId) {
 					orderP -= 100
 				}
 			}
-
+			
 			// For now calculate length only for CDR3 to keep the number of columns manageable
 			if featureU == "CDR3" {
 				columnsSpecPerClonotypeNoAggregates += [ {
@@ -435,7 +519,8 @@ calculateExportSpecs := func(presetSpecForBack, blockId) {
 						"pl7.app/isDiscreteFilter": "true",
 						"pl7.app/discreteValues": string(json.encode(["True", "False"])) } )
 				}
-			} ]
+			}
+		] 
 		exportArgs += [ [ variant.arg, productiveFeature ] ]
 		orderP -= 100
 	}

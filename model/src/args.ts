@@ -8,6 +8,10 @@ export const BlockArgsValid = z.object({
   librarySequence: z.string(),
   threePrimePrimer: z.string().optional(),
   fivePrimePrimer: z.string().optional(),
+  r1Pattern: z.string().optional(),
+  r2Pattern: z.string().optional(),
+  hasUMI: z.boolean().optional(),
+  fullPattern: z.string().optional(),
   vGenes: z.string().optional(), // now a single FASTA string
   jGenes: z.string().optional(), // now a single FASTA string
   limitInput: z.number().int().optional(),

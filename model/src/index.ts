@@ -10,7 +10,15 @@ import { ProgressPrefix } from './progress';
 
 export const platforma = BlockModel.create('Heavy')
 
-  .withArgs<BlockArgs>({ librarySequence: '', chains: 'IGHeavy', cloneClusteringMode: 'none' })
+  .withArgs<BlockArgs>({
+    librarySequence: '',
+    chains: 'IGHeavy',
+    cloneClusteringMode: 'none',
+    r1Pattern: undefined,
+    r2Pattern: undefined,
+    hasUMI: undefined,
+    fullPattern: undefined,
+  })
 
   .output('qc', (ctx) =>
     parseResourceMap(
@@ -114,7 +122,7 @@ export const platforma = BlockModel.create('Heavy')
       : 'MiXCR Amplicon Alignment',
   )
 
-  .done();
+  .done(2);
 
 export type BlockOutputs = InferOutputsType<typeof platforma>;
 export type Href = InferHrefType<typeof platforma>;
