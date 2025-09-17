@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment.test
 
+## 1.2.0
+
+### Minor Changes
+
+- 79a4e71: umi support and updating dependencies
+
 ## 1.1.0
 
 ### Minor Changes

@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow
 
+## 1.8.0
+
+### Minor Changes
+
+- 79a4e71: umi support and updating dependencies
+
 ## 1.7.0
 
 ### Minor Changes
