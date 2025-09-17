@@ -1,5 +1,12 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow
 
+## 1.7.0
+
+### Minor Changes
+
+- 3b008c0: speed up MiXCR clustering by relaxing fuzzy matching criteria or turning of clustering itself
+- 3b008c0: updating SDK
+
 ## 1.6.0
 
 ### Minor Changes

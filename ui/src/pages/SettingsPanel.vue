@@ -192,9 +192,9 @@ const chains = computed({
 });
 
 const clusteringOptions = [
-  { value: 'none', label: 'None' },
-  { value: 'decrease', label: 'Decrease clustering sensitivity' },
-  { value: 'off', label: 'Turn off clustering' },
+  { value: 'none', label: 'Default assembly (standard clustering)' },
+  { value: 'decrease', label: 'Faster assembly (relaxed matching)' },
+  { value: 'off', label: 'Fastest assembly (no error correction)' },
 ] as const;
 
 const cloneClusteringMode = computed({
@@ -306,12 +306,13 @@ ATCGATCGATCG..."
     <PlDropdown
       v-model="cloneClusteringMode"
       :options="clusteringOptions"
-      label="MiXCR clone clustering parameters"
+      label="Clustering presets"
     >
       <template #tooltip>
-        None is the default clustering mode.
-        Decrease clustering sensitivity relaxes the fuzzy matching criteria used for clone clustering, which can substantially speed up the assembly step.
-        Turn off clustering can accelerate assembly even further, but this disables error correction.
+        'Default assembly' is the standard MiXCR clustering
+        mode. 'Faster assembly' relaxes fuzzy matching
+        criteria, speeding up assembly. 'Fastest assembly' further accelerates the process but disables error
+        correction.
       </template>
     </PlDropdown>
     <PlTextField
