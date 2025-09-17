@@ -58,8 +58,16 @@ self.body(func(inputs) {
 		env("MI_PROGRESS_PREFIX", progressPrefix).
 		software(mixcrSw).
 		secret("MI_LICENSE", "MI_LICENSE").
-		arg("analyze").
-        arg("generic-amplicon").
+		arg("analyze")
+
+	// Select preset based on UMI presence
+	if !is_undefined(params.hasUMI) && params.hasUMI {
+		mixcrCmdBuilder.arg("generic-amplicon-with-umi")
+	} else {
+		mixcrCmdBuilder.arg("generic-amplicon")
+	}
+
+	mixcrCmdBuilder.
         arg("--assemble-clonotypes-by").arg("VDJRegion").
         arg("--species").arg("custom").
 		arg("--library").arg("library.json").
@@ -68,6 +76,15 @@ self.body(func(inputs) {
 		arg("--force-overwrite").
 		arg("--rigid-left-alignment-boundary").
 		arg("--rigid-right-alignment-boundary").arg("J")
+
+	// Pass pattern if provided
+	if !is_undefined(params.fullPattern) && params.fullPattern != "" {
+		if !is_undefined(params.hasUMI) && params.hasUMI {
+			mixcrCmdBuilder.arg("--tag-pattern").arg(params.fullPattern)
+		} else {
+			mixcrCmdBuilder.arg("--tag-pattern").arg(params.fullPattern)
+		}
+	}
 
 	// Clone clustering tuning
 	if cloneClusteringMode == "decrease" {

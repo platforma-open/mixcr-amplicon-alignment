@@ -32,6 +32,12 @@ self.body(func(inputs) {
 	chains := params.chains
 	mixcrChains := params.mixcrChains
 	cloneClusteringMode := params.cloneClusteringMode
+	hasUMI := params.hasUMI
+	fullPattern := params.fullPattern
+
+	// Normalize optional params to avoid undefined in JSON
+	hasUmiBool := !is_undefined(hasUMI) && hasUMI
+	fullPatternStr := is_undefined(fullPattern) ? "" : fullPattern
 	limitInput := inputs.limitInput
 	perProcessMemGB := params.perProcessMemGB
 	perProcessCPUs := params.perProcessCPUs
@@ -41,7 +47,7 @@ self.body(func(inputs) {
 	presetSpecForBack := {
 		assemblingFeature: ["VDJRegion"],
 		splitByC: true,
-		umiTags: undefined,
+		umiTags: hasUmiBool ? ["Molecule"] : undefined,
 		cellTags: undefined
 	}
 
@@ -162,7 +168,9 @@ self.body(func(inputs) {
 				params: {
 					fileExtension: fileExtension,
 					referenceLibrary: referenceLibrary,
-					cloneClusteringMode: cloneClusteringMode
+					cloneClusteringMode: cloneClusteringMode,
+					hasUMI: hasUmiBool,
+					fullPattern: fullPatternStr
 				},
 				limitInput: limitInput
 			},

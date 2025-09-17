@@ -85,17 +85,9 @@ watch(
   { immediate: true },
 );
 
-// Validation rules for PlTextArea
+// Validation rules for PlTextArea (no error on empty input)
 const fastaValidationRules = [
-  // Rule 1: Check if sequence is not empty
-  (value: string): boolean | string => {
-    if (!value || !value.trim()) {
-      return 'FASTA sequence is required';
-    }
-    return true;
-  },
-
-  // Rule 2: Check if content looks like FASTA format
+  // Rule: Check if content looks like FASTA format
   (value: string): boolean | string => {
     if (!value) return true; // Skip if empty (handled by first rule)
 
@@ -150,7 +142,7 @@ const fastaValidationRules = [
     return true;
   },
 
-  // Rule 3: Use the comprehensive validation function for all other checks
+  // Rule: Use the comprehensive validation function for all other checks
   (value: string): boolean | string => {
     if (!value) return true; // Skip if empty (handled by first rule)
 
@@ -205,6 +197,36 @@ const cloneClusteringMode = computed({
   },
 });
 
+// Optional MiXCR read patterns
+const r1Pattern = computed({
+  get: (): string => app.model.args.r1Pattern ?? '',
+  set: (value: string) => {
+    app.model.args.r1Pattern = value || undefined;
+  },
+});
+
+const r2Pattern = computed({
+  get: (): string => app.model.args.r2Pattern ?? '',
+  set: (value: string) => {
+    app.model.args.r2Pattern = value || undefined;
+  },
+});
+
+// Derive hasUMI based on patterns
+watch([r1Pattern, r2Pattern], ([r1, r2]) => {
+  const has = /UMI/.test(r1 || '') || /UMI/.test(r2 || '');
+  app.model.args.hasUMI = has ? true : (r1 || r2 ? false : undefined);
+
+  const trimmedR1 = (r1 || '').trim();
+  const trimmedR2 = (r2 || '').trim();
+  const defaultR1 = '^(R1:*)';
+  const defaultR2 = '^(R2:*)';
+  const finalR1 = trimmedR1 || (trimmedR2 ? defaultR1 : '');
+  const finalR2 = trimmedR2 || (trimmedR1 ? defaultR2 : '');
+  const full = finalR1 && finalR2 ? `${finalR1}\\${finalR2}` : (finalR1 || finalR2 || undefined);
+  app.model.args.fullPattern = full;
+}, { immediate: true });
+
 function parseNumber(v: string): number | undefined {
   if (!v || v.trim() === '') {
     return undefined;
@@ -251,6 +273,26 @@ ATCGATCGATCG..."
     :required="true"
     @update:model-value="setInput"
   />
+  <PlTextField
+    v-model="r1Pattern"
+    label="R1 pattern"
+    placeholder="e.g. ^N{16}CAGT(UMI:N{18})(R1:*)"
+    clearable
+  >
+    <template #tooltip>
+      Pattern for read 1. Needed for primer trimming, UMI extraction. Support MiXCR pattern syntax. Can be left empty.
+    </template>
+  </PlTextField>
+  <PlTextField
+    v-model="r2Pattern"
+    label="R2 pattern"
+    placeholder="e.g. ^N{16}GGTA(UMI:N{18})(R2:*)"
+    clearable
+  >
+    <template #tooltip>
+      Pattern for read 2. Needed for primer trimming, UMI extraction. Support MiXCR pattern syntax. Can be left empty.
+    </template>
+  </PlTextField>
   <PlAccordionSection label="Advanced Settings">
     <PlSectionSeparator>MiXCR options</PlSectionSeparator>
     <PlDropdown
