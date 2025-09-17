@@ -1,5 +1,18 @@
 ## 1.0.0
 
+## 1.2.0
+
+### Minor Changes
+
+- 79a4e71: umi support and updating dependencies
+
+### Patch Changes
+
+- Updated dependencies [79a4e71]
+  - @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow@1.8.0
+  - @platforma-open/milaboratories.mixcr-amplicon-alignment.model@1.5.0
+  - @platforma-open/milaboratories.mixcr-amplicon-alignment.ui@1.5.0
+
 ## 1.1.0
 
 ### Minor Changes

@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment.model
 
+## 1.5.0
+
+### Minor Changes
+
+- 79a4e71: umi support and updating dependencies
+
 ## 1.4.0
 
 ### Minor Changes
