@@ -85,17 +85,9 @@ watch(
   { immediate: true },
 );
 
-// Validation rules for PlTextArea
+// Validation rules for PlTextArea (no error on empty input)
 const fastaValidationRules = [
-  // Rule 1: Check if sequence is not empty
-  (value: string): boolean | string => {
-    if (!value || !value.trim()) {
-      return 'FASTA sequence is required';
-    }
-    return true;
-  },
-
-  // Rule 2: Check if content looks like FASTA format
+  // Rule: Check if content looks like FASTA format
   (value: string): boolean | string => {
     if (!value) return true; // Skip if empty (handled by first rule)
 
@@ -150,7 +142,7 @@ const fastaValidationRules = [
     return true;
   },
 
-  // Rule 3: Use the comprehensive validation function for all other checks
+  // Rule: Use the comprehensive validation function for all other checks
   (value: string): boolean | string => {
     if (!value) return true; // Skip if empty (handled by first rule)
 
