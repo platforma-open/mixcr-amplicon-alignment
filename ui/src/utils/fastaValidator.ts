@@ -125,8 +125,13 @@ export function validateFastaSequence(content: string): FastaValidationResult {
       warnings.push(`Record "${header}": Sequence length is not a multiple of 3 - translation may be incomplete`);
     }
 
-    // Translate DNA to protein for pattern validation
-    const translatedSequence = translateDNAToProtein(cleanSequence);
+    // If the whole reference sequence (record) is in frame, append two nucleotides (e.g., AT)
+    const referenceSequence = cleanSequence.length % 3 === 0
+      ? cleanSequence + 'A'
+      : cleanSequence;
+
+    // Translate DNA to protein for pattern validation using the adjusted reference sequence
+    const translatedSequence = translateDNAToProtein(referenceSequence);
 
     if (translatedSequence.length === 0) {
       errors.push(`Record "${header}": Translation resulted in empty protein sequence (possibly due to early stop codon)`);
@@ -159,13 +164,13 @@ export function validateFastaSequence(content: string): FastaValidationResult {
     // First sequence: from beginning to first cysteine in pattern + 3 nucleotides
     const firstCysteinePosition = patternStartInFullSequence; // First C in pattern
     const vGeneEndNucleotides = (firstCysteinePosition + 3) * 3; // +2 for the cysteine, *3 for nucleotides
-    const vGeneSequence = cleanSequence.substring(0, vGeneEndNucleotides);
+    const vGeneSequence = referenceSequence.substring(0, vGeneEndNucleotides);
     const vGene = `>${header}_Vgene\n${vGeneSequence}`;
 
     // Second sequence: from 6 nucleotides before pattern end to sequence end
     const patternEndNucleotides = patternEndInFullSequence * 3;
     const jGeneStartNucleotides = patternEndNucleotides - 21; // 6 nucleotides before pattern end
-    const jGeneSequence = cleanSequence.substring(jGeneStartNucleotides);
+    const jGeneSequence = referenceSequence.substring(jGeneStartNucleotides);
     const jGene = `>${header}_Jgene\n${jGeneSequence}`;
 
     vGeneParts.push(vGene);
