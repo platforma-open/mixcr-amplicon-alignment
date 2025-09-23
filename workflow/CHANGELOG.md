@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow
 
+## 1.9.0
+
+### Minor Changes
+
+- db9f3fe: fix J end and updating dependencies
+
 ## 1.8.0
 
 ### Minor Changes

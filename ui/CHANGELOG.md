@@ -1,5 +1,16 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment.ui
 
+## 1.6.0
+
+### Minor Changes
+
+- db9f3fe: fix J end and updating dependencies
+
+### Patch Changes
+
+- Updated dependencies [db9f3fe]
+  - @platforma-open/milaboratories.mixcr-amplicon-alignment.model@1.6.0
+
 ## 1.5.0
 
 ### Minor Changes
