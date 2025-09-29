@@ -78,16 +78,12 @@ self.body(func(inputs) {
 		arg("--rigid-right-alignment-boundary").arg("J")
 
 	// Pass pattern if provided
-	if !is_undefined(params.fullPattern) && params.fullPattern != "" {
-		if !is_undefined(params.hasUMI) && params.hasUMI {
-			mixcrCmdBuilder.arg("--tag-pattern").arg(params.fullPattern)
-		} else {
-			mixcrCmdBuilder.arg("--tag-pattern").arg(params.fullPattern)
-		}
+	if !is_undefined(params.tagPattern) && params.tagPattern != "" {
+		mixcrCmdBuilder.arg("--tag-pattern").arg(params.tagPattern)
 	}
 
 	// Clone clustering tuning
-	if cloneClusteringMode == "decrease" {
+	if cloneClusteringMode == "relaxed" {
 		mixcrCmdBuilder.arg("-Massemble.cloneAssemblerParameters.cloneClusteringParameters.searchParameters=oneMismatchOrIndel")
 	} else if cloneClusteringMode == "off" {
 		mixcrCmdBuilder.arg("-Massemble.cloneAssemblerParameters.cloneClusteringParameters=null")

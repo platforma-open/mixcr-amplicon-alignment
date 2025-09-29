@@ -1,24 +1,45 @@
-import type { InferHrefType } from '@platforma-sdk/model';
+import type { InferHrefType, PlRef } from '@platforma-sdk/model';
 import {
   BlockModel,
   isPColumnSpec,
   parseResourceMap,
   type InferOutputsType,
 } from '@platforma-sdk/model';
-import { BlockArgs, BlockArgsValid } from './args';
 import { ProgressPrefix } from './progress';
+
+export type CloneClusteringMode = 'relaxed' | 'default' | 'off';
+
+export interface BlockArgs {
+  datasetRef?: PlRef;
+  chains?: string; // default: 'IGHeavy'
+  title?: string;
+  tagPattern: string;
+  vGenes?: string; // now a single FASTA string
+  jGenes?: string; // now a single FASTA string
+  limitInput?: number;
+  perProcessMemGB?: number; // 1GB or more required
+  perProcessCPUs?: number; // 1 or more required
+  cloneClusteringMode?: CloneClusteringMode; // default: 'none'
+}
+
+export interface UiState {
+  librarySequence?: string;
+}
+
+export interface BlockArgsValid extends BlockArgs {
+  dataset: PlRef;
+  chains: string;
+  librarySequence: string;
+}
 
 export const platforma = BlockModel.create('Heavy')
 
   .withArgs<BlockArgs>({
-    librarySequence: '',
     chains: 'IGHeavy',
-    cloneClusteringMode: 'none',
-    r1Pattern: undefined,
-    r2Pattern: undefined,
-    hasUMI: undefined,
-    fullPattern: undefined,
+    cloneClusteringMode: 'relaxed',
+    tagPattern: '',
   })
+  .withUiState<UiState>({})
 
   .output('qc', (ctx) =>
     parseResourceMap(
@@ -91,7 +112,7 @@ export const platforma = BlockModel.create('Heavy')
   })
 
   .output('sampleLabels', (ctx): Record<string, string> | undefined => {
-    const inputRef = ctx.args.input;
+    const inputRef = ctx.args.datasetRef;
     if (inputRef === undefined) return undefined;
 
     const spec = ctx.resultPool.getPColumnSpecByRef(inputRef);
@@ -105,13 +126,7 @@ export const platforma = BlockModel.create('Heavy')
   })
 
   .argsValid((ctx) => {
-    // Basic schema validation
-    if (!BlockArgsValid.safeParse(ctx.args).success) return false;
-
-    const sequence = ctx.args.librarySequence;
-    if (!sequence || !sequence.trim()) return false;
-
-    return true;
+    return ctx.args.datasetRef !== undefined && ctx.uiState.librarySequence !== undefined;
   })
 
   .output('isRunning', (ctx) => ctx.outputs?.getIsReadyOrError() === false)
@@ -126,8 +141,6 @@ export const platforma = BlockModel.create('Heavy')
 
 export type BlockOutputs = InferOutputsType<typeof platforma>;
 export type Href = InferHrefType<typeof platforma>;
-export * from './args';
 export * from './progress';
 export * from './qc';
 export * from './reports';
-export { BlockArgs };

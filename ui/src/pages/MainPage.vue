@@ -16,6 +16,7 @@ import {
   createAgGridColDef,
   makeRowNumberColDef,
 } from '@platforma-sdk/ui-vue';
+import { whenever } from '@vueuse/core';
 import type {
   ColDef,
   GridApi,
@@ -24,15 +25,14 @@ import type {
 } from 'ag-grid-enterprise';
 import { ClientSideRowModelModule, ModuleRegistry } from 'ag-grid-enterprise';
 import { computed, reactive, shallowRef, watch } from 'vue';
-import { whenever } from '@vueuse/core';
-import { getAlignmentChartSettings } from '../charts/alignmentChartSettings';
 import { useApp } from '../app';
+import { getAlignmentChartSettings } from '../charts/alignmentChartSettings';
 import { parseProgressString } from '../parseProgress';
 import type { AmpliconAlignmentResult } from '../results';
 import { resultMap } from '../results';
+import LogsPanel from './LogsPanel.vue';
 import SampleReportPanel from './SampleReportPanel.vue';
 import SettingsPanel from './SettingsPanel.vue';
-import LogsPanel from './LogsPanel.vue';
 
 const app = useApp();
 
@@ -162,7 +162,7 @@ const showLogs = () => {
     <template #title>MiXCR Amplicon Alignment</template>
     <template #append>
       <PlBtnGhost @click.stop="showLogs">
-        Reference Library Generation Logs
+        Reference Alignment Logs
         <template #append>
           <PlMaskIcon24 name="file-logs" />
         </template>
