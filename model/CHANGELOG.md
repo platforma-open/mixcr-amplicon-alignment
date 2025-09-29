@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment.model
 
+## 1.7.0
+
+### Minor Changes
+
+- 07e7fc7: Update frame shift behaviour, general refactoring
+
 ## 1.6.0
 
 ### Minor Changes
