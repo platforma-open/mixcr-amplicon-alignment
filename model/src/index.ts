@@ -19,7 +19,7 @@ export interface BlockArgs {
   limitInput?: number;
   perProcessMemGB?: number; // 1GB or more required
   perProcessCPUs?: number; // 1 or more required
-  cloneClusteringMode?: CloneClusteringMode; // default: 'none'
+  cloneClusteringMode?: CloneClusteringMode; // default: 'relaxed'
 }
 
 export interface UiState {
