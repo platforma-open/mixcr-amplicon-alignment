@@ -1,19 +1,9 @@
 # Overview
 
-The MiXCR Amplicon Alignment block analyzes amplicon sequencing data for immune receptor repertoire profiling using MiXCR software.
+This block is a specialized tool for analyzing sequencing data from antibody/TCR libraries built on a **known reference backbone**. It is the ideal for analysis of synthetic libraries, such as those used in phage or yeast display campaigns, where diversity is introduced into specific regions (e.g., CDRs) of a standard antibody framework.
 
-## What it does
+Unlike the `MiXCR Clonotyping` block, which discovers novel clonotypes by aligning to a germline gene database, this block aligns reads against a user-provided reference sequences. This allows for precise analysis of randomized regions and detailed quality control of the library.
 
-This block processes amplicon sequencing data (FASTA/FASTQ files) to:
+MiXCR is developed by MiLaboratories Inc. For more information, please see the [MiXCR website](https://mixcr.com/) and cite the following publication if you use this block in your research:
 
-1. **Generate Reference Libraries**: Creates custom V and J gene reference libraries
-2. **Run MiXCR Analysis**: Performs generic-amplicon analysis chain types
-3. **Quality Control**: Produces alignment and assembly quality reports
-4. **Export Data**: Generates clone sets, TSV exports, and processing logs
-
-## Key Features
-
-- Supports multiple chain types (IG Heavy/Light, TCR Alpha/Beta/Gamma/Delta)
-- Custom V and J gene library support
-- Comprehensive quality metrics and reports
-
+> Bolotin, D., Poslavsky, S., Mitrophanov, I. et al. MiXCR: software for comprehensive adaptive immunity profiling. _Nat Methods_ **12**, 380–381 (2015) [https://doi.org/10.1038/nmeth.3364](https://doi.org/10.1038/nmeth.3364)

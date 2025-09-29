@@ -22,12 +22,10 @@ wf.prepare(func(args){
 wf.body(func(args) {
 	blockId := wf.blockId().getDataAsJson()
 
-	inputRef := args.input
+	inputRef := args.datasetRef
 
 	input := wf.resolve(inputRef)
 
-	threePrimePrimer := args.threePrimePrimer
-	fivePrimePrimer := args.fivePrimePrimer
 	chains := args.chains
 	limitInput := args.limitInput
 	perProcessMemGB := args.perProcessMemGB
@@ -86,13 +84,10 @@ wf.body(func(args) {
 			blockId: blockId,
 			perProcessMemGB: perProcessMemGB,
 			perProcessCPUs: perProcessCPUs,
-			threePrimePrimer: threePrimePrimer,
-			fivePrimePrimer: fivePrimePrimer,
 			chains: chains,
 			mixcrChains: chainInfos[chains].mixcrFilter,
 			cloneClusteringMode: cloneClusteringMode,
-			hasUMI: args.hasUMI,
-			fullPattern: args.fullPattern
+			tagPattern: args.tagPattern
 		})
 	})
 
