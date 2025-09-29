@@ -10,15 +10,12 @@ import {
 } from '@platforma-sdk/ui-vue';
 import { computed, ref, watch } from 'vue';
 import { useApp } from '../app';
-import {
-  validateFastaSequence,
-  type FastaValidationResult,
-} from '../utils/fastaValidator';
+import { parseFasta } from '../utils/parseFasta';
 
 const app = useApp();
 
 // Validation state management
-const fastaValidation = ref<FastaValidationResult | undefined>();
+const fastaError = ref<string | undefined>();
 
 function setInput(inputRef: PlRef | undefined) {
   app.model.args.datasetRef = inputRef;
@@ -34,107 +31,27 @@ watch(
   () => app.model.ui.librarySequence,
   (newSequence) => {
     if ((newSequence || '').trim()) {
-      fastaValidation.value = validateFastaSequence(newSequence || '');
+      const result = parseFasta(newSequence || '');
 
       // If validation is successful, save the extracted sequences to args
-      if (fastaValidation.value?.isValid) {
-        app.model.args.vGenes = fastaValidation.value.vGenes;
-        app.model.args.jGenes = fastaValidation.value.jGenes;
+      if (result.isValid) {
+        fastaError.value = undefined;
+        app.model.args.vGenes = result.vGenes;
+        app.model.args.jGenes = result.jGenes;
       } else {
-        // Clear sequences if validation fails
+        // show error and clear sequences if validation fails
+        fastaError.value = result.error;
         app.model.args.vGenes = undefined;
         app.model.args.jGenes = undefined;
       }
     } else {
-      fastaValidation.value = undefined;
+      fastaError.value = undefined;
       app.model.args.vGenes = undefined;
       app.model.args.jGenes = undefined;
     }
   },
   { immediate: true },
 );
-
-// Validation rules for PlTextArea (no error on empty input)
-const fastaValidationRules = [
-  // Rule: Check if content looks like FASTA format
-  (value: string): boolean | string => {
-    if (!value) return true; // Skip if empty (handled by first rule)
-
-    const lines = value.trim().split('\n');
-    let hasHeader = false;
-    let hasSequence = false;
-    let sequenceCount = 0;
-    let headerCount = 0;
-    let lastLineWasHeader = false;
-
-    for (const line of lines) {
-      const trimmedLine = line.trim();
-      if (!trimmedLine) continue;
-
-      if (trimmedLine.startsWith('>')) {
-        // Found a header - check if it's not empty
-        if (trimmedLine.length === 1) {
-          return 'Headers cannot be empty. Please provide a name after ">" (e.g., ">ref_name").';
-        }
-        hasHeader = true;
-        headerCount++;
-        lastLineWasHeader = true;
-      } else {
-        // Found a sequence line
-        hasSequence = true;
-        sequenceCount++;
-        lastLineWasHeader = false;
-      }
-    }
-
-    if (!hasSequence) {
-      return 'FASTA content must contain sequence data';
-    }
-
-    // If we have headers, ensure every sequence has a header
-    if (hasHeader) {
-      if (headerCount !== sequenceCount) {
-        return 'All sequences must have headers starting with ">". Found sequences without headers.';
-      }
-    } else {
-      // No headers - ensure only single sequence
-      if (sequenceCount > 1) {
-        return 'Multiple sequences without headers detected. Please use FASTA format with headers (">sequence_name") or provide a single sequence.';
-      }
-    }
-
-    // If the last line was a header, that's invalid (header without sequence)
-    if (lastLineWasHeader) {
-      return 'FASTA content ends with a header but no sequence. Each header must be followed by sequence data.';
-    }
-
-    return true;
-  },
-
-  // Rule: Use the comprehensive validation function for all other checks
-  (value: string): boolean | string => {
-    if (!value) return true; // Skip if empty (handled by first rule)
-
-    // Use the existing validation function for all complex validation
-    const validation = validateFastaSequence(value);
-    if (!validation.isValid) {
-      // Provide detailed error information
-      let errorMessage = validation.error || 'Sequence validation failed';
-
-      // Add specific error details if available
-      if (validation.errors && validation.errors.length > 0) {
-        if (validation.errors.length === 1) {
-          errorMessage = validation.errors[0];
-        } else {
-          errorMessage = `Multiple validation errors:\n${validation.errors.join('\n')}`;
-        }
-      }
-
-      return errorMessage;
-    }
-    return true;
-  },
-];
 
 const chainOptions = [
   { value: 'IGHeavy', label: 'IG Heavy' },
@@ -177,7 +94,7 @@ const clusteringOptions = [
 ATCGATCGATCG..."
     :rows="8"
     :required="true"
-    :rules="fastaValidationRules"
+    :error="fastaError"
   >
     <template #tooltip>
       Paste the nucleotide sequence(s) in FASTA format. Multiple FASTA records are supported. The header will be used as part of V and J gene names (e.g., header_Vgene, header_Jgene). The sequence must cover VDJRegion.

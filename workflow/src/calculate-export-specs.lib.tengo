@@ -11,15 +11,6 @@ a := func(order, defaultVisibility, spec) {
 	})
 }
 
-/**
- * Mapping from original featuers to their in-frame variants when available.
- * This is used to avoid showing non-informative features in the clonotype browser.
- */
-inFrameFeatures := {
-	"FR4": "FR4InFrame",
-	"VDJRegion": "VDJRegionInFrame"
-}
-
 annotationMappings := {
 	"CDRs": "{\"1\":\"CDR1\",\"2\":\"CDR2\",\"3\":\"CDR3\"}",
 	"Segments": "{\"1\":\"V\",\"2\":\"D\",\"3\":\"J\",\"4\":\"C\"}"
@@ -47,7 +38,7 @@ toCombinedDomainValue := func(spec) {
  *     - J: formatted identifier for the J gene core feature (if applicable)
  */
 assemblingFeature := "VDJRegion"
-productiveFeature := "VDJRegionInFrame"
+productiveFeature := "VDJRegion"
 coreVFeature := "{FR1Begin:FR3End}"
 coreJFeature := "FR4"
 splitByC := false
@@ -71,7 +62,7 @@ calculateExportSpecs := func(presetSpecForBack, blockId) {
 	assemblingFeature := "VDJRegion" // Hardcoded to VDJRegion
 	splitByC := false
 
-	productiveFeature := "VDJRegionInFrame"
+	productiveFeature := "VDJRegion"
 	coreGeneFeatures := {
 		V: "{FR1Begin:FR3End}",
 		J: "FR4"
@@ -306,8 +297,8 @@ calculateExportSpecs := func(presetSpecForBack, blockId) {
 	annotationTypes := ["CDRs", "Segments"]
 
 	inFrameFeatures := {
-		"FR4": "FR4InFrame",
-		"VDJRegion": "VDJRegionInFrame"
+		"FR4": "FR4",
+		"VDJRegion": "VDJRegion"
 	}
 
 	for featureU in features {
