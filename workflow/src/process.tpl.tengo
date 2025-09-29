@@ -27,17 +27,12 @@ self.body(func(inputs) {
 	params := inputs.params
 	blockId := params.blockId
 	referenceLibrary := inputs.referenceLibrary
-	threePrimePrimer := params.threePrimePrimer
-	fivePrimePrimer := params.fivePrimePrimer
 	chains := params.chains
 	mixcrChains := params.mixcrChains
 	cloneClusteringMode := params.cloneClusteringMode
-	hasUMI := params.hasUMI
-	fullPattern := params.fullPattern
+	tagPattern := params.tagPattern
 
-	// Normalize optional params to avoid undefined in JSON
-	hasUmiBool := !is_undefined(hasUMI) && hasUMI
-	fullPatternStr := is_undefined(fullPattern) ? "" : fullPattern
+	hasUMI := text.contains(tagPattern, "UMI") || text.contains(tagPattern, "Umi") || text.contains(tagPattern, "umi")
 	limitInput := inputs.limitInput
 	perProcessMemGB := params.perProcessMemGB
 	perProcessCPUs := params.perProcessCPUs
@@ -47,7 +42,7 @@ self.body(func(inputs) {
 	presetSpecForBack := {
 		assemblingFeature: ["VDJRegion"],
 		splitByC: true,
-		umiTags: hasUmiBool ? ["Molecule"] : undefined,
+		umiTags: hasUMI ? ["Molecule"] : undefined,
 		cellTags: undefined
 	}
 
@@ -169,8 +164,8 @@ self.body(func(inputs) {
 					fileExtension: fileExtension,
 					referenceLibrary: referenceLibrary,
 					cloneClusteringMode: cloneClusteringMode,
-					hasUMI: hasUmiBool,
-					fullPattern: fullPatternStr
+					hasUMI: hasUMI,
+					tagPattern: tagPattern
 				},
 				limitInput: limitInput
 			},

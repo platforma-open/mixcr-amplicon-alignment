@@ -1,15 +1,11 @@
-export interface FastaValidationResult {
+export interface FastaParseResult {
   isValid: boolean;
   error?: string;
-  errors?: string[];
-  warnings?: string[];
-  vGenes?: string; // Single FASTA string with all V genes
-  jGenes?: string; // Single FASTA string with all J genes
-  headers?: string[];
-  records?: FastaRecord[];
+  vGenes?: string;
+  jGenes?: string;
 }
 
-export interface FastaRecord {
+interface FastaRecord {
   header: string;
   sequence: string;
 }
@@ -19,11 +15,24 @@ export interface FastaRecord {
  * @param content - The FASTA content to parse
  * @returns Array of FASTA records
  */
-export function parseFasta(content: string): FastaRecord[] {
+export function parseFastaRecords(content: string): FastaRecord[] {
   const lines = content.trim().split('\n');
   const records: FastaRecord[] = [];
-  let currentHeader = '';
+  let currentHeader: string | null = null;
   let currentSequence = '';
+
+  // Handle case where content might be a single sequence without a header
+  if (!content.trim().startsWith('>')) {
+    const sequence = lines
+      .map((l) => l.trim())
+      .join('')
+      .toUpperCase()
+      .replace(/\s/g, '');
+    if (sequence) {
+      return [{ header: '', sequence }];
+    }
+    return [];
+  }
 
   for (const line of lines) {
     const trimmedLine = line.trim();
@@ -31,23 +40,23 @@ export function parseFasta(content: string): FastaRecord[] {
 
     if (trimmedLine.startsWith('>')) {
       // Save previous record if exists
-      if (currentHeader && currentSequence) {
+      if (currentHeader !== null && currentSequence) {
         records.push({
           header: currentHeader,
           sequence: currentSequence.toUpperCase().replace(/\s/g, ''),
         });
       }
       // Start new record
-      currentHeader = trimmedLine.substring(1); // Remove '>'
+      currentHeader = trimmedLine.substring(1).trim(); // Remove '>' and trim
       currentSequence = '';
-    } else {
+    } else if (currentHeader !== null) {
       // Sequence line
       currentSequence += trimmedLine;
     }
   }
 
   // Add the last record
-  if (currentHeader && currentSequence) {
+  if (currentHeader !== null && currentSequence) {
     records.push({
       header: currentHeader,
       sequence: currentSequence.toUpperCase().replace(/\s/g, ''),
@@ -60,30 +69,45 @@ export function parseFasta(content: string): FastaRecord[] {
 /**
  * Validates FASTA content and extracts V and J gene sequences
  * @param content - The FASTA content to validate
- * @returns FastaValidationResult with validation details
+ * @returns FastaParseResult with validation details
  */
-export function validateFastaSequence(content: string): FastaValidationResult {
-  const warnings: string[] = [];
-  const errors: string[] = [];
-
+export function parseFasta(content: string): FastaParseResult {
   // Check if content is empty
   if (!content.trim()) {
     return {
       isValid: false,
       error: 'FASTA content is empty',
-      errors: ['FASTA content is empty'],
     };
   }
 
+  const lines = content.trim().split('\n');
+  if (lines.some((line) => line.trim() === '>')) {
+    const error
+      = 'Headers cannot be empty. Please provide a name after ">" (e.g., ">ref_name").';
+    return { isValid: false, error };
+  }
+  if (lines[lines.length - 1]?.trim().startsWith('>')) {
+    const error
+      = 'FASTA content ends with a header but no sequence. Each header must be followed by sequence data.';
+    return { isValid: false, error };
+  }
+
   // Parse FASTA content
-  const records = parseFasta(content);
+  const records = parseFastaRecords(content);
 
   if (records.length === 0) {
     return {
       isValid: false,
-      error: 'No valid FASTA records found',
-      errors: ['No valid FASTA records found'],
+      error:
+        'No valid FASTA records found. Please ensure the content is in FASTA format or a single raw sequence.',
     };
+  }
+
+  // Check for mix of headered and non-headered sequences
+  if (records.length > 1 && records.some((r) => !r.header)) {
+    const error
+      = 'Multiple sequences detected, but some are missing headers. Please provide headers for all sequences.';
+    return { isValid: false, error };
   }
 
   const vGeneParts: string[] = [];
@@ -91,14 +115,16 @@ export function validateFastaSequence(content: string): FastaValidationResult {
   const headers: string[] = [];
 
   // Validate each record
-  for (const record of records) {
+  for (const [i, record] of records.entries()) {
     const { header, sequence } = record;
 
     // Validate header
-    if (!header || header.trim().length === 0) {
-      errors.push(`Record ${headers.length + errors.length + 1}: Empty header`);
-      continue;
+    if (records.length > 1 && (!header || header.trim().length === 0)) {
+      const error = `A sequence record is missing a header. All sequences must have a header in a multi-sequence FASTA.`;
+      return { isValid: false, error };
     }
+
+    const recordIdentifier = header ? `Record "${header}"` : `Record ${i + 1}`;
 
     // Clean the sequence (remove whitespace, convert to uppercase, and replace IUPAC wildcards with A)
     const cleanSequence = sequence
@@ -108,39 +134,41 @@ export function validateFastaSequence(content: string): FastaValidationResult {
 
     // Validate sequence contains only valid DNA characters (excluding wildcards which we already replaced)
     const validDNACars = /^[ACGT]+$/;
-    if (!validDNACars.test(cleanSequence)) {
+    if (!cleanSequence || !validDNACars.test(cleanSequence)) {
       const invalidChars = cleanSequence.match(/[^ACGT]/g);
-      errors.push(`Record "${header}": Invalid DNA characters: ${invalidChars?.join(', ')}`);
-      continue;
+      const error = `${recordIdentifier}: Invalid DNA characters: ${invalidChars?.join(
+        ', ',
+      )}`;
+      return { isValid: false, error };
     }
 
     // Check minimum length
     if (cleanSequence.length < 250) {
-      errors.push(`Record "${header}": Sequence too short (${cleanSequence.length} nucleotides, minimum 250 required)`);
-      continue;
+      const error = `${recordIdentifier}: Sequence too short (${cleanSequence.length} nucleotides, minimum 250 required)`;
+      return { isValid: false, error };
     }
 
     // Check if sequence length is a multiple of 3
     if (cleanSequence.length % 3 !== 0) {
-      warnings.push(`Record "${header}": Sequence length is not a multiple of 3 - translation may be incomplete`);
+      const error = `${recordIdentifier}: Sequence length is not a multiple of 3 - translation may be incomplete`;
+      return { isValid: false, error };
     }
 
-    // If the whole reference sequence (record) is in frame, append two nucleotides (e.g., AT)
-    const referenceSequence = cleanSequence.length % 3 === 0
-      ? cleanSequence + 'A'
-      : cleanSequence;
+    // If the whole reference sequence (record) is in frame, append one nucleotide
+    const referenceSequence = cleanSequence;
 
     // Translate DNA to protein for pattern validation using the adjusted reference sequence
     const translatedSequence = translateDNAToProtein(referenceSequence);
 
     if (translatedSequence.length === 0) {
-      errors.push(`Record "${header}": Translation resulted in empty protein sequence (possibly due to early stop codon)`);
-      continue;
+      const error = `${recordIdentifier}: Translation resulted in empty protein sequence (possibly due to early stop codon)`;
+      return { isValid: false, error };
     }
 
     // Check if translation contains unknown amino acids
     if (translatedSequence.includes('X')) {
-      warnings.push(`Record "${header}": Translation contains unknown amino acids (X) due to invalid codons`);
+      const error = `${recordIdentifier}: Translation contains unknown amino acids (X) due to invalid codons`;
+      return { isValid: false, error };
     }
 
     // Apply the regex validation: C[ACDEFGHIKLMNPQRSTVWY]+(?:[GAST])?[WFL]
@@ -153,40 +181,32 @@ export function validateFastaSequence(content: string): FastaValidationResult {
 
     const match = validationRegex.exec(sequenceToSearch);
     if (!match) {
-      errors.push(`Record "${header}": Translated sequence does not contain CDR3 after position ${searchStartPosition}`);
-      continue;
+      const error = `${recordIdentifier}: Translated sequence does not contain CDR3 after position ${searchStartPosition}`;
+      return { isValid: false, error };
     }
 
     // Extract the two sequences with headers
     const patternStartInFullSequence = searchStartPosition + match.index;
-    const patternEndInFullSequence = patternStartInFullSequence + match[0].length;
+    const patternEndInFullSequence
+      = patternStartInFullSequence + match[0].length;
 
     // First sequence: from beginning to first cysteine in pattern + 3 nucleotides
     const firstCysteinePosition = patternStartInFullSequence; // First C in pattern
     const vGeneEndNucleotides = (firstCysteinePosition + 3) * 3; // +2 for the cysteine, *3 for nucleotides
     const vGeneSequence = referenceSequence.substring(0, vGeneEndNucleotides);
-    const vGene = `>${header}_Vgene\n${vGeneSequence}`;
+    const vGeneHeader = header ? `${header}_Vgene` : 'ref_Vgene';
+    const vGene = `>${vGeneHeader}\n${vGeneSequence}`;
 
     // Second sequence: from 6 nucleotides before pattern end to sequence end
     const patternEndNucleotides = patternEndInFullSequence * 3;
     const jGeneStartNucleotides = patternEndNucleotides - 21; // 6 nucleotides before pattern end
     const jGeneSequence = referenceSequence.substring(jGeneStartNucleotides);
-    const jGene = `>${header}_Jgene\n${jGeneSequence}`;
+    const jGeneHeader = header ? `${header}_Jgene` : 'ref_Jgene';
+    const jGene = `>${jGeneHeader}\n${jGeneSequence}`;
 
     vGeneParts.push(vGene);
     jGeneParts.push(jGene);
-    headers.push(header);
-  }
-
-  // If any records are invalid, return error
-  if (errors.length > 0) {
-    return {
-      isValid: false,
-      error: 'Some records are invalid',
-      errors,
-      warnings: warnings.length > 0 ? warnings : undefined,
-      records,
-    };
+    if (header) headers.push(header);
   }
 
   // Create single FASTA strings for all V and J genes
@@ -197,9 +217,6 @@ export function validateFastaSequence(content: string): FastaValidationResult {
     isValid: true,
     vGenes,
     jGenes,
-    headers,
-    warnings: warnings.length > 0 ? warnings : undefined,
-    records,
   };
 }
 
