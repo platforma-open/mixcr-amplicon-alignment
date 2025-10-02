@@ -1,5 +1,13 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment.ui
 
+## 1.7.1
+
+### Patch Changes
+
+- 2209c82: [sdk/ui] Broken error propagation: block errors are not showing anymore
+- Updated dependencies [2209c82]
+  - @platforma-open/milaboratories.mixcr-amplicon-alignment.model@1.7.1
+
 ## 1.7.0
 
 ### Minor Changes
