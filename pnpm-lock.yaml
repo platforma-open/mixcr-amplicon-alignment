@@ -37,8 +37,8 @@ catalogs:
       specifier: ^1.43.17
       version: 1.43.17
     '@platforma-sdk/ui-vue':
-      specifier: ^1.43.14
-      version: 1.43.14
+      specifier: ^1.43.28
+      version: 1.43.28
     '@platforma-sdk/workflow-tengo':
       specifier: ^5.3.0
       version: 5.3.0
@@ -163,7 +163,7 @@ importers:
         version: 1.43.14
       '@platforma-sdk/ui-vue':
         specifier: 'catalog:'
-        version: 1.43.14(d3-dispatch@3.0.1)(d3-path@3.1.0)(d3-scale-chromatic@3.1.0)(sortablejs@1.15.6)(typescript@5.5.4)
+        version: 1.43.28(d3-dispatch@3.0.1)(d3-path@3.1.0)(d3-scale-chromatic@3.1.0)(sortablejs@1.15.6)(typescript@5.5.4)
       '@vueuse/core':
         specifier: 'catalog:'
         version: 13.9.0(vue@3.5.21(typescript@5.5.4))
@@ -1163,8 +1163,8 @@ packages:
     resolution: {integrity: sha512-AfFP7Mxfk66YUU8IxG5+5s6PXOA6BxJRfcFjqcQMrcP7HzC42W5cyj4CKpEdidnSd9PS8IaOH9R2D7GfmZo+wA==}
     engines: {node: '>=22.19.0'}
 
-  '@milaboratories/uikit@2.4.17':
-    resolution: {integrity: sha512-mMaBiFWayBrXqpXORDQRuHK65TK0V8pKQ+C0E9O4YlsircHgclAQ3NVHmhSJY/KoMGpyfZeDI6+S8iJGrP2mFA==}
+  '@milaboratories/uikit@2.4.19':
+    resolution: {integrity: sha512-AGtKpaX9IomO/2Zwm3pN4+RftAQ+yEIml5uxHB3Z+S13KdwqmM1uRsBnppHPFJOGd3V/UIP+Aw9U2tA7pHguUg==}
 
   '@nodelib/fs.scandir@2.1.5':
     resolution: {integrity: sha512-vq24Bq3ym5HEQm2NKCr3yXDwjc7vTsEThRDnkp2DK9p1uqLR+DHurm/NOTo0KG7HYHU7eppKZj3MyqYuMBf62g==}
@@ -1263,6 +1263,9 @@ packages:
   '@platforma-sdk/model@1.43.14':
     resolution: {integrity: sha512-zS5//Pl0G4CmZ7c2oI74EfvPajMA0Oc3qke7Ku8E9NeaMI3HEbi1477qSMIOw/pck+wjXDR2Vl2yUO7Yz1SBMA==}
 
+  '@platforma-sdk/model@1.43.21':
+    resolution: {integrity: sha512-izNRmZEJqYlU+gsLaKxNQ6L3dgUbsdnTkG6wRF4bPMHN1WnCHf1QtrGdAuvyIn+utYLT4gmuxdS3TRGbta8U0w==}
+
   '@platforma-sdk/tengo-builder@2.2.0':
     resolution: {integrity: sha512-Tb6wDbjzkU7LCy4p4DjTlMPanLxRgXb+pqdBIICv08PGXu6kA3wZ8ns6B01eZPz4TJ7mVinJ5N8AcZFBs9g6KQ==}
     engines: {node: '>=22'}
@@ -1271,8 +1274,8 @@ packages:
   '@platforma-sdk/test@1.43.17':
     resolution: {integrity: sha512-vEDgNRLVqp+5qdbWPyjG6O1vevSDGE2bjKeSBYZqRNCxpsD/jZSkAO9QB+Wfb/vouV3qD5e1MdO7P9WmcGp7xA==}
 
-  '@platforma-sdk/ui-vue@1.43.14':
-    resolution: {integrity: sha512-yLmYAgHs2wFOGAoo/JqHniSJeebrMFq9M0vJWKDkeoaQfXiCohivmYLAGHg2n9mdONaAjZaVABsQTiUdivo8Qg==}
+  '@platforma-sdk/ui-vue@1.43.28':
+    resolution: {integrity: sha512-8YAIstT+qTB+0cYTEeKYopjPYK9YAeEO9pbKsSe9DdByXA5KTnkPwnH3jtNDjux0fYiTvTF0oiwhyMLoYg2jZA==}
 
   '@platforma-sdk/workflow-tengo@5.3.0':
     resolution: {integrity: sha512-gZnnDjNeu6hByYgti46u6t7eF1PVnTcy86NlV6S17Jn/qYBvbShwzwxWzGEj7M314EB+AdlZGfk81SG1olfsaw==}
@@ -4465,6 +4468,10 @@ packages:
     resolution: {integrity: sha512-r8LA6i4LP4EeWOhqBaZZjDWwehd1xUJPCJd9Sv300H0ZmcUER4+JPh7bqqZeqs1o5pgtgvXm+d9UGrB5zZGDiQ==}
     engines: {node: 20 || >=22}
 
+  lru-cache@11.2.2:
+    resolution: {integrity: sha512-F9ODfyqML2coTIsQpSkRHnLSZMtkU8Q+mSfcaIyKwy58u+8k5nvAYeiNhsyMARvzNcXJ9QfWVrcPsC9e9rAxtg==}
+    engines: {node: 20 || >=22}
+
   magic-string@0.30.19:
     resolution: {integrity: sha512-2N21sPY9Ws53PZvsEpVtNuSW+ScYbQdp4b9qUaL+9QkHUrGFKo56Lg9Emg5s9V/qrtNBmiR01sYhUOwu3H+VOw==}
 
@@ -6779,10 +6786,10 @@ snapshots:
       canonicalize: 2.1.0
       denque: 2.1.0
 
-  '@milaboratories/uikit@2.4.17(typescript@5.5.4)':
+  '@milaboratories/uikit@2.4.19(typescript@5.5.4)':
     dependencies:
       '@milaboratories/helpers': 1.9.0
-      '@platforma-sdk/model': 1.43.14
+      '@platforma-sdk/model': 1.43.21
       '@types/d3-array': 3.2.1
       '@types/d3-axis': 3.0.6
       '@types/d3-scale': 4.0.9
@@ -6943,6 +6950,14 @@ snapshots:
       utility-types: 3.11.0
       zod: 3.23.8
 
+  '@platforma-sdk/model@1.43.21':
+    dependencies:
+      '@milaboratories/pl-error-like': 1.12.5
+      '@milaboratories/pl-model-common': 1.20.0
+      canonicalize: 2.1.0
+      utility-types: 3.11.0
+      zod: 3.23.8
+
   '@platforma-sdk/tengo-builder@2.2.0':
     dependencies:
       '@milaboratories/pl-model-backend': 1.1.10
@@ -6985,12 +7000,12 @@ snapshots:
       - supports-color
       - terser
 
-  '@platforma-sdk/ui-vue@1.43.14(d3-dispatch@3.0.1)(d3-path@3.1.0)(d3-scale-chromatic@3.1.0)(sortablejs@1.15.6)(typescript@5.5.4)':
+  '@platforma-sdk/ui-vue@1.43.28(d3-dispatch@3.0.1)(d3-path@3.1.0)(d3-scale-chromatic@3.1.0)(sortablejs@1.15.6)(typescript@5.5.4)':
     dependencies:
       '@milaboratories/biowasm-tools': 2.0.0
       '@milaboratories/miplots4': 1.0.145(d3-dispatch@3.0.1)(d3-path@3.1.0)(d3-scale-chromatic@3.1.0)
-      '@milaboratories/uikit': 2.4.17(typescript@5.5.4)
-      '@platforma-sdk/model': 1.43.14
+      '@milaboratories/uikit': 2.4.19(typescript@5.5.4)
+      '@platforma-sdk/model': 1.43.21
       '@types/d3-format': 3.0.4
       '@types/node': 24.5.2
       '@types/semver': 7.7.1
@@ -7000,7 +7015,7 @@ snapshots:
       ag-grid-vue3: 34.2.0(vue@3.5.21(typescript@5.5.4))
       canonicalize: 2.1.0
       d3-format: 3.1.0
-      lru-cache: 11.2.1
+      lru-cache: 11.2.2
       vue: 3.5.21(typescript@5.5.4)
       zod: 3.23.8
     transitivePeerDependencies:
@@ -11009,6 +11024,8 @@ snapshots:
   lru-cache@10.4.3: {}
 
   lru-cache@11.2.1: {}
+
+  lru-cache@11.2.2: {}
 
   magic-string@0.30.19:
     dependencies:
