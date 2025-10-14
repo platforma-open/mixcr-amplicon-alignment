@@ -13,8 +13,8 @@ catalogs:
       specifier: ^1.9.0
       version: 1.9.0
     '@platforma-open/milaboratories.software-mixcr':
-      specifier: 4.7.0-169-develop
-      version: 4.7.0-169-develop
+      specifier: 4.7.0-235-develop
+      version: 4.7.0-235-develop
     '@platforma-open/milaboratories.software-repseqio':
       specifier: ^2.5.0-13-master
       version: 2.5.0-23-master
@@ -197,7 +197,7 @@ importers:
     dependencies:
       '@platforma-open/milaboratories.software-mixcr':
         specifier: 'catalog:'
-        version: 4.7.0-169-develop
+        version: 4.7.0-235-develop
       '@platforma-open/milaboratories.software-repseqio':
         specifier: 'catalog:'
         version: 2.5.0-23-master
@@ -1209,8 +1209,8 @@ packages:
     resolution: {integrity: sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg==}
     engines: {node: '>=14'}
 
-  '@platforma-open/milaboratories.software-mixcr@4.7.0-169-develop':
-    resolution: {integrity: sha512-yqqVbqfAyRGRRUDHmcMwSemOgd0c1Wa7k1QBKh8xeCXIQ8f9n68mHP1/kKTnxvsk047YPWXk2LbW4iKrkIT19w==}
+  '@platforma-open/milaboratories.software-mixcr@4.7.0-235-develop':
+    resolution: {integrity: sha512-Ic0v1jFijxTvzesY7kikTkv2Uja3nnFZ8pD1P0FU0POtughplEojMre71ndip3tc+WPGg4rJC2M+T6LGw4FjHA==}
 
   '@platforma-open/milaboratories.software-ptabler@1.12.4':
     resolution: {integrity: sha512-owDO4imeBgHawQRrHV9GbsA+8WJaIl0Mlxwam1unUsfnCOWxqtbWi9Kt+Q201otp4VjACPbA5KOtO6Czwz4hHg==}
@@ -6920,7 +6920,7 @@ snapshots:
   '@pkgjs/parseargs@0.11.0':
     optional: true
 
-  '@platforma-open/milaboratories.software-mixcr@4.7.0-169-develop': {}
+  '@platforma-open/milaboratories.software-mixcr@4.7.0-235-develop': {}
 
   '@platforma-open/milaboratories.software-ptabler@1.12.4': {}
 
