@@ -8,7 +8,7 @@ packages:
 catalog:
   "@platforma-sdk/model": ^1.43.14
   "@platforma-sdk/ui-vue": ^1.43.28
-  "@platforma-sdk/workflow-tengo": ^5.3.0
+  "@platforma-sdk/workflow-tengo": ^5.3.3
   "@platforma-sdk/block-tools": ^2.6.7
   "@platforma-sdk/test": ^1.43.17
   "@platforma-sdk/tengo-builder": ^2.2.0
