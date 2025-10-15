@@ -1,5 +1,21 @@
 ## 1.0.0
 
+## 1.3.4
+
+### Patch Changes
+
+- ce7e72c: technical release
+- b52b77d: technical release
+- a21b4cc: technical release
+- c468231: technical release
+- Updated dependencies [ce7e72c]
+- Updated dependencies [b52b77d]
+- Updated dependencies [a21b4cc]
+- Updated dependencies [c468231]
+  - @platforma-open/milaboratories.mixcr-amplicon-alignment.model@1.7.2
+  - @platforma-open/milaboratories.mixcr-amplicon-alignment.ui@1.7.3
+  - @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow@1.10.2
+
 ## 1.3.3
 
 ### Patch Changes

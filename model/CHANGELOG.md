@@ -1,5 +1,14 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment.model
 
+## 1.7.2
+
+### Patch Changes
+
+- ce7e72c: technical release
+- b52b77d: technical release
+- a21b4cc: technical release
+- c468231: technical release
+
 ## 1.7.1
 
 ### Patch Changes
