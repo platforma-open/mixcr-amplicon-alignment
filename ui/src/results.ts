@@ -2,10 +2,10 @@
 // The results logic was removed as the table was removed from the UI.
 
 import type { AlignReport as ModelAlignReport } from '@platforma-open/milaboratories.mixcr-amplicon-alignment.model';
-import type { AnyLogHandle } from "@platforma-sdk/model";
-import { ReactiveFileContent } from "@platforma-sdk/ui-vue";
-import { computed } from "vue";
-import { useApp } from "./app";
+import type { AnyLogHandle } from '@platforma-sdk/model';
+import { ReactiveFileContent } from '@platforma-sdk/ui-vue';
+import { computed } from 'vue';
+import { useApp } from './app';
 
 export type AlignReport = ModelAlignReport;
 export type AssembleReport = Record<string, unknown>;
@@ -18,6 +18,8 @@ export type AmpliconAlignmentResult = {
   alignReport?: AlignReport;
   assembleReport?: AssembleReport;
 };
+
+const reactiveFileContent = ReactiveFileContent.useGlobal();
 
 /** Relatively rarely changing part of the results */
 export const AmpliconAlignmentResultsMap = computed(() => {
@@ -56,17 +58,17 @@ export const AmpliconAlignmentResultsMap = computed(() => {
         switch (reportId) {
           case 'align':
             // globally cached
-            resultMap.get(sampleId)!.alignReport =
-              ReactiveFileContent.getContentJson(report.value.handle)?.value as
-              | AlignReport
-              | undefined;
+            resultMap.get(sampleId)!.alignReport
+            = reactiveFileContent.getContentJson(report.value.handle)?.value as
+            | AlignReport
+            | undefined;
             break;
           case 'assemble':
             // globally cached
-            resultMap.get(sampleId)!.assembleReport =
-              ReactiveFileContent.getContentJson(report.value.handle)?.value as
-              | AssembleReport
-              | undefined;
+            resultMap.get(sampleId)!.assembleReport
+            = reactiveFileContent.getContentJson(report.value.handle)?.value as
+            | AssembleReport
+            | undefined;
             break;
         }
     }
