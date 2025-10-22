@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment.ui
 
+## 1.7.4
+
+### Patch Changes
+
+- fb7d933: Support parquet format (update SDK)
+
 ## 1.7.3
 
 ### Patch Changes
