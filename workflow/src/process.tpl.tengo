@@ -201,7 +201,7 @@ self.body(func(inputs) {
 		settings: {
 			axes: axesByClonotypeKeyWithChain,
 			columns: columnsSpecPerSample,
-			storageFormat: "Binary",
+			storageFormat: "Parquet",
 			partitionKeyLength: 0
 		},
 		mem: "16GB",
@@ -245,7 +245,7 @@ self.body(func(inputs) {
 		settings: {
 			axes: axesByClonotypeKeyWithChain,
 			columns: columnsSpecPerClonotypeNoAggregates + columnsSpecPerClonotypeAggregates,
-			storageFormat: "Binary"
+			storageFormat: "Parquet"
 		},
 		mem: "12GB",
 		cpu: 2,

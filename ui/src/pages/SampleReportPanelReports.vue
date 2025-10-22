@@ -1,11 +1,11 @@
 <script setup lang="ts">
+import type { SimpleOption } from '@platforma-sdk/ui-vue';
 import {
   PlBtnGroup,
   PlContainer,
   PlTextArea,
   ReactiveFileContent,
 } from '@platforma-sdk/ui-vue';
-import type { SimpleOption } from '@platforma-sdk/ui-vue';
 import { computed, reactive } from 'vue';
 import { useApp } from '../app';
 
@@ -22,6 +22,8 @@ const data = reactive<{
 
 const app = useApp();
 
+const reactiveFileContent = ReactiveFileContent.useGlobal();
+
 const reportHandle = computed(() => {
   const sampleId = props.sampleId;
   return app.model.outputs.reports?.data?.find(
@@ -33,7 +35,7 @@ const reportHandle = computed(() => {
 });
 
 const reportContent = computed(
-  () => ReactiveFileContent.getContentString(reportHandle.value)?.value,
+  () => reactiveFileContent.getContentString(reportHandle.value)?.value,
 );
 
 const tabOptions: SimpleOption<ReportId>[] = [
