@@ -173,9 +173,6 @@ importers:
       '@vueuse/core':
         specifier: 'catalog:'
         version: 13.9.0(vue@3.5.21(typescript@5.5.4))
-      '@zip.js/zip.js':
-        specifier: 'catalog:'
-        version: 2.8.8
       ag-grid-enterprise:
         specifier: 'catalog:'
         version: 34.2.0
@@ -195,6 +192,9 @@ importers:
       '@vitejs/plugin-vue':
         specifier: 'catalog:'
         version: 5.2.4(vite@6.3.6(@types/node@24.5.2)(yaml@2.8.1))(vue@3.5.21(typescript@5.5.4))
+      '@zip.js/zip.js':
+        specifier: 'catalog:'
+        version: 2.8.8
       typescript:
         specifier: 'catalog:'
         version: 5.5.4

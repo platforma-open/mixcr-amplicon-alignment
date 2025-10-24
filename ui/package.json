@@ -17,8 +17,7 @@
     "@platforma-sdk/model": "catalog:",
     "@platforma-sdk/ui-vue": "catalog:",
     "vue": "catalog:",
-    "@vueuse/core": "catalog:",
-    "@zip.js/zip.js": "catalog:"
+    "@vueuse/core": "catalog:"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "catalog:",
@@ -26,6 +25,7 @@
     "vite": "catalog:",
     "vue-tsc": "catalog:",
     "@platforma-sdk/eslint-config": "catalog:",
-    "@types/wicg-file-system-access": "catalog:"
+    "@types/wicg-file-system-access": "catalog:",
+     "@zip.js/zip.js": "catalog:"
   }
 }

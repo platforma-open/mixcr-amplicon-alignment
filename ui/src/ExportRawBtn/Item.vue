@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ExportItem } from './types';
+import type { ExportItem } from './types.ts';
 import { prettyBytes } from '@milaboratories/helpers';
 
 defineProps<{
@@ -8,7 +8,9 @@ defineProps<{
 </script>
 
 <template>
-  <div :class="$style.item">
+  <div
+    :class="$style.item"
+  >
     <div :class="$style.name">{{ item.fileName }}</div>
     <div v-if="item.status === 'in-progress'" :class="$style.details">
       <span>{{ prettyBytes(item.current, {}) }}</span>
@@ -18,7 +20,9 @@ defineProps<{
     <div v-else-if="item.status === 'completed'" :class="$style.details">
       Done <span>{{ prettyBytes(item.size, {}) }}</span>
     </div>
-    <div v-else :class="$style.details">Pending</div>
+    <div v-else :class="$style.details">
+      Pending
+    </div>
   </div>
 </template>
 
@@ -44,5 +48,3 @@ defineProps<{
   color: rgba(255, 255, 255, 0.6);
 }
 </style>
-
-
