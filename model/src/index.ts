@@ -124,25 +124,22 @@ export const platforma = BlockModel.create('Heavy')
   .output('rawTsvs', (ctx) => {
     if (ctx.outputs === undefined)
       return undefined;
-    const pCols = ctx.outputs?.resolve('clones')?.getPColumns();
+    const pCols = ctx.outputs?.resolve('clonotypeTables')?.getPColumns();
     if (pCols === undefined) {
       return undefined;
     }
-    return pCols
-      .map((pCol) => {
-        return {
-          ...pCol,
-          id: (JSON.parse(pCol.id) as { name: string }).name,
-          data: parseResourceMap(pCol.data, (acc) => acc.getRemoteFileHandle(), false),
-        };
-      })
-      .filter((pCol) => pCol.data.isComplete)
-      .map((pCol) => {
-        return {
-          ...pCol,
-          data: pCol.data.data,
-        };
-      });
+    return pCols.map((pCol) => {
+      return {
+        ...pCol,
+        id: (JSON.parse(pCol.id) as { name: string }).name,
+        data: parseResourceMap(pCol.data, (acc) => acc.getRemoteFileHandle(), false),
+      };
+    }).filter((pCol) => pCol.data.isComplete).map((pCol) => {
+      return {
+        ...pCol,
+        data: pCol.data.data,
+      };
+    });
   })
 
   .sections((_ctx) => {

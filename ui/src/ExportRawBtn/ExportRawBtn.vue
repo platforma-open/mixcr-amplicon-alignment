@@ -1,14 +1,23 @@
 <script setup lang="ts">
-import { PlBtnGhost, PlIcon16, PlIcon24, useClickOutside } from '@platforma-sdk/ui-vue';
+import {
+  PlBtnGhost,
+  PlIcon16,
+  PlIcon24,
+  useClickOutside,
+} from '@platforma-sdk/ui-vue';
 import { uniqueId } from '@milaboratories/helpers';
 import { useApp } from '../app';
-import { ZipWriter } from '@zip.js/zip.js';
+import { ZipWriter, configure } from '@zip.js/zip.js';
 import { ChunkedStreamReader } from '../ChunkedStreamReader';
 import { reactive, computed, ref } from 'vue';
-import type { ExportItem, ExportsMap } from './types';
+import type { ExportItem, ExportsMap } from './types.ts';
 import Item from './Item.vue';
 
 const app = useApp();
+const DEBUG_DOWNLOAD = true as const;
+
+// Avoid data: URL workers blocked by CSP. Use main-thread compression.
+configure({ useWebWorkers: false });
 
 const data = reactive({
   loading: false,
@@ -21,36 +30,62 @@ const isReadyToExport = computed(() => {
   return app.model.outputs.rawTsvs !== undefined && app.model.outputs.sampleLabels !== undefined;
 });
 
-const items = computed(() => Array.from(data.exports?.values() ?? []));
+const items = computed(() => {
+  return Array.from(data.exports?.values() ?? []);
+});
 
-const archive = computed<ExportItem>(() => ({
-  fileName: data.name,
-  current: items.value.reduce((acc, item) => acc + item.current, 0),
-  size: items.value.reduce((acc, item) => acc + item.size, 0),
-  status: items.value.some((item) => item.status === 'in-progress')
-    ? 'in-progress'
-    : items.value.every((item) => item.status === 'completed')
-      ? 'completed'
-      : 'pending',
-}));
+const archive = computed<ExportItem>(() => {
+  return {
+    fileName: data.name,
+    current: items.value.reduce((acc, item) => acc + item.current, 0),
+    size: items.value.reduce((acc, item) => acc + item.size, 0),
+    status: items.value.some((item) => item.status === 'in-progress') ? 'in-progress' : items.value.every((item) => item.status === 'completed') ? 'completed' : 'pending',
+  };
+});
 
-type ZipRequest = { id: string; fileName: string; size: number; stream: ChunkedStreamReader };
+type ZipRequest = {
+  id: string;
+  fileName: string;
+  size: number;
+  stream: ChunkedStreamReader;
+};
 
 const exportRawTsvs = async () => {
+  if (DEBUG_DOWNLOAD) console.debug('[ExportRaw] clicked; loading:', data.loading);
   if (data.loading) {
     data.showExports = true;
     return;
   }
-  if (!isReadyToExport.value) return;
+
+  if (!isReadyToExport.value) {
+    if (DEBUG_DOWNLOAD) console.debug('[ExportRaw] not ready to export', {
+      hasRawTsvs: app.model.outputs.rawTsvs !== undefined,
+      hasSampleLabels: app.model.outputs.sampleLabels !== undefined,
+    });
+    return;
+  }
 
   const pCols = app.model.outputs.rawTsvs;
-  if (pCols === undefined) return;
+  if (pCols === undefined) {
+    if (DEBUG_DOWNLOAD) console.debug('[ExportRaw] pCols undefined');
+    return;
+  }
 
   const sampleLabels = app.model.outputs.sampleLabels;
-  if (sampleLabels === undefined) return;
+  if (sampleLabels === undefined) return undefined;
+
+  if (DEBUG_DOWNLOAD) console.debug('[ExportRaw] preparing save dialog', {
+    pColsCount: pCols.length,
+    sampleLabelsCount: Object.keys(sampleLabels ?? {}).length,
+  });
 
   const newHandle = await window.showSaveFilePicker({
-    types: [{ description: 'ZIP files', accept: { 'application/zip': ['.zip'] } }],
+    types: [{
+      description: 'ZIP files',
+      accept: {
+        'application/zip': ['.zip'],
+      },
+    }],
     suggestedName: `${new Date().toISOString().split('T')[0]}_AmpliconAlignmentResultsRaw_${app.model.args.title ?? 'Untitled'}.zip`,
   });
 
@@ -60,47 +95,89 @@ const exportRawTsvs = async () => {
   data.exports = new Map();
 
   try {
+    const startedAt = performance.now();
     const writableStream = await newHandle.createWritable();
     const zip = new ZipWriter(writableStream, { keepOrder: true, zip64: true, bufferedWrite: false });
+    if (DEBUG_DOWNLOAD) console.debug('[ExportRaw] ZIP writer created');
+
     try {
-      const requests: ZipRequest[] = [];
+      const requests = [] as ZipRequest[];
+
       for (const pCol of pCols) {
         for (const { key, value } of pCol.data) {
-          const fileName = `${sampleLabels[key[0] as string]}_${pCol.id}.tsv`;
+          const fileName = `${sampleLabels[key[0]]}_${pCol.id}.tsv`;
           const id = uniqueId();
           const { handle, size } = value!;
+
           data.exports?.set(id, { fileName, current: 0, size, status: 'pending' });
+
+          // Create a chunked stream reader for efficient streaming
           requests.push({ id, fileName, size, stream: new ChunkedStreamReader(handle, size) });
+          if (DEBUG_DOWNLOAD) console.debug('[ExportRaw] queued file', { id, fileName, size });
         }
       }
 
+      if (DEBUG_DOWNLOAD) console.debug('[ExportRaw] total files queued', requests.length);
+
+      const lastPct = new Map<string, number>();
       for (const request of requests) {
         const { id, fileName, size, stream } = request;
         const update = (partial: Partial<ExportItem>) => {
           const it = data.exports?.get(id);
-          if (it) data.exports?.set(id, { ...it, ...partial });
+          if (it) {
+            data.exports?.set(id, { ...it, ...partial });
+          }
         };
+        if (DEBUG_DOWNLOAD) console.debug('[ExportRaw] zip.add start', { id, fileName, size });
         await zip.add(fileName, stream.createStream(), {
           bufferedWrite: false,
-          onstart: () => { update({ status: 'in-progress' }); return undefined; },
-          onprogress: (current) => { update({ current }); return undefined; },
-          onend: () => { update({ current: size, status: 'completed' }); return undefined; },
+          onstart: () => {
+            update({ status: 'in-progress' });
+            if (DEBUG_DOWNLOAD) console.debug('[ExportRaw] onstart', { id, fileName });
+            return undefined;
+          },
+          onprogress: (current) => {
+            update({ current });
+            if (DEBUG_DOWNLOAD) {
+              const pct = Math.floor((current / size) * 100);
+              const last = lastPct.get(id) ?? -1;
+              if (pct !== last && pct % 10 === 0) {
+                lastPct.set(id, pct);
+                console.debug('[ExportRaw] onprogress', { id, fileName, current, size, pct });
+              }
+            }
+            return undefined;
+          },
+          onend() {
+            update({ current: size, status: 'completed' });
+            if (DEBUG_DOWNLOAD) console.debug('[ExportRaw] onend', { id, fileName, size });
+            return undefined;
+          },
         });
       }
     } finally {
       await zip.close();
+      if (DEBUG_DOWNLOAD) console.debug('[ExportRaw] ZIP closed', { ms: Math.round(performance.now() - startedAt) });
     }
   } finally {
     data.loading = false;
+    if (DEBUG_DOWNLOAD) console.debug('[ExportRaw] export finished');
   }
 };
 
 const progressesRef = ref();
-useClickOutside([progressesRef], () => { data.showExports = false; });
+
+useClickOutside([progressesRef], () => {
+  data.showExports = false;
+});
 </script>
 
 <template>
-  <PlBtnGhost :disabled="!isReadyToExport" :loading="data.loading" :class="{ [$style['has-exports']]: data.exports }" @click.stop="exportRawTsvs">
+  <PlBtnGhost
+    :disabled="!isReadyToExport"
+    :loading="data.loading" :class="{ [$style['has-exports']]: data.exports }"
+    @click.stop="exportRawTsvs"
+  >
     Export Raw Results
     <template #append>
       <PlIcon24 :class="$style.icon" name="download" />
@@ -144,7 +221,16 @@ useClickOutside([progressesRef], () => { data.showExports = false; });
   font-weight: 600;
   z-index: 1000;
 
-  .items { max-height: 300px; }
-  .close { position: absolute; top: 8px; right: 8px; cursor: pointer; --icon-color: white; }
+  .items {
+    max-height: 300px;
+  }
+
+  .close {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    cursor: pointer;
+    --icon-color: white;
+  }
 }
 </style>
