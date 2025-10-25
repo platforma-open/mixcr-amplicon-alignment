@@ -33,6 +33,7 @@ import { resultMap } from '../results';
 import LogsPanel from './LogsPanel.vue';
 import SampleReportPanel from './SampleReportPanel.vue';
 import SettingsPanel from './SettingsPanel.vue';
+import { ExportRawBtn } from '../ExportRawBtn';
 
 const app = useApp();
 
@@ -161,6 +162,7 @@ const showLogs = () => {
   <PlBlockPage>
     <template #title>MiXCR Amplicon Alignment</template>
     <template #append>
+      <ExportRawBtn />
       <PlBtnGhost @click.stop="showLogs">
         Reference Alignment Logs
         <template #append>

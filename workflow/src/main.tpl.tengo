@@ -114,6 +114,7 @@ wf.body(func(args) {
 		clones: pframes.exportFrame(runMixcr.output("clones")),
 		clns: runMixcr.output("clns.data"),
 		progress: runMixcr.output("progress.data"),
+		clonotypeTables: pframes.exportFrame(runMixcr.output("clonotypeTables")),
 		debugOutput: debugOutput
 	}
 

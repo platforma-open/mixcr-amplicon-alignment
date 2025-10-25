@@ -24,6 +24,8 @@
     "typescript": "catalog:",
     "vite": "catalog:",
     "vue-tsc": "catalog:",
-    "@platforma-sdk/eslint-config": "catalog:"
+    "@platforma-sdk/eslint-config": "catalog:",
+    "@types/wicg-file-system-access": "catalog:",
+     "@zip.js/zip.js": "catalog:"
   }
 }
