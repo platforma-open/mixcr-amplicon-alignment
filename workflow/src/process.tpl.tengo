@@ -183,6 +183,8 @@ self.body(func(inputs) {
 			spec: { domain: { "pl7.app/vdj/chain": chains } }
 		}) ]
 
+	clonotypeTables := pframes.pFrameBuilder()
+
 	exportOutputs := [ {
 		type: "Resource",
 		spec: {
@@ -225,6 +227,8 @@ self.body(func(inputs) {
 			}
 		}
 	)
+
+	clonotypeTables.add(mixcrChains, exportResults.outputSpec("clonotypeTable"), exportResults.outputData("clonotypeTable"))
 
 	// Aggregate by clonotype key
 	aggregationOutputs := [ {
@@ -293,6 +297,7 @@ self.body(func(inputs) {
 
 		"progress.data": mixcrResults.outputData("log"),
 
-		clones: clones.build()
+		clones: clones.build(),
+		clonotypeTables: clonotypeTables.build()
 	}
 }) 
