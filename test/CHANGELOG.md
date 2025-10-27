@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment.test
 
+## 1.3.3
+
+### Patch Changes
+
+- 3d3e04d: updating dependencies
+
 ## 1.3.2
 
 ### Patch Changes

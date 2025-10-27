@@ -1,5 +1,16 @@
 ## 1.0.0
 
+## 1.3.6
+
+### Patch Changes
+
+- 3d3e04d: updating dependencies
+- Updated dependencies [3d3e04d]
+- Updated dependencies [4f1e226]
+  - @platforma-open/milaboratories.mixcr-amplicon-alignment.model@1.8.0
+  - @platforma-open/milaboratories.mixcr-amplicon-alignment.ui@1.8.0
+  - @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow@1.11.0
+
 ## 1.3.5
 
 ### Patch Changes

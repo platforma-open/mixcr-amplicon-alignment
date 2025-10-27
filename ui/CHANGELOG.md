@@ -1,5 +1,18 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment.ui
 
+## 1.8.0
+
+### Minor Changes
+
+- 4f1e226: export of raw mixcr data added
+
+### Patch Changes
+
+- 3d3e04d: updating dependencies
+- Updated dependencies [3d3e04d]
+- Updated dependencies [4f1e226]
+  - @platforma-open/milaboratories.mixcr-amplicon-alignment.model@1.8.0
+
 ## 1.7.4
 
 ### Patch Changes
