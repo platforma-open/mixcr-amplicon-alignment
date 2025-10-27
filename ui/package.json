@@ -1,6 +1,6 @@
 {
   "name": "@platforma-open/milaboratories.mixcr-amplicon-alignment.ui",
-  "version": "1.7.4",
+  "version": "1.8.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -26,6 +26,6 @@
     "vue-tsc": "catalog:",
     "@platforma-sdk/eslint-config": "catalog:",
     "@types/wicg-file-system-access": "catalog:",
-     "@zip.js/zip.js": "catalog:"
+    "@zip.js/zip.js": "catalog:"
   }
 }

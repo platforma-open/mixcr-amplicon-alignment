@@ -1,5 +1,15 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow
 
+## 1.11.0
+
+### Minor Changes
+
+- 4f1e226: export of raw mixcr data added
+
+### Patch Changes
+
+- 3d3e04d: updating dependencies
+
 ## 1.10.3
 
 ### Patch Changes
