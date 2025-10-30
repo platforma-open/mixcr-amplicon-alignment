@@ -21,6 +21,7 @@ self.body(func(inputs) {
 	exportArgs := params.exportArgs
 
 	clonotypeKeyColumns := params.clonotypeKeyColumns
+	mainIsProductiveColumn := params.mainIsProductiveColumn
 
 	hashKeyDerivationExpressionPt := func(sourceColumns) {
 		return pt.concatStr(
@@ -87,6 +88,15 @@ self.body(func(inputs) {
 	dfMain.addColumns(
 		pt.col("readCount").round().cast("Long").alias("readCount")
 	)
+	// Normalize isProductive column casing to strictly "true"/"false"
+	if !is_undefined(mainIsProductiveColumn) {
+		dfMain.addColumns(
+			pt.when(pt.col(mainIsProductiveColumn).strToUpper().eq("TRUE")).
+				then(pt.lit("true")).
+				otherwise(pt.lit("false")).
+				alias(mainIsProductiveColumn)
+		)
+	}
 	dfMain.addColumns(
 		hashKeyDerivationExpressionPt(clonotypeKeyColumns).alias("clonotypeKey")
 	)
