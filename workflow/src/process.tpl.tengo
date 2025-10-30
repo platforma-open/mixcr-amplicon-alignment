@@ -222,7 +222,8 @@ self.body(func(inputs) {
 					clonotypeKeyColumns: clonotypeKeyColumns,
 					exportArgs: exportArgs,
 					referenceLibrary: referenceLibrary,
-					mixcrChains: mixcrChains
+						mixcrChains: mixcrChains,
+						mainIsProductiveColumn: mainIsProductiveColumn
 				}
 			}
 		}
