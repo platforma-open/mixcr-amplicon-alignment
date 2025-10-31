@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow
 
+## 1.12.0
+
+### Minor Changes
+
+- 75ca0ce: change isProductive column values to true and false, sdk update
+
 ## 1.11.0
 
 ### Minor Changes
