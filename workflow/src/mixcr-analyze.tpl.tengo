@@ -67,8 +67,8 @@ self.body(func(inputs) {
 		mixcrCmdBuilder.arg("generic-amplicon")
 	}
 
-	mixcrCmdBuilder.
-        arg("--assemble-clonotypes-by").arg("VDJRegion").
+    mixcrCmdBuilder.
+        arg("--assemble-clonotypes-by").arg(params.assemblingFeature).
         arg("--species").arg("custom").
 		arg("--library").arg("library.json").
 		addFile("library.json", params.referenceLibrary).
