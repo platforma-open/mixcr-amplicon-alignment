@@ -8,6 +8,7 @@ import {
 import { ProgressPrefix } from './progress';
 
 export type CloneClusteringMode = 'relaxed' | 'default' | 'off';
+export type AssemblingFeature = 'VDJRegion' | 'CDR3';
 
 export interface BlockArgs {
   datasetRef?: PlRef;
@@ -20,6 +21,7 @@ export interface BlockArgs {
   perProcessMemGB?: number; // 1GB or more required
   perProcessCPUs?: number; // 1 or more required
   cloneClusteringMode?: CloneClusteringMode; // default: 'relaxed'
+  assemblingFeature?: AssemblingFeature; // default: 'VDJRegion'
 }
 
 export interface UiState {
@@ -38,6 +40,7 @@ export const platforma = BlockModel.create('Heavy')
     chains: 'IGHeavy',
     cloneClusteringMode: 'relaxed',
     tagPattern: '',
+    assemblingFeature: 'VDJRegion',
   })
   .withUiState<UiState>({})
 
