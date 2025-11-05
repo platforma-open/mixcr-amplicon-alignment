@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow
 
+## 1.13.0
+
+### Minor Changes
+
+- 0b637f1: Possibility to choose clonotype assembling feature - VDJRegion or CDR3
+
 ## 1.12.0
 
 ### Minor Changes

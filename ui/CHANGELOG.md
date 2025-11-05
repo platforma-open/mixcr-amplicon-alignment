@@ -1,5 +1,16 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment.ui
 
+## 1.9.0
+
+### Minor Changes
+
+- 0b637f1: Possibility to choose clonotype assembling feature - VDJRegion or CDR3
+
+### Patch Changes
+
+- Updated dependencies [0b637f1]
+  - @platforma-open/milaboratories.mixcr-amplicon-alignment.model@1.9.0
+
 ## 1.8.0
 
 ### Minor Changes
