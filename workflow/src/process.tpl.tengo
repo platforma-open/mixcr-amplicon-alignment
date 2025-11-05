@@ -40,7 +40,7 @@ self.body(func(inputs) {
 
 	// Use calculateExportSpecs for output columns
 	presetSpecForBack := {
-		assemblingFeature: ["VDJRegion"],
+		assemblingFeature: params.assemblingFeature,
 		splitByC: true,
 		umiTags: hasUMI ? ["Molecule"] : undefined,
 		cellTags: undefined
@@ -72,8 +72,8 @@ self.body(func(inputs) {
 	}
 
 
-    clnsAnnotations := {
-		"mixcr.com/assemblingFeature": "VDJRegion",
+	clnsAnnotations := {
+		"mixcr.com/assemblingFeature": params.assemblingFeature,
 		"pl7.app/label": "MiXCR Amplicon Alignment Clonesets"
 	}
 
@@ -165,7 +165,8 @@ self.body(func(inputs) {
 					referenceLibrary: referenceLibrary,
 					cloneClusteringMode: cloneClusteringMode,
 					hasUMI: hasUMI,
-					tagPattern: tagPattern
+					tagPattern: tagPattern,
+					assemblingFeature: params.assemblingFeature
 				},
 				limitInput: limitInput
 			},
