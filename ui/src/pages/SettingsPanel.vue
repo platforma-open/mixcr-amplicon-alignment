@@ -14,6 +14,8 @@ import { parseFasta } from '../utils/parseFasta';
 
 const app = useApp();
 
+type AssemblingFeature = 'VDJRegion' | 'CDR3';
+
 // Validation state management
 const fastaError = ref<string | undefined>();
 
@@ -75,6 +77,18 @@ const clusteringOptions = [
   { value: 'off', label: 'No error correction, fastest assembly' },
 ] as const;
 
+const assemblingFeatureOptions = [
+  { value: 'VDJRegion', label: 'VDJRegion' },
+  { value: 'CDR3', label: 'CDR3' },
+];
+
+const assemblingFeature = computed<AssemblingFeature>({
+  get: () => app.model.args.assemblingFeature as AssemblingFeature,
+  set: (value: AssemblingFeature) => {
+    app.model.args.assemblingFeature = value;
+  },
+});
+
 </script>
 
 <template>
@@ -106,6 +120,16 @@ ATCGATCGATCG..."
     label="Chain selection"
     :required="true"
   />
+
+  <PlDropdown
+    v-model="assemblingFeature"
+    :options="assemblingFeatureOptions"
+    label="Assembling feature"
+  >
+    <template #tooltip>
+      Select the region used to assemble clonotypes.
+    </template>
+  </PlDropdown>
 
   <PlTextField
     v-model="app.model.args.tagPattern"

@@ -59,26 +59,38 @@ addSpec := func(columns, additionalSpec) {
 
 calculateExportSpecs := func(presetSpecForBack, blockId) {
 
-	assemblingFeature := "VDJRegion" // Hardcoded to VDJRegion
+	assemblingFeature = presetSpecForBack.assemblingFeature
+
 	splitByC := false
 
-	productiveFeature := "VDJRegion"
+	productiveFeature := assemblingFeature
 	coreGeneFeatures := {
 		V: "{FR1Begin:FR3End}",
 		J: "FR4"
 	}
 
 	// column with nucleotide sequence of this feature will be marked as anchor
-	anchorFeature := "VDJRegion"
+	anchorFeature := assemblingFeature
 
-	features := ["CDR1", "FR1", "FR2", "CDR2", "FR3", "CDR3", "FR4", "VDJRegion"]
+	features := assemblingFeature == "CDR3" ? ["CDR3"] : ["CDR1", "FR1", "FR2", "CDR2", "FR3", "CDR3", "FR4", "VDJRegion"]
 
-	clonotypeKeyColumns := ["nSeqVDJRegion", "bestVGene", "bestJGene"]
-	clonotypeKeyArgs := [
-		[ "-nFeature", "VDJRegion" ],
-		[ "-vGene" ],
-		[ "-jGene" ]
-	]
+	clonotypeKeyColumns := []
+	clonotypeKeyArgs := []
+	if assemblingFeature == "CDR3" {
+		clonotypeKeyColumns = ["nSeqCDR3", "bestVGene", "bestJGene"]
+		clonotypeKeyArgs = [
+			[ "-nFeature", "CDR3" ],
+			[ "-vGene" ],
+			[ "-jGene" ]
+		]
+	} else {
+		clonotypeKeyColumns = ["nSeqVDJRegion", "bestVGene", "bestJGene"]
+		clonotypeKeyArgs = [
+			[ "-nFeature", "VDJRegion" ],
+			[ "-vGene" ],
+			[ "-jGene" ]
+		]
+	}
 	if splitByC {
 		clonotypeKeyColumns += ["bestCGene"]
 		clonotypeKeyArgs += [ [ "-cGene" ] ]
@@ -296,9 +308,10 @@ calculateExportSpecs := func(presetSpecForBack, blockId) {
 	// aaAnnotationOfSegmentsForVDJRegionInFrame
 	annotationTypes := ["CDRs", "Segments"]
 
-	inFrameFeatures := {
+inFrameFeatures := {
 		"FR4": "FR4",
-		"VDJRegion": "VDJRegion"
+		"VDJRegion": "VDJRegion",
+		"CDR3": "CDR3"
 	}
 
 	for featureU in features {
@@ -431,55 +444,56 @@ calculateExportSpecs := func(presetSpecForBack, blockId) {
 		}
 	}
 
-	// Mutations
-
-	orderP = 10000
-
-	mutationColumnVariants := [
-	{
-		name: "MutationsCount",
-		valueType: "Int",
-		labelPart: " mutations count in ",
-		idPart: "-mutations-count-"
-	}, {
-		name: "MutationsRate",
-		valueType: "Double",
-		labelPart: " mutations rate in ",
-		idPart: "-mutations-rate-"
-	} ]
-
-	for isAminoAcid in [false, true] {
-		alphabetShort := isAminoAcid ? "AA" : "Nt"
-		alphabetShortMixcr := isAminoAcid ? "aa" : "n"
-
-		// Now loop over gene types.
-		for geneU in ["V", "J"] {
-			geneL := text.to_lower(geneU)
-
-			coreFeature := coreGeneFeatures[geneU]
-			if is_undefined(coreFeature) {
-				continue
-			}
-
-			for variant in mutationColumnVariants {
-				columnsSpecPerClonotypeNoAggregates += [ {
-						column: alphabetShortMixcr + variant.name + coreFeature,
-						id: alphabetShortMixcr + variant.idPart + geneL,
-						allowNA: true,
-						naRegex: "region_not_covered",
-						spec: {
-							valueType: variant.valueType,
-							name: "pl7.app/vdj/sequence/" + alphabetShortMixcr + variant.name,
-							domain: {
-								"pl7.app/vdj/gene": geneU
-							},
-							annotations: a(orderP, false, {
-								"pl7.app/label": alphabetShort + variant.labelPart + geneU + " gene"
-							})
-						}
-					} ]
-				exportArgs += [ [ "-" + alphabetShortMixcr + variant.name, coreFeature ] ]
-				orderP -= 100
+	// Mutations (disabled for CDR3 assembling feature)
+	if assemblingFeature != "CDR3" {
+		orderP = 10000
+		
+		mutationColumnVariants := [
+			{
+				name: "MutationsCount",
+				valueType: "Int",
+				labelPart: " mutations count in ",
+				idPart: "-mutations-count-"
+			}, {
+				name: "MutationsRate",
+				valueType: "Double",
+				labelPart: " mutations rate in ",
+				idPart: "-mutations-rate-"
+			} ]
+		
+		for isAminoAcid in [false, true] {
+			alphabetShort := isAminoAcid ? "AA" : "Nt"
+			alphabetShortMixcr := isAminoAcid ? "aa" : "n"
+			
+			// Now loop over gene types.
+			for geneU in ["V", "J"] {
+				geneL := text.to_lower(geneU)
+				
+				coreFeature := coreGeneFeatures[geneU]
+				if is_undefined(coreFeature) {
+					continue
+				}
+				
+				for variant in mutationColumnVariants {
+					columnsSpecPerClonotypeNoAggregates += [ {
+							column: alphabetShortMixcr + variant.name + coreFeature,
+							id: alphabetShortMixcr + variant.idPart + geneL,
+							allowNA: true,
+							naRegex: "region_not_covered",
+							spec: {
+								valueType: variant.valueType,
+								name: "pl7.app/vdj/sequence/" + alphabetShortMixcr + variant.name,
+								domain: {
+									"pl7.app/vdj/gene": geneU
+								},
+								annotations: a(orderP, false, {
+									"pl7.app/label": alphabetShort + variant.labelPart + geneU + " gene"
+								})
+							}
+						} ]
+					exportArgs += [ [ "-" + alphabetShortMixcr + variant.name, coreFeature ] ]
+					orderP -= 100
+				}
 			}
 		}
 	}

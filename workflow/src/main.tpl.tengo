@@ -87,7 +87,8 @@ wf.body(func(args) {
 			chains: chains,
 			mixcrChains: chainInfos[chains].mixcrFilter,
 			cloneClusteringMode: cloneClusteringMode,
-			tagPattern: args.tagPattern
+			tagPattern: args.tagPattern,
+			assemblingFeature: args.assemblingFeature
 		})
 	})
 
