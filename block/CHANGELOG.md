@@ -1,5 +1,11 @@
 ## 1.0.0
 
+## 1.3.9
+
+### Patch Changes
+
+- d05a139: Updated block metadata
+
 ## 1.3.8
 
 ### Patch Changes
