@@ -28,8 +28,9 @@
       "title": "MiXCR Amplicon Alignment",
       "logo": "file:../logos/block-logo.png",
       "url": "https://github.com/platforma-open/mixcr-amplicon-alignment",
+      "docs": "https://docs.platforma.bio/guides/antibody-discovery/amplicon-clonotyping/",
       "support": "mailto:support@milaboratories.com",
-      "description": "Align amplicon sequences using MiXCR",
+      "description": "Aligns amplicon sequences against user-provided reference sequences using MiXCR for analysis of synthetic antibody/TCR libraries.",
       "longDescription": "file:../docs/description.md",
       "changelog": "file:./CHANGELOG.md",
       "tags": [
