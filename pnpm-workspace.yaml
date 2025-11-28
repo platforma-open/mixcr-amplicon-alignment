@@ -8,15 +8,15 @@ packages:
 catalog:
   "@platforma-sdk/model": ^1.45.0
   "@platforma-sdk/ui-vue": ^1.45.0
-  "@platforma-sdk/workflow-tengo": ^5.5.9
-  "@platforma-sdk/block-tools": ^2.6.21
+  "@platforma-sdk/workflow-tengo": ^5.6.3
+  "@platforma-sdk/block-tools": ^2.6.25
   "@platforma-sdk/test": ^1.45.11
   "@platforma-sdk/tengo-builder": ^2.3.3
   "@platforma-sdk/package-builder": ^3.10.5
   "@platforma-sdk/eslint-config": ^1.1.0
 
 
-  "@platforma-open/milaboratories.runenv-python-3": ^1.1.7
+  "@platforma-open/milaboratories.runenv-python-3": ^1.7.5
   '@platforma-open/milaboratories.software-mixcr': 4.7.0-235-develop
   '@platforma-open/milaboratories.software-repseqio': ^2.5.0-13-master
 
