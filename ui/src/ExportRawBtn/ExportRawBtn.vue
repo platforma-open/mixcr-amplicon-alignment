@@ -165,8 +165,9 @@ const exportRawTsvs = async () => {
   }
 };
 
-const progressesRef = ref();
+const progressesRef = ref<HTMLElement | undefined>();
 
+// @ts-expect-error - Version mismatch between @vue/reactivity versions in dependency tree
 useClickOutside([progressesRef], () => {
   data.showExports = false;
 });
