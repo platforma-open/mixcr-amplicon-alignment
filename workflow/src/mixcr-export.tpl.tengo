@@ -36,7 +36,6 @@ self.body(func(inputs) {
 			mem("12GB").
 		    cpu(2).
 			printErrStreamToStdout().
-			dontSaveStdoutOrStderr().
 			software(mixcrSw).
 			secret("MI_LICENSE", "MI_LICENSE").
 			arg("exportClones").
