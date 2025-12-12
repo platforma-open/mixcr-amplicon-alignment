@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow
 
+## 1.13.2
+
+### Patch Changes
+
+- f4d0ddb: Fix issue after update
+
 ## 1.13.1
 
 ### Patch Changes
