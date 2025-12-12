@@ -171,6 +171,7 @@ self.body(func(inputs) {
 	mixcrCmdBuilder.saveFile("result.qc.json")
 
     mixcrCmdBuilder.saveFile(clnsFileName)
+	mixcrCmdBuilder.saveStdoutStream()
 
 	for report in reports {
 		mixcrCmdBuilder.saveFile(report.fileJson)
