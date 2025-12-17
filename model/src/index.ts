@@ -1,6 +1,8 @@
-import type { InferHrefType, PlRef } from '@platforma-sdk/model';
+import type { InferHrefType, PlDataTableStateV2, PlRef } from '@platforma-sdk/model';
 import {
   BlockModel,
+  createPlDataTableV2,
+  createPlDataTableStateV2,
   isPColumnSpec,
   parseResourceMap,
   type InferOutputsType,
@@ -26,6 +28,7 @@ export interface BlockArgs {
 
 export interface UiState {
   librarySequence?: string;
+  tableState: PlDataTableStateV2;
 }
 
 export interface BlockArgsValid extends BlockArgs {
@@ -42,7 +45,9 @@ export const platforma = BlockModel.create('Heavy')
     tagPattern: '',
     assemblingFeature: 'VDJRegion',
   })
-  .withUiState<UiState>({})
+  .withUiState<UiState>({
+    tableState: createPlDataTableStateV2(),
+  })
 
   .output('qc', (ctx) =>
     parseResourceMap(
@@ -145,8 +150,19 @@ export const platforma = BlockModel.create('Heavy')
     });
   })
 
+  .output('pt', (ctx) => {
+    const pCols = ctx.outputs?.resolve({ field: 'qcReportTable', assertFieldType: 'Input', allowPermanentAbsence: true })?.getPColumns();
+    if (pCols === undefined) {
+      return undefined;
+    }
+    return createPlDataTableV2(ctx, pCols, ctx.uiState.tableState);
+  })
+
   .sections((_ctx) => {
-    return [{ type: 'link', href: '/', label: 'Main' }];
+    return [
+      { type: 'link', href: '/', label: 'Main' },
+      { type: 'link', href: '/qc-report-table', label: 'QC Report Table' },
+    ];
   })
 
   .argsValid((ctx) => {

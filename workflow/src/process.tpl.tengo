@@ -2,6 +2,7 @@
 
 self := import("@platforma-sdk/workflow-tengo:tpl")
 
+render := import("@platforma-sdk/workflow-tengo:render")
 ll := import("@platforma-sdk/workflow-tengo:ll")
 assets := import("@platforma-sdk/workflow-tengo:assets")
 pframes := import("@platforma-sdk/workflow-tengo:pframes")
@@ -14,6 +15,7 @@ text := import("text")
 mixcrAnalyzeTpl := assets.importTemplate(":mixcr-analyze")
 mixcrExportTpl := assets.importTemplate(":mixcr-export")
 aggregateByClonotypeKeyTpl := assets.importTemplate(":aggregate-by-clonotype-key")
+exportReportTpl := assets.importTemplate(":export-report")
 calculateExportSpecs := import(":calculate-export-specs")
 
 self.awaitState("InputsLocked")
@@ -37,13 +39,14 @@ self.body(func(inputs) {
 	perProcessMemGB := params.perProcessMemGB
 	perProcessCPUs := params.perProcessCPUs
 	fileExtension := inputSpec.domain["pl7.app/fileExtension"]
+	sampleIdAxisSpec := inputSpec.axesSpec[0]
 
 	// Use calculateExportSpecs for output columns
 	presetSpecForBack := {
 		assemblingFeature: params.assemblingFeature,
 		splitByC: true,
 		umiTags: hasUMI ? ["Molecule"] : undefined,
-		cellTags: undefined
+		cellTags: []
 	}
 
 	exportSpecs := calculateExportSpecs(presetSpecForBack, blockId)
@@ -231,6 +234,8 @@ self.body(func(inputs) {
 	)
 
 	clonotypeTables.add(mixcrChains, exportResults.outputSpec("clonotypeTable"), exportResults.outputData("clonotypeTable"))
+	clonotypeTablesData := {}
+	clonotypeTablesData[chains] = exportResults.outputData("clonotypeTable")
 
 	// Aggregate by clonotype key
 	aggregationOutputs := [ {
@@ -284,6 +289,16 @@ self.body(func(inputs) {
 	exportResults.addXsvOutputToBuilder(clones, "byCloneKeyBySample", "clonotypeProperties/bySample/" + chains + "/")
 	aggregationResults.addXsvOutputToBuilder(clones, "aggregates", "clonotypeProperties/aggregates/" + chains + "/")
 
+	qcReportTable := render.create(exportReportTpl, {
+		clnsData: mixcrResults.outputData("clns"),
+		presetSpecForBack: presetSpecForBack,
+		sampleIdAxisSpec: sampleIdAxisSpec,
+		chains: [chains],
+		library: referenceLibrary,
+		isLibraryFileGzipped: false,
+		clonotypeTablesData: clonotypeTablesData
+	})
+
 	return {
 		"qc.spec": mixcrResults.outputSpec("qc"),
 		"qc.data": mixcrResults.outputData("qc"),
@@ -300,6 +315,7 @@ self.body(func(inputs) {
 		"progress.data": mixcrResults.outputData("log"),
 
 		clones: clones.build(),
-		clonotypeTables: clonotypeTables.build()
+		clonotypeTables: clonotypeTables.build(),
+		qcReportTable: qcReportTable.output("qcReportTable")
 	}
 }) 
