@@ -1,0 +1,190 @@
+self := import("@platforma-sdk/workflow-tengo:tpl")
+smart := import("@platforma-sdk/workflow-tengo:smart")
+ll := import("@platforma-sdk/workflow-tengo:ll")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+pcolumn := import("@platforma-sdk/workflow-tengo:pframes.pcolumn")
+times := import("times")
+text := import("text")
+pframes := import("@platforma-sdk/workflow-tengo:pframes")
+xsv := import("@platforma-sdk/workflow-tengo:pframes.xsv")
+slices := import("@platforma-sdk/workflow-tengo:slices")
+pConstants := import("@platforma-sdk/workflow-tengo:pframes.constants")
+pt := import("@platforma-sdk/workflow-tengo:pt")
+qcReportColumns := import(":qc-report-columns")
+
+json := import("json")
+
+self.defineOutputs("qcReportTable")
+
+mixcrSw := assets.importSoftware("@platforma-open/milaboratories.software-mixcr:main")
+ptablerSw := assets.importSoftware("@platforma-open/milaboratories.software-ptabler:main")
+
+
+self.body(func(inputs) {
+    clnsData := inputs.clnsData
+    presetSpecForBack := inputs.presetSpecForBack
+    sampleIdAxisSpec := inputs.sampleIdAxisSpec
+    chains := inputs.chains
+    library := inputs.library
+    isLibraryFileGzipped := inputs.isLibraryFileGzipped
+    clonotypeTablesData := inputs.clonotypeTablesData
+
+	hasUmi := !is_undefined(presetSpecForBack.umiTags) && len(presetSpecForBack.umiTags) > 0
+
+    chainInfos := {
+	"IGHeavy": { mixcrFilter: "IGH", name: "IG Heavy", shortName: "Heavy" },
+	"IGLight": { mixcrFilter: "IGK,IGL", name: "IG Light", shortName: "Light" },
+	"TCRAlpha": { mixcrFilter: "TRA", name: "TCR Alpha", shortName: "Alpha" },
+	"TCRBeta": { mixcrFilter: "TRB", name: "TCR Beta", shortName: "Beta" },
+	"TCRGamma": { mixcrFilter: "TRG", name: "TCR Gamma", shortName: "Gamma" },
+	"TCRDelta": { mixcrFilter: "TRD", name: "TCR Delta", shortName: "Delta" }
+    }
+
+    chainsForMixcr := []
+
+    for chain in chains {
+        chainsForMixcr += text.split(chainInfos[chain].mixcrFilter, ",")
+    }
+    
+    // Get all clns files from the input data
+    clnsFiles := clnsData.inputs()
+    
+    // Build the exportReportsTable command
+    exportReportCmd := exec.builder().
+        software(mixcrSw).
+        env("MI_USE_SYSTEM_CA", "true").
+        secret("MI_LICENSE", "MI_LICENSE").
+        arg("exportReportsTable")
+    
+    // Add all clns files as input
+    for i, clnsFile in clnsFiles {
+        fileName := json.decode(i)[0] + ".clns"
+        exportReportCmd.addFile(fileName, clnsFile)
+        exportReportCmd.arg(fileName)
+    }
+
+    exportReportCmd.arg("qc-report.tsv").saveFile("qc-report.tsv")
+    if library {
+        if isLibraryFileGzipped {
+			exportReportCmd.addFile("library.json.gz", library)
+		} else {
+			exportReportCmd.addFile("library.json", library)
+		}
+	}
+    
+    // Run the command
+    result := exportReportCmd.run()
+
+    rawTsvFile := result.getFile("qc-report.tsv")
+    
+    // Use pTabler to remove ".clns" from fileName column
+    wf := pt.workflow().
+        inMediumQueue().
+        mem("8GiB").
+        cpu(2)
+    
+    // Load the raw TSV file as a DataFrame
+    df := wf.frame(rawTsvFile, {
+        xsvType: "tsv",
+        inferSchema: false
+    })
+    
+        // Add the sampleId column and remove ".clns" from fileName using pTabler string methods
+    processedDf := df.withColumns(
+        pt.col("fileName").strSlice(0, pt.col("fileName").strLenChars().minus(5)).alias("sampleId")
+    )
+
+    // Calculate real number of exported (productive) clonotypes per sample
+    // Use existing clonotype tables produced earlier; per-sample counts and read sums across chains
+    countDfs := []
+    for chain in chains {
+        chainData := clonotypeTablesData[chain]
+        if is_undefined(chainData) { continue }
+        for key, clonesFile in chainData.inputs() {
+            sampleId := json.decode(key)[0]
+            dfCountSource := wf.frame(clonesFile, { xsvType: "tsv", inferSchema: false, schema: [ { column: "readCount", type: "Double" } ] })
+            dfCount := dfCountSource.select(
+                pt.lit(sampleId).alias("sampleId"),
+                pt.col("clonotypeKey").count().alias("exportedClonotypes"),
+                pt.col("readCount").round().cast("Long").sum().alias("readsUsedInClonotypes")
+            )
+            countDfs = append(countDfs, dfCount)
+        }
+    }
+
+    countsDf := undefined
+    if len(countDfs) > 1 { countsDf = pt.concat(countDfs) } else { countsDf = countDfs[0] }
+    aggregatedCounts := countsDf.groupBy("sampleId").agg(
+        pt.col("exportedClonotypes").sum().alias("exportedClonotypes"),
+        pt.col("readsUsedInClonotypes").sum().alias("readsUsedInClonotypesNew")
+    )
+
+    // Join counts and overwrite totalClonotypes to reflect exported (productive) clones
+    joinedDf := processedDf.join(aggregatedCounts, { how: "left", on: ["sampleId"] })
+
+    // Per-chain clonotype counts
+    perChainJoined := joinedDf
+    for chain in chains {
+        chainData := clonotypeTablesData[chain]
+        chainCol := "clonotypesByChain." + chain
+        if is_undefined(chainData) {
+            perChainJoined = perChainJoined.withColumns(pt.lit(0).alias(chainCol))
+            continue
+        }
+        perChainDfs := []
+        for key, clonesFile in chainData.inputs() {
+            sampleId := json.decode(key)[0]
+            dfSrc := wf.frame(clonesFile, { xsvType: "tsv", inferSchema: false })
+            dfCnt := dfSrc.select(
+                pt.lit(sampleId).alias("sampleId"),
+                pt.col("clonotypeKey").count().alias("__chainCount")
+            )
+            perChainDfs = append(perChainDfs, dfCnt)
+        }
+        if len(perChainDfs) == 0 {
+            perChainJoined = perChainJoined.withColumns(pt.lit(0).alias(chainCol))
+            continue
+        }
+        chainCountsDf := len(perChainDfs) > 1 ? pt.concat(perChainDfs) : perChainDfs[0]
+        chainAgg := chainCountsDf.groupBy("sampleId").agg(
+            pt.col("__chainCount").sum().alias(chainCol)
+        )
+        perChainJoined = perChainJoined.join(chainAgg, { how: "left", on: ["sampleId"] })
+    }
+
+    // Finalize: cast/fill totals and per-chain counts
+    finalDf := perChainJoined.withColumns(
+        pt.col("exportedClonotypes").fillNull(0).cast("Long").alias("totalClonotypes"),
+        pt.col("readsUsedInClonotypesNew").fillNull(0).cast("Long").alias("readsUsedInClonotypes")
+    )
+    for chain in chains {
+        col := "clonotypesByChain." + chain
+        finalDf = finalDf.withColumns(pt.col(col).fillNull(0).cast("Long").alias(col))
+    }
+    
+    // Save the final DataFrame back to TSV
+    finalDf.save("qc-report-processed.tsv", {
+        xsvType: "tsv"
+    })
+    
+    // Run the pTabler workflow
+    wfResult := wf.run()
+    
+    tsvFile := wfResult.getFile("qc-report-processed.tsv")
+
+    qcReportColumns := qcReportColumns(hasUmi, sampleIdAxisSpec, chains)
+    reportColumnsSpec := qcReportColumns.reportColumnsSpec
+
+    qcReportTable := xsv.importFile(
+		tsvFile,
+		"tsv",
+		reportColumnsSpec,
+		{ cpu: 1, mem: "16GiB" }
+	)
+
+    
+    return {
+        qcReportTable: qcReportTable
+    }
+})
