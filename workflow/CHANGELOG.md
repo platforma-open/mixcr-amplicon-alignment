@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow
 
+## 1.14.0
+
+### Minor Changes
+
+- 392f0eb: Qc report table and dependencies updates
+
 ## 1.13.2
 
 ### Patch Changes
