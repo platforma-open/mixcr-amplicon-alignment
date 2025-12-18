@@ -119,6 +119,9 @@ wf.body(func(args) {
 		debugOutput: debugOutput
 	}
 
+	qcReportTable := runMixcr.output("qcReportTable")
+	outputs.qcReportTable = pframes.exportFrame(qcReportTable)
+
 	return {
 		outputs: outputs,
 		exports: exports
