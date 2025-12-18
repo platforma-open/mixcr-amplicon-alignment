@@ -1,5 +1,16 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment.ui
 
+## 1.10.0
+
+### Minor Changes
+
+- 392f0eb: Qc report table and dependencies updates
+
+### Patch Changes
+
+- Updated dependencies [392f0eb]
+  - @platforma-open/milaboratories.mixcr-amplicon-alignment.model@1.10.0
+
 ## 1.9.1
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment.test
 
+## 1.4.0
+
+### Minor Changes
+
+- 392f0eb: Qc report table and dependencies updates
+
 ## 1.3.4
 
 ### Patch Changes
