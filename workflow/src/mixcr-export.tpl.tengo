@@ -12,7 +12,7 @@ json := import("json")
 
 mixcrSw := assets.importSoftware("@platforma-open/milaboratories.software-mixcr:main")
 
-self.defineOutputs("tsv")
+self.defineOutputs("tsv", "linker")
 
 self.body(func(inputs) {
 	clnsFile := inputs[pConstants.VALUE_FIELD_NAME]
@@ -107,7 +107,33 @@ self.body(func(inputs) {
 	ptablerResultMain := wfMain.run()
 	processedTsv := ptablerResultMain.getFile("output.tsv")
 
+	// Create linker TSV with just clonotypeKey and link columns
+	wfLinker := pt.workflow().
+		inMediumQueue().
+		mem("8GB").
+		cpu(2)
+	
+	frameLinkerMap := {
+		file: processedTsv,
+		xsvType: "tsv",
+		schema: [ { column: "clonotypeKey", type: "String" } ]
+	}
+	dfLinker := wfLinker.frame(frameLinkerMap, { inferSchema: false, id: "linker_table" })
+	
+	// Add link column with constant value 1
+	dfLinker.addColumns(
+		pt.lit(1).alias("link")
+	)
+	
+	// Select only clonotypeKey and link columns
+	dfLinker.select(pt.col("clonotypeKey"), pt.col("link"))
+	
+	dfLinker.save("linker.tsv")
+	ptablerResultLinker := wfLinker.run()
+	linkerTsv := ptablerResultLinker.getFile("linker.tsv")
+
 	return {
-		tsv: processedTsv
+		tsv: processedTsv,
+		linker: linkerTsv
 	}
 }) 
