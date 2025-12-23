@@ -1,12 +1,12 @@
 {
   "name": "@platforma-open/milaboratories.mixcr-amplicon-alignment.workflow",
   "version": "1.14.0",
-  "description": "MiXCR Amplicon Alignment Workflow",
-  "type": "module",
+  "description": "Tengo-based template",
   "scripts": {
     "build": "rm -rf dist && pl-tengo check && pl-tengo build",
+    "format": "/usr/bin/env emacs --script ./format.el",
     "test": "vitest",
-    "format": "/usr/bin/env emacs --script ./format.el"
+    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "dependencies": {
     "@platforma-sdk/workflow-tengo": "catalog:",
@@ -14,8 +14,12 @@
     "@platforma-open/milaboratories.software-repseqio": "catalog:"
   },
   "devDependencies": {
+    "@milaboratories/ts-builder": "catalog:",
+    "@milaboratories/ts-configs": "catalog:",
     "@platforma-sdk/tengo-builder": "catalog:",
+    "@platforma-sdk/model": "catalog:",
     "@platforma-sdk/test": "catalog:",
+    "typescript": "catalog:",
     "vitest": "catalog:"
   }
 }

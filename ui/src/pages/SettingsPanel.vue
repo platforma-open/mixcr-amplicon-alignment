@@ -149,10 +149,11 @@ ATCGATCGATCG..."
       label="Error correction"
     >
       <template #tooltip>
-        'Default assembly' is the standard MiXCR clustering
-        mode. 'Faster assembly' relaxes fuzzy matching
-        criteria, speeding up assembly. 'Fastest assembly' further accelerates the process but disables error
-        correction.
+        <ul>
+          <li><b>Default assembly:</b> The standard MiXCR clustering mode.</li>
+          <li><b>Faster assembly:</b> Relaxes fuzzy matching criteria, speeding up assembly.</li>
+          <li><b>Fastest assembly:</b> Further accelerates the process but disables error correction.</li>
+        </ul>
       </template>
     </PlDropdown>
     <PlNumberField
