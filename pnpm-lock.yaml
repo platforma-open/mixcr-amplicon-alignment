@@ -247,9 +247,6 @@ importers:
       '@milaboratories/ts-configs':
         specifier: 'catalog:'
         version: 1.2.0
-      '@platforma-sdk/eslint-config':
-        specifier: 'catalog:'
-        version: 1.2.0(@eslint/js@9.39.2)(@stylistic/eslint-plugin@2.13.0(eslint@9.39.2)(typescript@5.6.3))(eslint-plugin-n@17.23.1(eslint@9.39.2)(typescript@5.6.3))(eslint-plugin-vue@9.33.0(eslint@9.39.2))(eslint@9.39.2)(globals@15.15.0)(typescript-eslint@8.50.0(eslint@9.39.2)(typescript@5.6.3))(typescript@5.6.3)
       '@platforma-sdk/model':
         specifier: 'catalog:'
         version: 1.48.14
@@ -259,9 +256,6 @@ importers:
       '@platforma-sdk/test':
         specifier: 'catalog:'
         version: 1.48.18(@eslint/js@9.39.2)(@stylistic/eslint-plugin@2.13.0(eslint@9.39.2)(typescript@5.6.3))(@types/node@25.0.2)(eslint-plugin-n@17.23.1(eslint@9.39.2)(typescript@5.6.3))(eslint-plugin-vue@9.33.0(eslint@9.39.2))(globals@15.15.0)(typescript-eslint@8.50.0(eslint@9.39.2)(typescript@5.6.3))(typescript@5.6.3)(yaml@2.8.2)
-      eslint:
-        specifier: 'catalog:'
-        version: 9.39.2
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
