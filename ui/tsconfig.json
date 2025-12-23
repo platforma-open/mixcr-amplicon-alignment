@@ -2,7 +2,8 @@
   "extends": "@milaboratories/ts-configs/block/ui",
   "compilerOptions": {
     "rootDir": "./src",
-    "outDir": "./dist"
+    "outDir": "./dist",
+    "types": ["wicg-file-system-access"]
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue"]
 }
