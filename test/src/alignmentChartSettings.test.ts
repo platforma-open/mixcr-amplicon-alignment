@@ -1,9 +1,29 @@
-import { test, expect } from "vitest";
+import { test, expect } from 'vitest';
+import type { AlignReport } from '@platforma-open/milaboratories.mixcr-amplicon-alignment.model';
 
 // Test the core logic without importing UI components
-test("alignment chart data extraction logic", () => {
-  const mockAlignReport = {
-    type: "alignerReport",
+// This matches the data extraction logic from getAlignmentChartSettings
+function extractAlignmentData(alignReport: AlignReport | undefined) {
+  if (alignReport === undefined) return [];
+
+  const aligned = alignReport.aligned || 0;
+  const notAlignedReasons = alignReport.notAlignedReasons || {};
+
+  const result = [{ category: 'Success', value: aligned }];
+
+  // Add not aligned reasons
+  for (const [reason, count] of Object.entries(notAlignedReasons)) {
+    if (count > 0) {
+      result.push({ category: reason, value: count });
+    }
+  }
+
+  return result;
+}
+
+test('alignment chart data extraction logic', () => {
+  const mockAlignReport: AlignReport = {
+    type: 'alignerReport',
     totalReadsProcessed: 1000,
     aligned: 850,
     notAligned: 150,
@@ -18,25 +38,24 @@ test("alignment chart data extraction logic", () => {
       SampleNotMatched: 3,
       FailedAfterAOverlap: 2,
     },
-  };
-
-  // Simulate the core logic from getAlignmentChartSettings
-  const extractAlignmentData = (alignReport: any) => {
-    if (alignReport === undefined) return [];
-
-    const aligned = alignReport.aligned || 0;
-    const notAlignedReasons = alignReport.notAlignedReasons || {};
-
-    const result = [{ category: "Success", value: aligned }];
-
-    // Add not aligned reasons
-    for (const [reason, count] of Object.entries(notAlignedReasons)) {
-      if (count > 0) {
-        result.push({ category: reason, value: count });
-      }
-    }
-
-    return result;
+    overlapped: 0,
+    overlappedAligned: 0,
+    overlappedNotAligned: 0,
+    alignmentAidedOverlaps: 0,
+    noCDR3PartsAlignments: 0,
+    partialAlignments: 0,
+    chimeras: 0,
+    vChimeras: 0,
+    jChimeras: 0,
+    pairedEndAlignmentConflicts: 0,
+    realignedWithForcedNonFloatingBound: 0,
+    realignedWithForcedNonFloatingRightBoundInLeftRead: 0,
+    realignedWithForcedNonFloatingLeftBoundInRightRead: 0,
+    chainUsage: {
+      chimeras: 0,
+      total: 0,
+      chains: {},
+    },
   };
 
   const result = extractAlignmentData(mockAlignReport);
@@ -44,12 +63,12 @@ test("alignment chart data extraction logic", () => {
   expect(result).toHaveLength(10); // Success + 9 not aligned reasons
 
   // Check that Success category exists and has correct value
-  const successCategory = result.find((item) => item.category === "Success");
+  const successCategory = result.find((item) => item.category === 'Success');
   expect(successCategory).toBeDefined();
   expect(successCategory?.value).toBe(850);
 
   // Check that NoHits category exists and has correct value
-  const noHitsCategory = result.find((item) => item.category === "NoHits");
+  const noHitsCategory = result.find((item) => item.category === 'NoHits');
   expect(noHitsCategory).toBeDefined();
   expect(noHitsCategory?.value).toBe(50);
 
@@ -59,46 +78,40 @@ test("alignment chart data extraction logic", () => {
   });
 });
 
-test("alignment chart data extraction with undefined report", () => {
-  const extractAlignmentData = (alignReport: any) => {
-    if (alignReport === undefined) return [];
-    // ... rest of logic
-    return [];
-  };
-
+test('alignment chart data extraction with undefined report', () => {
   const result = extractAlignmentData(undefined);
   expect(result).toHaveLength(0);
 });
 
-test("alignment chart data extraction with empty notAlignedReasons", () => {
-  const mockAlignReport = {
-    type: "alignerReport",
+test('alignment chart data extraction with empty notAlignedReasons', () => {
+  const mockAlignReport: AlignReport = {
+    type: 'alignerReport',
     totalReadsProcessed: 1000,
     aligned: 1000,
     notAligned: 0,
     notAlignedReasons: {},
-  };
-
-  const extractAlignmentData = (alignReport: any) => {
-    if (alignReport === undefined) return [];
-
-    const aligned = alignReport.aligned || 0;
-    const notAlignedReasons = alignReport.notAlignedReasons || {};
-
-    const result = [{ category: "Success", value: aligned }];
-
-    // Add not aligned reasons
-    for (const [reason, count] of Object.entries(notAlignedReasons)) {
-      if (count > 0) {
-        result.push({ category: reason, value: count });
-      }
-    }
-
-    return result;
+    overlapped: 0,
+    overlappedAligned: 0,
+    overlappedNotAligned: 0,
+    alignmentAidedOverlaps: 0,
+    noCDR3PartsAlignments: 0,
+    partialAlignments: 0,
+    chimeras: 0,
+    vChimeras: 0,
+    jChimeras: 0,
+    pairedEndAlignmentConflicts: 0,
+    realignedWithForcedNonFloatingBound: 0,
+    realignedWithForcedNonFloatingRightBoundInLeftRead: 0,
+    realignedWithForcedNonFloatingLeftBoundInRightRead: 0,
+    chainUsage: {
+      chimeras: 0,
+      total: 0,
+      chains: {},
+    },
   };
 
   const result = extractAlignmentData(mockAlignReport);
   expect(result).toHaveLength(1); // Only Success category
-  expect(result[0].category).toBe("Success");
+  expect(result[0].category).toBe('Success');
   expect(result[0].value).toBe(1000);
 });
