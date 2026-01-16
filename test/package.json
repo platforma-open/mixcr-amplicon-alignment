@@ -5,15 +5,23 @@
   "description": "MiXCR Amplicon Alignment Tests",
   "type": "module",
   "scripts": {
-    "test": "vitest --passWithNoTests"
+    "test": "vitest --run --passWithNoTests",
+    "lint": "eslint .",
+    "type-check": "ts-builder types --target block-test"
   },
   "files": [],
   "keywords": [],
   "dependencies": {
-    "this-block": "workspace:@platforma-open/milaboratories.mixcr-amplicon-alignment@*"
+    "this-block": "workspace:@platforma-open/milaboratories.mixcr-amplicon-alignment@*",
+    "@platforma-open/milaboratories.mixcr-amplicon-alignment.model": "workspace:*",
+    "@platforma-sdk/model": "catalog:"
   },
   "devDependencies": {
+    "@milaboratories/ts-builder": "catalog:",
+    "@milaboratories/ts-configs": "catalog:",
+    "@platforma-sdk/eslint-config": "catalog:",
     "@platforma-sdk/test": "catalog:",
+    "eslint": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }
