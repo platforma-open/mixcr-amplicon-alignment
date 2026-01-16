@@ -1,9 +1,9 @@
-import { test, expect } from "vitest";
+import { test, expect } from 'vitest';
 
 // Test the core logic without importing UI components
-test("alignment chart data extraction logic", () => {
+test('alignment chart data extraction logic', () => {
   const mockAlignReport = {
-    type: "alignerReport",
+    type: 'alignerReport',
     totalReadsProcessed: 1000,
     aligned: 850,
     notAligned: 150,
@@ -27,7 +27,7 @@ test("alignment chart data extraction logic", () => {
     const aligned = alignReport.aligned || 0;
     const notAlignedReasons = alignReport.notAlignedReasons || {};
 
-    const result = [{ category: "Success", value: aligned }];
+    const result = [{ category: 'Success', value: aligned } as const];
 
     // Add not aligned reasons
     for (const [reason, count] of Object.entries(notAlignedReasons)) {
@@ -44,12 +44,12 @@ test("alignment chart data extraction logic", () => {
   expect(result).toHaveLength(10); // Success + 9 not aligned reasons
 
   // Check that Success category exists and has correct value
-  const successCategory = result.find((item) => item.category === "Success");
+  const successCategory = result.find((item) => item.category === 'Success');
   expect(successCategory).toBeDefined();
   expect(successCategory?.value).toBe(850);
 
   // Check that NoHits category exists and has correct value
-  const noHitsCategory = result.find((item) => item.category === "NoHits");
+  const noHitsCategory = result.find((item) => item.category === 'NoHits');
   expect(noHitsCategory).toBeDefined();
   expect(noHitsCategory?.value).toBe(50);
 
@@ -59,7 +59,8 @@ test("alignment chart data extraction logic", () => {
   });
 });
 
-test("alignment chart data extraction with undefined report", () => {
+test('alignment chart data extraction with undefined report', () => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const extractAlignmentData = (alignReport: any) => {
     if (alignReport === undefined) return [];
     // ... rest of logic
@@ -70,9 +71,9 @@ test("alignment chart data extraction with undefined report", () => {
   expect(result).toHaveLength(0);
 });
 
-test("alignment chart data extraction with empty notAlignedReasons", () => {
+test('alignment chart data extraction with empty notAlignedReasons', () => {
   const mockAlignReport = {
-    type: "alignerReport",
+    type: 'alignerReport',
     totalReadsProcessed: 1000,
     aligned: 1000,
     notAligned: 0,
@@ -99,6 +100,6 @@ test("alignment chart data extraction with empty notAlignedReasons", () => {
 
   const result = extractAlignmentData(mockAlignReport);
   expect(result).toHaveLength(1); // Only Success category
-  expect(result[0].category).toBe("Success");
+  expect(result[0].category).toBe('Success');
   expect(result[0].value).toBe(1000);
 });

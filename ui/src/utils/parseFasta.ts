@@ -187,19 +187,35 @@ export function parseFasta(content: string): FastaParseResult {
 
     // Extract the two sequences with headers
     const patternStartInFullSequence = searchStartPosition + match.index;
-    const patternEndInFullSequence
-      = patternStartInFullSequence + match[0].length;
 
-    // First sequence: from beginning to first cysteine in pattern + 3 nucleotides
+    // Find CDR3 boundaries: from first C to last W/F/L/Y/I in pattern
     const firstCysteinePosition = patternStartInFullSequence; // First C in pattern
-    const vGeneEndNucleotides = (firstCysteinePosition + 3) * 3; // +2 for the cysteine, *3 for nucleotides
+    // Find the last conserved residue (W/F/L/Y/I) in the pattern - this marks the end of CDR3
+    const patternSequence = match[0];
+    let cdr3EndInPattern = patternSequence.length - 1;
+    // Look for the last W/F/L/Y/I before the final G...G motif
+    for (let i = patternSequence.length - 1; i >= 0; i--) {
+      if (['W', 'F', 'L', 'Y', 'I'].includes(patternSequence[i])) {
+        cdr3EndInPattern = i;
+        break;
+      }
+    }
+    const cdr3EndInFullSequence = patternStartInFullSequence + cdr3EndInPattern + 1;
+
+    // Calculate CDR3 nucleotide boundaries
+    const cdr3StartNucleotides = firstCysteinePosition * 3; // Start of CDR3 (first C)
+    const cdr3EndNucleotides = cdr3EndInFullSequence * 3; // End of CDR3 (last W/F/L/Y/I)
+    const cdr3LengthNucleotides = cdr3EndNucleotides - cdr3StartNucleotides;
+    const cdr3HalfLengthNucleotides = Math.floor(cdr3LengthNucleotides / 2);
+
+    // V gene: from beginning to first cysteine + half of CDR3
+    const vGeneEndNucleotides = cdr3StartNucleotides + cdr3HalfLengthNucleotides;
     const vGeneSequence = referenceSequence.substring(0, vGeneEndNucleotides);
     const vGeneHeader = header ? `${header}_Vgene` : 'ref_Vgene';
     const vGene = `>${vGeneHeader}\n${vGeneSequence}`;
 
-    // Second sequence: from 6 nucleotides before pattern end to sequence end
-    const patternEndNucleotides = patternEndInFullSequence * 3;
-    const jGeneStartNucleotides = patternEndNucleotides - 21; // 6 nucleotides before pattern end
+    // J gene: from second half of CDR3 to sequence end
+    const jGeneStartNucleotides = cdr3StartNucleotides + cdr3HalfLengthNucleotides;
     const jGeneSequence = referenceSequence.substring(jGeneStartNucleotides);
     const jGeneHeader = header ? `${header}_Jgene` : 'ref_Jgene';
     const jGene = `>${jGeneHeader}\n${jGeneSequence}`;

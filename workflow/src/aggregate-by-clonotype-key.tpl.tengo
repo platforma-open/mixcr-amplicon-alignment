@@ -37,6 +37,16 @@ self.body(func(inputs) {
 	dataFrames := []
 
 	baseSchemaForRead := schemaPerSample + [ { column: "clonotypeKey", type: "String" } ]
+	
+	// Add germline CDR3 part columns to schema as String first (to handle "region_not_covered")
+	// These are needed to calculate nMutationsCountCDR3 and aaMutationsCountCDR3 but won't appear in final output
+	baseSchemaForRead = append(baseSchemaForRead, 
+		{ column: "nMutationsCountGermlineVCDR3Part", type: "String" },
+		{ column: "nMutationsCountGermlineJCDR3Part", type: "String" },
+		{ column: "aaMutationsCountGermlineVCDR3Part", type: "String" },
+		{ column: "aaMutationsCountGermlineJCDR3Part", type: "String" }
+	)
+	
 
 	for sKey in maps.getKeys(inputMap) {
 		inputFile := inputMap[sKey]
@@ -66,6 +76,22 @@ self.body(func(inputs) {
 	} else {
 		currentDf = pt.concat(dataFrames)
 	}
+
+	// Calculate nMutationsCountCDR3 by summing V and J germline CDR3 part mutations
+	// Handle "region_not_covered" as null, then convert to Int and fill nulls with 0 before summing
+	vColExpr := pt.when(pt.col("nMutationsCountGermlineVCDR3Part").eq("region_not_covered").or(pt.col("nMutationsCountGermlineVCDR3Part").isNull())).then(pt.lit(0)).otherwise(pt.col("nMutationsCountGermlineVCDR3Part").cast("Int"))
+	jColExpr := pt.when(pt.col("nMutationsCountGermlineJCDR3Part").eq("region_not_covered").or(pt.col("nMutationsCountGermlineJCDR3Part").isNull())).then(pt.lit(0)).otherwise(pt.col("nMutationsCountGermlineJCDR3Part").cast("Int"))
+	currentDf = currentDf.withColumns(
+		vColExpr.plus(jColExpr).alias("nMutationsCountCDR3")
+	)
+	
+	// Calculate aaMutationsCountCDR3 by summing V and J germline CDR3 part amino acid mutations
+	// Handle "region_not_covered" as null, then convert to Int and fill nulls with 0 before summing
+	aaVColExpr := pt.when(pt.col("aaMutationsCountGermlineVCDR3Part").eq("region_not_covered").or(pt.col("aaMutationsCountGermlineVCDR3Part").isNull())).then(pt.lit(0)).otherwise(pt.col("aaMutationsCountGermlineVCDR3Part").cast("Int"))
+	aaJColExpr := pt.when(pt.col("aaMutationsCountGermlineJCDR3Part").eq("region_not_covered").or(pt.col("aaMutationsCountGermlineJCDR3Part").isNull())).then(pt.lit(0)).otherwise(pt.col("aaMutationsCountGermlineJCDR3Part").cast("Int"))
+	currentDf = currentDf.withColumns(
+		aaVColExpr.plus(aaJColExpr).alias("aaMutationsCountCDR3")
+	)
 
 	aggExpressions := []
 
