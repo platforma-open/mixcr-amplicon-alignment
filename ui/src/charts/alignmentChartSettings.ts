@@ -12,7 +12,6 @@ export function getAlignmentChartSettings(
 
     // Extract actual data from the alignment report
     const aligned = alignReport.aligned || 0;
-    const notAligned = alignReport.notAligned || 0;
     const notAlignedReasons = alignReport.notAlignedReasons || {};
 
     const result = [{ category: 'Success', value: aligned }];
