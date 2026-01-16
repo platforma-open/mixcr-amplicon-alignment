@@ -1,8 +1,9 @@
 import { test, expect } from 'vitest';
+import type { AlignReport } from '@platforma-open/milaboratories.mixcr-amplicon-alignment.model';
 
 // Test the core logic without importing UI components
 test('alignment chart data extraction logic', () => {
-  const mockAlignReport = {
+  const mockAlignReport: Partial<AlignReport> = {
     type: 'alignerReport',
     totalReadsProcessed: 1000,
     aligned: 850,
@@ -21,13 +22,13 @@ test('alignment chart data extraction logic', () => {
   };
 
   // Simulate the core logic from getAlignmentChartSettings
-  const extractAlignmentData = (alignReport: any) => {
+  const extractAlignmentData = (alignReport: Partial<AlignReport> | undefined) => {
     if (alignReport === undefined) return [];
 
     const aligned = alignReport.aligned || 0;
     const notAlignedReasons = alignReport.notAlignedReasons || {};
 
-    const result = [{ category: 'Success', value: aligned } as const];
+    const result: Array<{ category: string; value: number }> = [{ category: 'Success', value: aligned }];
 
     // Add not aligned reasons
     for (const [reason, count] of Object.entries(notAlignedReasons)) {
@@ -60,8 +61,7 @@ test('alignment chart data extraction logic', () => {
 });
 
 test('alignment chart data extraction with undefined report', () => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const extractAlignmentData = (alignReport: any) => {
+  const extractAlignmentData = (alignReport: Partial<AlignReport> | undefined) => {
     if (alignReport === undefined) return [];
     // ... rest of logic
     return [];
@@ -72,7 +72,7 @@ test('alignment chart data extraction with undefined report', () => {
 });
 
 test('alignment chart data extraction with empty notAlignedReasons', () => {
-  const mockAlignReport = {
+  const mockAlignReport: Partial<AlignReport> = {
     type: 'alignerReport',
     totalReadsProcessed: 1000,
     aligned: 1000,
@@ -80,13 +80,13 @@ test('alignment chart data extraction with empty notAlignedReasons', () => {
     notAlignedReasons: {},
   };
 
-  const extractAlignmentData = (alignReport: any) => {
+  const extractAlignmentData = (alignReport: Partial<AlignReport> | undefined) => {
     if (alignReport === undefined) return [];
 
     const aligned = alignReport.aligned || 0;
     const notAlignedReasons = alignReport.notAlignedReasons || {};
 
-    const result = [{ category: "Success", value: aligned }];
+    const result: Array<{ category: string; value: number }> = [{ category: 'Success', value: aligned }];
 
     // Add not aligned reasons
     for (const [reason, count] of Object.entries(notAlignedReasons)) {
