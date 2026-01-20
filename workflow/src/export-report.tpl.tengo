@@ -30,7 +30,8 @@ self.body(func(inputs) {
     isLibraryFileGzipped := inputs.isLibraryFileGzipped
     clonotypeTablesData := inputs.clonotypeTablesData
 
-	hasUmi := !is_undefined(presetSpecForBack.umiTags) && len(presetSpecForBack.umiTags) > 0
+	umiTags := inputs.umiTags
+	hasUmi := !is_undefined(umiTags) && len(umiTags) > 0
 
     chainInfos := {
 	"IGHeavy": { mixcrFilter: "IGH", name: "IG Heavy", shortName: "Heavy" },
@@ -173,7 +174,7 @@ self.body(func(inputs) {
     
     tsvFile := wfResult.getFile("qc-report-processed.tsv")
 
-    qcReportColumns := qcReportColumns(hasUmi, sampleIdAxisSpec, chains)
+    qcReportColumns := qcReportColumns(hasUmi, sampleIdAxisSpec, chains, umiTags)
     reportColumnsSpec := qcReportColumns.reportColumnsSpec
 
     qcReportTable := xsv.importFile(
