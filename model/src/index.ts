@@ -13,6 +13,8 @@ export type CloneClusteringMode = 'relaxed' | 'default' | 'off';
 export type AssemblingFeature = 'VDJRegion' | 'CDR3';
 
 export interface BlockArgs {
+  defaultBlockLabel?: string;
+  customBlockLabel?: string;
   datasetRef?: PlRef;
   chains?: string; // default: 'IGHeavy'
   title?: string;
@@ -40,6 +42,8 @@ export interface BlockArgsValid extends BlockArgs {
 export const platforma = BlockModel.create('Heavy')
 
   .withArgs<BlockArgs>({
+    defaultBlockLabel: '',
+    customBlockLabel: '',
     chains: 'IGHeavy',
     cloneClusteringMode: 'relaxed',
     tagPattern: '',
@@ -150,12 +154,16 @@ export const platforma = BlockModel.create('Heavy')
     });
   })
 
-  .output('pt', (ctx) => {
+  .outputWithStatus('pt', (ctx) => {
     const pCols = ctx.outputs?.resolve({ field: 'qcReportTable', assertFieldType: 'Input', allowPermanentAbsence: true })?.getPColumns();
     if (pCols === undefined) {
       return undefined;
     }
-    return createPlDataTableV2(ctx, pCols, ctx.uiState.tableState);
+    return createPlDataTableV2(
+      ctx,
+      pCols,
+      ctx.uiState.tableState,
+    );
   })
 
   .sections((_ctx) => {
@@ -171,11 +179,9 @@ export const platforma = BlockModel.create('Heavy')
 
   .output('isRunning', (ctx) => ctx.outputs?.getIsReadyOrError() === false)
 
-  .title((ctx) =>
-    ctx.args.title
-      ? `MiXCR Amplicon Alignment - ${ctx.args.title}`
-      : 'MiXCR Amplicon Alignment',
-  )
+  .title(() => 'MiXCR Amplicon Alignment')
+
+  .subtitle((ctx) => ctx.args.customBlockLabel || ctx.args.defaultBlockLabel || '')
 
   .done(2);
 
