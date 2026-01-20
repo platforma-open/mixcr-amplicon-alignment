@@ -1,5 +1,16 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment.ui
 
+## 1.11.0
+
+### Minor Changes
+
+- 8c5c9ff: Support custom block title and running status
+
+### Patch Changes
+
+- Updated dependencies [8c5c9ff]
+  - @platforma-open/milaboratories.mixcr-amplicon-alignment.model@1.11.0
+
 ## 1.10.0
 
 ### Minor Changes
