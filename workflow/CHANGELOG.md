@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow
 
+## 1.15.0
+
+### Minor Changes
+
+- a08b796: multiple UMI bug fix
+
 ## 1.14.0
 
 ### Minor Changes
