@@ -42,7 +42,7 @@ export interface BlockArgsValid extends BlockArgs {
 export const platforma = BlockModel.create('Heavy')
 
   .withArgs<BlockArgs>({
-    defaultBlockLabel: '',
+    defaultBlockLabel: 'Select Dataset',
     customBlockLabel: '',
     chains: 'IGHeavy',
     cloneClusteringMode: 'relaxed',
