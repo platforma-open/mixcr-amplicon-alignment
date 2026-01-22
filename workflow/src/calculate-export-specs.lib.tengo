@@ -581,10 +581,10 @@ inFrameFeatures := {
 	orderP = 9400
 	cdr3Feature := "CDR3"
 	cdr3FeatureL := text.to_lower(formatId(cdr3Feature))
-	
+
 	// Nucleotide mutations count
 	columnName := "nMutationsCount" + cdr3Feature
-	columnsSpecPerClonotypeNoAggregates += [ {
+	cdr3DistanceColumnsSpec := [ {
 		column: columnName,
 		id: "n-mutations-count-" + cdr3FeatureL,
 		allowNA: true,
@@ -600,11 +600,11 @@ inFrameFeatures := {
 			})
 		}
 	} ]
-	
+
 	// Amino acid mutations count
 	orderP = 8400
 	columnName = "aaMutationsCount" + cdr3Feature
-	columnsSpecPerClonotypeNoAggregates += [ {
+	cdr3DistanceColumnsSpec = append(cdr3DistanceColumnsSpec, {
 		column: columnName,
 		id: "aa-mutations-count-" + cdr3FeatureL,
 		allowNA: true,
@@ -619,7 +619,7 @@ inFrameFeatures := {
 				"pl7.app/label": "AA mutations count in " + cdr3Feature
 			})
 		}
-	} ]
+	} )
 
 	// Flags: productive, oof, stop codons
 
@@ -733,6 +733,7 @@ inFrameFeatures := {
 		columnsSpecPerSample: columnsSpecPerSample,
 		columnsSpecPerClonotypeNoAggregates: columnsSpecPerClonotypeNoAggregates,
 		columnsSpecPerClonotypeAggregates: columnsSpecPerClonotypeAggregates,
+		cdr3DistanceColumnsSpec: cdr3DistanceColumnsSpec,
 
 		columnsSpec: columnsSpec,
 

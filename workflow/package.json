@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@platforma-sdk/workflow-tengo": "catalog:",
+    "@platforma-open/milaboratories.mixcr-amplicon-alignment.software": "workspace:*",
     "@platforma-open/milaboratories.software-mixcr": "catalog:",
     "@platforma-open/milaboratories.software-repseqio": "catalog:"
   },
