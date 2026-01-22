@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { AgGridVue } from 'ag-grid-vue3';
 
+import { plRefsEqual } from '@platforma-sdk/model';
 import type { PlAgHeaderComponentParams } from '@platforma-sdk/ui-vue';
 import {
   AgGridTheme,
@@ -24,7 +25,7 @@ import type {
   GridReadyEvent,
 } from 'ag-grid-enterprise';
 import { ClientSideRowModelModule, ModuleRegistry } from 'ag-grid-enterprise';
-import { computed, reactive, shallowRef, watch } from 'vue';
+import { computed, reactive, shallowRef, watch, watchEffect } from 'vue';
 import { useApp } from '../app';
 import { getAlignmentChartSettings } from '../charts/alignmentChartSettings';
 import { parseProgressString } from '../parseProgress';
@@ -36,6 +37,29 @@ import SettingsPanel from './SettingsPanel.vue';
 import { ExportRawBtn } from '../ExportRawBtn';
 
 const app = useApp();
+
+// updating defaultBlockLabel
+watchEffect(() => {
+  const parts: string[] = [];
+  // Add dataset name if available
+  if (app.model.args.datasetRef) {
+    const inputOption = app.model.outputs.inputOptions?.find(
+      (p) => app.model.args.datasetRef && plRefsEqual(p.ref, app.model.args.datasetRef),
+    );
+    if (inputOption?.label) {
+      parts.push(inputOption.label);
+    }
+  }
+  // Add chains if available
+  if (app.model.args.chains) {
+    parts.push(app.model.args.chains);
+  }
+  // Add assembling feature if available
+  if (app.model.args.assemblingFeature) {
+    parts.push(app.model.args.assemblingFeature);
+  }
+  app.model.args.defaultBlockLabel = parts.filter(Boolean).join(' - ');
+});
 
 const result = computed(() =>
   resultMap.value ? [...resultMap.value.values()] : [],
@@ -159,8 +183,9 @@ const showLogs = () => {
 </script>
 
 <template>
-  <PlBlockPage>
-    <template #title>MiXCR Amplicon Alignment</template>
+  <PlBlockPage
+    title="MiXCR Amplicon Alignment"
+  >
     <template #append>
       <ExportRawBtn />
       <PlBtnGhost @click.stop="showLogs">

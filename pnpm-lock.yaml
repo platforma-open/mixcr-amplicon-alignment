@@ -196,7 +196,7 @@ importers:
     dependencies:
       '@milaboratories/helpers':
         specifier: 'catalog:'
-        version: 1.12.1
+        version: 1.13.0
       '@platforma-open/milaboratories.mixcr-amplicon-alignment.model':
         specifier: workspace:*
         version: link:../model
@@ -1210,8 +1210,8 @@ packages:
     resolution: {integrity: sha512-Eg3AQMJbVClYhdvhogdlW3Ys9EdLLl8ZTqG675iLwoO64ZJcQOAnIPjXwl4zJ/bZWx4nEhRF9AvwxRdc08fikQ==}
     engines: {node: '>=22'}
 
-  '@milaboratories/helpers@1.12.1':
-    resolution: {integrity: sha512-s43CmagHKmJ8Vvr2J586Z8D73siA06SGGVXRNn3BMHvtRethAeGcH2ti2+eQyQWxsPMCK3SM63DZrtnJyPynIQ==}
+  '@milaboratories/helpers@1.13.0':
+    resolution: {integrity: sha512-gsrH9uXQZ6eXM3E3fJZWIS5E5UMEQyohtyjzVXG69aQoecTctC88XUxBv0CgNoA+IAuiB2hE+whZmWU7ifq8wA==}
     engines: {node: '>=22'}
 
   '@milaboratories/helpers@1.13.0':
@@ -1285,8 +1285,8 @@ packages:
     resolution: {integrity: sha512-Q20ACej9wQCdH+vchl+OhaTcfRkdnvb4qvy8qdIE8z399Qx1t5CWzDNOoUqYQPifeHqakKfNno5jPEPgUxg7mw==}
     engines: {node: '>=22.19.0'}
 
-  '@milaboratories/ptabler-expression-js@1.1.7':
-    resolution: {integrity: sha512-IdKg96SgKc8YBR8XPCKS8kmEKMY1mxjyOI3Z3ecWq0uxUTe0St4wOXQyjPqA8WoSALKMg75JtYHXQDyccylrEg==}
+  '@milaboratories/ptabler-expression-js@1.1.9':
+    resolution: {integrity: sha512-fH0gix6ObRI9/TgPk1S40EkdFLskSdh6AloNBhkedH7WyTwOmM7zmtjmp+n7TiRHzRfufqzwLOZ9TFb7qAXQRA==}
 
   '@milaboratories/ptabler-expression-js@1.1.9':
     resolution: {integrity: sha512-fH0gix6ObRI9/TgPk1S40EkdFLskSdh6AloNBhkedH7WyTwOmM7zmtjmp+n7TiRHzRfufqzwLOZ9TFb7qAXQRA==}
@@ -1359,8 +1359,8 @@ packages:
   '@platforma-open/milaboratories.software-mixcr@4.7.0-279-develop':
     resolution: {integrity: sha512-eUPEK4Oa5r1ubEzJXTD+bDww1qyXRSnusBrmqffifPABbjq5PslpCVkhxhyuGoUABIUOuVKw2UyNTfLEoDo7kQ==}
 
-  '@platforma-open/milaboratories.software-ptabler.schema@1.13.0':
-    resolution: {integrity: sha512-s0hv6fOvO7XSpvGB4x1uUyA9O0HYFjSxdlu3LypowhiBln1VIqeJYw/0tiQNnx2zRUp+A1mSlUVWLKczrox31g==}
+  '@platforma-open/milaboratories.software-ptabler.schema@1.13.2':
+    resolution: {integrity: sha512-xQ5eD6WNLL490bQY2kEH/Dz+0SE5uyLexwOQzoUpKhBqdYb4eIKGA2NnZ9SDOgfDoiNFzTeYGQhuI+R3W6P0Og==}
 
   '@platforma-open/milaboratories.software-ptabler.schema@1.13.2':
     resolution: {integrity: sha512-xQ5eD6WNLL490bQY2kEH/Dz+0SE5uyLexwOQzoUpKhBqdYb4eIKGA2NnZ9SDOgfDoiNFzTeYGQhuI+R3W6P0Og==}
@@ -1437,8 +1437,8 @@ packages:
       typescript: ~5.6.3
       typescript-eslint: ^8.17.0
 
-  '@platforma-sdk/model@1.48.4':
-    resolution: {integrity: sha512-egwiMHitmFzhrB2ZHPZ0x9lpC8MdaTKRfSCcaMIm9LWhlMcVv9Tb6sfTHVFol+8qAZgtV4I5J3PHTPJvcIWG2Q==}
+  '@platforma-sdk/model@1.51.6':
+    resolution: {integrity: sha512-UgFbC7gPtH4qMwZ0opbM7Tcs8mCMlbjHzJsqs1wD2gxc22l4QvAQOHiIZh2i8dmXny8ny+TwQ/6L8nPaRHqk5g==}
 
   '@platforma-sdk/model@1.51.5':
     resolution: {integrity: sha512-uDUsTZpEK1yX3NHjosfd+Zz/kBlSt0E3AUxXqtxdvDAHvnHuQA3ZUmebmRAmTC+wdng2gsdLJ0faa+rl5BiUdA==}
@@ -1455,8 +1455,8 @@ packages:
   '@platforma-sdk/test@1.51.5':
     resolution: {integrity: sha512-p1WGJCpbv2sROSZJC8f1uL7BlcmAXJQK37WDVdWEY2a+Jna8i8bQZGCXiFXPoz+KjXf9cycxNizFM+Q4ju8Dbw==}
 
-  '@platforma-sdk/ui-vue@1.48.8':
-    resolution: {integrity: sha512-+Gw2nEnfcf2mrnWVZfqewUv9+kjDmeLvMVctA7seeKs8tM4PygylyV052BePG//QxfF+ekt31jfqSaNuN7eeIg==}
+  '@platforma-sdk/ui-vue@1.51.8':
+    resolution: {integrity: sha512-3GZQ0p/85k2jiakhe1ovvWJyOXya3c4emtcGEkpJWThKDpch9b1mVU39szyauuEK5PUCcpE2NRBRETf23fpuKg==}
 
   '@platforma-sdk/workflow-tengo@5.8.0':
     resolution: {integrity: sha512-OJnnjBXt1VcS1QNMC90PlkXrWJoKQ/Nl3/NeTqzTmq1j5gT3cZXoIQYu1c31KZXBungUo8TphymBcs+qDGpVgA==}
@@ -4052,6 +4052,7 @@ packages:
   tar@7.5.2:
     resolution: {integrity: sha512-7NyxrTE4Anh8km8iEy7o0QYPs+0JKBTj5ZaqHg6B39erLg0qYXN3BijtShwbsNSvQ+LN75+KV+C4QR/f6Gwnpg==}
     engines: {node: '>=18'}
+    deprecated: Old versions of tar are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exhorbitant rates) by contacting i@izs.me
 
   term-size@2.2.1:
     resolution: {integrity: sha512-wK0Ri4fOGjv/XPy8SBHZChl8CM7uMc5VML7SqiQ0zG7+J5Vr+RMQDoHa2CNT6KHUnTGIXH34UDMkPzAUyapBZg==}
@@ -5808,7 +5809,7 @@ snapshots:
 
   '@milaboratories/helpers@1.12.0': {}
 
-  '@milaboratories/helpers@1.12.1': {}
+  '@milaboratories/helpers@1.13.0': {}
 
   '@milaboratories/helpers@1.13.0': {}
 
@@ -5981,13 +5982,13 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@milaboratories/pl-model-common@1.21.10':
+  '@milaboratories/pl-model-common@1.21.8':
     dependencies:
       '@milaboratories/pl-error-like': 1.12.5
       canonicalize: 2.1.0
       zod: 3.23.8
 
-  '@milaboratories/pl-model-common@1.21.8':
+  '@milaboratories/pl-model-common@1.23.0':
     dependencies:
       '@milaboratories/pl-error-like': 1.12.5
       canonicalize: 2.1.0
@@ -6039,9 +6040,9 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@milaboratories/ptabler-expression-js@1.1.7':
+  '@milaboratories/ptabler-expression-js@1.1.9':
     dependencies:
-      '@platforma-open/milaboratories.software-ptabler.schema': 1.13.0
+      '@platforma-open/milaboratories.software-ptabler.schema': 1.13.2
 
   '@milaboratories/ptabler-expression-js@1.1.9':
     dependencies:
@@ -6114,8 +6115,8 @@ snapshots:
 
   '@milaboratories/uikit@2.8.3(typescript@5.6.3)':
     dependencies:
-      '@milaboratories/helpers': 1.12.1
-      '@platforma-sdk/model': 1.48.4
+      '@milaboratories/helpers': 1.13.0
+      '@platforma-sdk/model': 1.51.6
       '@types/d3-array': 3.2.2
       '@types/d3-axis': 3.0.6
       '@types/d3-scale': 4.0.9
@@ -6190,9 +6191,9 @@ snapshots:
 
   '@platforma-open/milaboratories.software-mixcr@4.7.0-279-develop': {}
 
-  '@platforma-open/milaboratories.software-ptabler.schema@1.13.0':
+  '@platforma-open/milaboratories.software-ptabler.schema@1.13.2':
     dependencies:
-      '@milaboratories/pl-model-common': 1.21.10
+      '@milaboratories/pl-model-common': 1.23.0
 
   '@platforma-open/milaboratories.software-ptabler.schema@1.13.2':
     dependencies:
@@ -6304,11 +6305,11 @@ snapshots:
       typescript: 5.6.3
       typescript-eslint: 8.50.0(eslint@9.39.2)(typescript@5.6.3)
 
-  '@platforma-sdk/model@1.48.4':
+  '@platforma-sdk/model@1.51.6':
     dependencies:
       '@milaboratories/pl-error-like': 1.12.5
-      '@milaboratories/pl-model-common': 1.21.10
-      '@milaboratories/ptabler-expression-js': 1.1.7
+      '@milaboratories/pl-model-common': 1.23.0
+      '@milaboratories/ptabler-expression-js': 1.1.9
       canonicalize: 2.1.0
       es-toolkit: 1.43.0
       utility-types: 3.11.0
