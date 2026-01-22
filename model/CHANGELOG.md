@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment.model
 
+## 1.11.0
+
+### Minor Changes
+
+- 8c5c9ff: Support custom block title and running status
+
 ## 1.10.0
 
 ### Minor Changes
