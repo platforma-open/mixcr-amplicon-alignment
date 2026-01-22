@@ -40,16 +40,19 @@ watch(
         fastaError.value = undefined;
         app.model.args.vGenes = result.vGenes;
         app.model.args.jGenes = result.jGenes;
+        app.model.args.cdr3Sequences = result.cdr3Sequences;
       } else {
         // show error and clear sequences if validation fails
         fastaError.value = result.error;
         app.model.args.vGenes = undefined;
         app.model.args.jGenes = undefined;
+        app.model.args.cdr3Sequences = undefined;
       }
     } else {
       fastaError.value = undefined;
       app.model.args.vGenes = undefined;
       app.model.args.jGenes = undefined;
+      app.model.args.cdr3Sequences = undefined;
     }
   },
   { immediate: true },

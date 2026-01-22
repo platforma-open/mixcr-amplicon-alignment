@@ -3,6 +3,7 @@ export interface FastaParseResult {
   error?: string;
   vGenes?: string;
   jGenes?: string;
+  cdr3Sequences?: string;
 }
 
 interface FastaRecord {
@@ -112,6 +113,7 @@ export function parseFasta(content: string): FastaParseResult {
 
   const vGeneParts: string[] = [];
   const jGeneParts: string[] = [];
+  const cdr3Parts: string[] = [];
   const headers: string[] = [];
 
   // Validate each record
@@ -171,9 +173,9 @@ export function parseFasta(content: string): FastaParseResult {
       return { isValid: false, error };
     }
 
-    // Apply the regex validation: C[ACDEFGHIKLMNPQRSTVWY]+(?:[GAST])?[WFL]
+    // Apply the regex validation and capture CDR3 (up to the conserved W/F/L/Y/I)
     const validationRegex
-      = /C[ACDEFGHIKLMNPQRSTVWY]{4,50}[FWYLI][ACDEFGHIKLMNPQRSTVWY]{0,5}G[ACDEFGHIKLMNPQRSTVWY]G/;
+      = /C([ACDEFGHIKLMNPQRSTVWY]{4,50}[FWYLI])[ACDEFGHIKLMNPQRSTVWY]{0,5}G[ACDEFGHIKLMNPQRSTVWY]G/;
 
     // Only search from position 80 onwards (240 nucleotides)
     const searchStartPosition = 80; // 240 nucleotides / 3 = 80 amino acids
@@ -188,19 +190,10 @@ export function parseFasta(content: string): FastaParseResult {
     // Extract the two sequences with headers
     const patternStartInFullSequence = searchStartPosition + match.index;
 
-    // Find CDR3 boundaries: from first C to last W/F/L/Y/I in pattern
+    // Find CDR3 boundaries: from first C to the conserved W/F/L/Y/I captured by regex
     const firstCysteinePosition = patternStartInFullSequence; // First C in pattern
-    // Find the last conserved residue (W/F/L/Y/I) in the pattern - this marks the end of CDR3
-    const patternSequence = match[0];
-    let cdr3EndInPattern = patternSequence.length - 1;
-    // Look for the last W/F/L/Y/I before the final G...G motif
-    for (let i = patternSequence.length - 1; i >= 0; i--) {
-      if (['W', 'F', 'L', 'Y', 'I'].includes(patternSequence[i])) {
-        cdr3EndInPattern = i;
-        break;
-      }
-    }
-    const cdr3EndInFullSequence = patternStartInFullSequence + cdr3EndInPattern + 1;
+    const cdr3AaLength = match[1].length + 1; // include leading C
+    const cdr3EndInFullSequence = patternStartInFullSequence + cdr3AaLength;
 
     // Calculate CDR3 nucleotide boundaries
     const cdr3StartNucleotides = firstCysteinePosition * 3; // Start of CDR3 (first C)
@@ -220,19 +213,29 @@ export function parseFasta(content: string): FastaParseResult {
     const jGeneHeader = header ? `${header}_Jgene` : 'ref_Jgene';
     const jGene = `>${jGeneHeader}\n${jGeneSequence}`;
 
+    const cdr3Sequence = referenceSequence.substring(
+      cdr3StartNucleotides,
+      cdr3EndNucleotides,
+    );
+    const cdr3Header = header ? `${header}_CDR3` : 'ref_CDR3';
+    const cdr3 = `>${cdr3Header}\n${cdr3Sequence}`;
+
     vGeneParts.push(vGene);
     jGeneParts.push(jGene);
+    cdr3Parts.push(cdr3);
     if (header) headers.push(header);
   }
 
   // Create single FASTA strings for all V and J genes
   const vGenes = vGeneParts.join('\n');
   const jGenes = jGeneParts.join('\n');
+  const cdr3Sequences = cdr3Parts.join('\n');
 
   return {
     isValid: true,
     vGenes,
     jGenes,
+    cdr3Sequences,
   };
 }
 

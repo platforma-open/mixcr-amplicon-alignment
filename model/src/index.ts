@@ -19,6 +19,7 @@ export interface BlockArgs {
   tagPattern: string;
   vGenes?: string; // now a single FASTA string
   jGenes?: string; // now a single FASTA string
+  cdr3Sequences?: string; // FASTA with CDR3 per reference
   limitInput?: number;
   perProcessMemGB?: number; // 1GB or more required
   perProcessCPUs?: number; // 1 or more required

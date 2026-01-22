@@ -48,10 +48,16 @@ wf.body(func(args) {
             saveFile("jGene.fasta")
 	}
 
+	if args.cdr3Sequences != "" {
+		fastaFileCmdBuilder.writeFile("cdr3Sequences.fasta", args.cdr3Sequences).
+            saveFile("cdr3Sequences.fasta")
+	}
+
     fastaFileCmd := fastaFileCmdBuilder.run()
 
     vGeneFasta := fastaFileCmd.getFile("vGene.fasta")
     jGeneFasta := fastaFileCmd.getFile("jGene.fasta")
+    cdr3SequencesFasta := fastaFileCmd.getFile("cdr3Sequences.fasta")
 
 	chainInfos := {
 		"IGHeavy": { mixcrFilter: "IGH", name: "IG Heavy", shortName: "Heavy" },
@@ -79,6 +85,7 @@ wf.body(func(args) {
 		inputData: input.getFutureInputField("data"),
 		referenceLibrary: referenceLibrary,
 		limitInput: limitInput,
+		cdr3Sequences: cdr3SequencesFasta,
 
 		params: smart.createJsonResource({
 			blockId: blockId,
