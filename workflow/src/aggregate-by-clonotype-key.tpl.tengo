@@ -110,8 +110,11 @@ self.body(func(inputs) {
 	if !is_undefined(params.cdr3Sequences) {
 		cdr3DistanceCmd := exec.builder().
 			software(cdr3DistanceSw).
+			mem("8GB").
+			cpu(1).
+			writeFile("cdr3-sequences.fasta", params.cdr3Sequences).saveFile("cdr3-sequences.fasta").
 			arg("--tsv").arg("cdr3-sequences.tsv").addFile("cdr3-sequences.tsv", cdr3Tsv).
-			arg("--ref-fasta").arg("cdr3-sequences.fasta").addFile("cdr3-sequences.fasta", params.cdr3Sequences).
+			arg("--ref-fasta").arg("cdr3-sequences.fasta").
 			arg("--out").arg("cdr3-distances.tsv").saveFile("cdr3-distances.tsv")
 
 		cdr3DistanceResult := cdr3DistanceCmd.run()
