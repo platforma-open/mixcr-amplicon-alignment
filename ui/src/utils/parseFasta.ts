@@ -127,6 +127,7 @@ export function parseFasta(content: string): FastaParseResult {
     }
 
     const recordIdentifier = header ? `Record "${header}"` : `Record ${i + 1}`;
+    const headerRoot = header ? header.split('|')[0]?.trim() : '';
 
     // Clean the sequence (remove whitespace, convert to uppercase, and replace IUPAC wildcards with A)
     const cleanSequence = sequence
@@ -204,13 +205,13 @@ export function parseFasta(content: string): FastaParseResult {
     // V gene: from beginning to first cysteine + half of CDR3
     const vGeneEndNucleotides = cdr3StartNucleotides + cdr3HalfLengthNucleotides;
     const vGeneSequence = referenceSequence.substring(0, vGeneEndNucleotides);
-    const vGeneHeader = header ? `${header}_Vgene` : 'ref_Vgene';
+    const vGeneHeader = headerRoot ? `${headerRoot}_Vgene` : 'ref_Vgene';
     const vGene = `>${vGeneHeader}\n${vGeneSequence}`;
 
     // J gene: from second half of CDR3 to sequence end
     const jGeneStartNucleotides = cdr3StartNucleotides + cdr3HalfLengthNucleotides;
     const jGeneSequence = referenceSequence.substring(jGeneStartNucleotides);
-    const jGeneHeader = header ? `${header}_Jgene` : 'ref_Jgene';
+    const jGeneHeader = headerRoot ? `${headerRoot}_Jgene` : 'ref_Jgene';
     const jGene = `>${jGeneHeader}\n${jGeneSequence}`;
 
     const cdr3Sequence = referenceSequence.substring(
