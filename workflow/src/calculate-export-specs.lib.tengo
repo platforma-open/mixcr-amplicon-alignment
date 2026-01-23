@@ -94,6 +94,7 @@ calculateExportSpecs := func(presetSpecForBack, blockId) {
 
 	columnsSpecPerSample := []
 	columnsSpecPerClonotypeNoAggregates := []
+	mutationColumns := []
 
 	clonotypeLabelColumn := {
 		column: "clonotypeLabel",
@@ -472,7 +473,7 @@ inFrameFeatures := {
 				}
 				
 				for variant in mutationColumnVariants {
-					columnsSpecPerClonotypeNoAggregates += [ {
+					mutationColumns += [ {
 							column: alphabetShortMixcr + variant.name + coreFeature,
 							id: alphabetShortMixcr + variant.idPart + geneL,
 							allowNA: true,
@@ -508,8 +509,9 @@ inFrameFeatures := {
 				continue
 			}
 			featureL := text.to_lower(formatId(featureU))
+			rateOrderP := orderP - 1
 			columnName := "nMutationsCount" + featureU
-			columnsSpecPerClonotypeNoAggregates += [ {
+			mutationColumns += [ {
 				column: columnName,
 				id: "n-mutations-count-" + featureL,
 				allowNA: true,
@@ -525,6 +527,24 @@ inFrameFeatures := {
 					})
 				}
 			} ]
+			columnName = "nMutationsRate" + featureU
+			mutationColumns += [ {
+				column: columnName,
+				id: "n-mutations-rate-" + featureL,
+				allowNA: true,
+				naRegex: "region_not_covered",
+				spec: {
+					valueType: "Double",
+					name: "pl7.app/vdj/sequence/nMutationsRate",
+					domain: {
+						"pl7.app/vdj/feature": featureU
+					},
+					annotations: a(rateOrderP, false, {
+						"pl7.app/label": "Nt mutations rate in " + featureU
+					})
+				}
+			} ]
+			exportArgs += [ [ "-nMutationRate", featureU ] ]
 			orderP -= 100
 		}
 		// Call -allNMutationsCount with boundaries FR1Begin FR4End (no mutation type parameter)
@@ -543,8 +563,9 @@ inFrameFeatures := {
 				continue
 			}
 			featureL := text.to_lower(formatId(featureU))
+			rateOrderP := orderP - 1
 			columnName := "aaMutationsCount" + featureU
-			columnsSpecPerClonotypeNoAggregates += [ {
+			mutationColumns += [ {
 				column: columnName,
 				id: "aa-mutations-count-" + featureL,
 				allowNA: true,
@@ -560,11 +581,30 @@ inFrameFeatures := {
 					})
 				}
 			} ]
+			columnName = "aaMutationsRate" + featureU
+			mutationColumns += [ {
+				column: columnName,
+				id: "aa-mutations-rate-" + featureL,
+				allowNA: true,
+				naRegex: "region_not_covered",
+				spec: {
+					valueType: "Double",
+					name: "pl7.app/vdj/sequence/aaMutationsRate",
+					domain: {
+						"pl7.app/vdj/feature": featureU
+					},
+					annotations: a(rateOrderP, false, {
+						"pl7.app/label": "AA mutations rate in " + featureU
+					})
+				}
+			} ]
+			exportArgs += [ [ "-aaMutationRate", featureU ] ]
 			orderP -= 100
 		}
 		// Call -allAAMutationsCount with boundaries FR1Begin FR4End (no mutation type parameter)
 		// This will export columns for all features between FR1Begin and FR4End with all mutation types
 		exportArgs += [ [ "-allAAMutationsCount", "FR1Begin", "FR4End" ] ]
+		
 	}
 	
 	// Export germline CDR3 part mutations for both VDJRegion and CDR3 assembling features
@@ -621,7 +661,48 @@ inFrameFeatures := {
 		}
 	} )
 
+	// Nucleotide mutations rate
+	orderP = 9300
+	columnName = "nMutationsRate" + cdr3Feature
+	cdr3DistanceColumnsSpec = append(cdr3DistanceColumnsSpec, {
+		column: columnName,
+		id: "n-mutations-rate-" + cdr3FeatureL,
+		allowNA: true,
+		naRegex: "region_not_covered",
+		spec: {
+			valueType: "Double",
+			name: "pl7.app/vdj/sequence/nMutationsRate",
+			domain: {
+				"pl7.app/vdj/feature": cdr3Feature
+			},
+			annotations: a(orderP, false, {
+				"pl7.app/label": "Nt mutations rate in " + cdr3Feature
+			})
+		}
+	})
+
+	// Amino acid mutations rate
+	orderP = 8300
+	columnName = "aaMutationsRate" + cdr3Feature
+	cdr3DistanceColumnsSpec = append(cdr3DistanceColumnsSpec, {
+		column: columnName,
+		id: "aa-mutations-rate-" + cdr3FeatureL,
+		allowNA: true,
+		naRegex: "region_not_covered",
+		spec: {
+			valueType: "Double",
+			name: "pl7.app/vdj/sequence/aaMutationsRate",
+			domain: {
+				"pl7.app/vdj/feature": cdr3Feature
+			},
+			annotations: a(orderP, false, {
+				"pl7.app/label": "AA mutations rate in " + cdr3Feature
+			})
+		}
+	})
+
 	// Flags: productive, oof, stop codons
+	orderP = 12000
 
 	flagColumnVariants := [ {
 			columnPrefix: "isProductive",
@@ -676,6 +757,7 @@ inFrameFeatures := {
 
 
 	// All columns are added
+	columnsSpecPerClonotypeNoAggregates += mutationColumns
 
 	columnsSpec := columnsSpecPerSample + columnsSpecPerClonotypeNoAggregates + columnsSpecPerClonotypeAggregates
 
