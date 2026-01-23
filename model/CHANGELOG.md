@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment.model
 
+## 1.12.0
+
+### Minor Changes
+
+- 187f583: Fix repseqio fasta generation, dependencies updates
+
 ## 1.11.0
 
 ### Minor Changes
