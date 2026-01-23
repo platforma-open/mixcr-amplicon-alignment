@@ -28,25 +28,25 @@ catalogs:
       specifier: ^2.5.0-13-master
       version: 2.5.0-25-master
     '@platforma-sdk/block-tools':
-      specifier: 2.6.31
+      specifier: ^2.6.31
       version: 2.6.31
+    '@platforma-sdk/blocks-deps-updater':
+      specifier: ^2.0.0
+      version: 2.0.0
     '@platforma-sdk/eslint-config':
       specifier: 1.2.0
       version: 1.2.0
     '@platforma-sdk/model':
-      specifier: 1.52.3
+      specifier: ^1.52.3
       version: 1.52.3
-    '@platforma-sdk/package-builder':
-      specifier: 3.11.0
-      version: 3.11.0
     '@platforma-sdk/tengo-builder':
-      specifier: 2.4.11
+      specifier: ^2.4.11
       version: 2.4.11
     '@platforma-sdk/test':
-      specifier: 1.52.4
+      specifier: ^1.52.4
       version: 1.52.4
     '@platforma-sdk/ui-vue':
-      specifier: 1.52.3
+      specifier: ^1.52.3
       version: 1.52.3
     '@platforma-sdk/workflow-tengo':
       specifier: 5.8.0

@@ -12,9 +12,6 @@ repseqioSw := assets.importSoftware("@platforma-open/milaboratories.software-rep
 self.defineOutputs("referenceLibrary", "debugOutput")
 
 self.body(func(inputs) {
-	// Get V and J gene FASTA files from prerun
-	vGeneFasta := inputs.vGeneFasta
-	jGeneFasta := inputs.jGeneFasta
 	
 	// Create repseqio command to generate reference library
 	repseqioVgeneCmd := exec.builder().
@@ -26,7 +23,8 @@ self.body(func(inputs) {
 		arg("--taxon-id").arg("1111").
 		arg("--gene-feature").arg("VRegion").
 		arg("--name-index").arg("0").
-		arg("vGene.fasta").addFile("vGene.fasta", vGeneFasta).
+		writeFile("vGene.fasta", inputs.vGenes).saveFile("vGene.fasta").
+		arg("vGene.fasta").
 		arg("vGene.json").saveFile("vGene.json").
 		cpu(1).mem("4GB")
 	
@@ -35,6 +33,7 @@ self.body(func(inputs) {
 	
 	// Get the generated reference library file
 	referenceLibraryVgene := repseqioVgeneResult.getFile("vGene.json")
+	vGeneFasta := repseqioVgeneResult.getFile("vGene.fasta")
 
 	repseqioJgeneCmd := exec.builder().
 		software(repseqioSw).
@@ -45,13 +44,14 @@ self.body(func(inputs) {
 		arg("--taxon-id").arg("1111").
 		arg("--gene-feature").arg("JRegion").
 		arg("--name-index").arg("0").
-		arg("jGene.fasta").addFile("jGene.fasta", jGeneFasta).
+		writeFile("jGene.fasta", inputs.jGenes).saveFile("jGene.fasta").
+		arg("jGene.fasta").
 		arg("jGene.json").saveFile("jGene.json").
 		cpu(1).mem("4GB")
 	
 	repseqioJgeneResult := repseqioJgeneCmd.run()
 	referenceLibraryJgene := repseqioJgeneResult.getFile("jGene.json")
-
+	jGeneFasta := repseqioJgeneResult.getFile("jGene.fasta")
 	repseqioMergeCmd := exec.builder().
 		software(repseqioSw).
 		arg("merge").
