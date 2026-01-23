@@ -91,13 +91,10 @@ calculateExportSpecs := func(presetSpecForBack, blockId) {
 			[ "-jGene" ]
 		]
 	}
-	if splitByC {
-		clonotypeKeyColumns += ["bestCGene"]
-		clonotypeKeyArgs += [ [ "-cGene" ] ]
-	}
 
 	columnsSpecPerSample := []
 	columnsSpecPerClonotypeNoAggregates := []
+	mutationColumns := []
 
 	clonotypeLabelColumn := {
 		column: "clonotypeLabel",
@@ -419,14 +416,15 @@ inFrameFeatures := {
 			argSuffix: "Gene",
 			visible: true
 		} ]
-	for vdjcU in ["V", "D", "J", "C"] {
+	// Only export V and J genes (D and C are excluded)
+	for vdjcU in ["V", "J"] {
 		vdjcL := text.to_lower(vdjcU)
 		for variant in geneHitColumnVariants {
 			columnsSpecPerClonotypeNoAggregates += [ {
 					column: "best" + vdjcU + variant.columnNameSuffix,
 					id: "best-" + vdjcL + variant.idSuffix,
 					naRegex: "",
-					allowNA: vdjcU == "C" || vdjcU == "D",
+					allowNA: false,
 					spec: {
 						name: variant.name,
 						valueType: "String",
@@ -475,7 +473,7 @@ inFrameFeatures := {
 				}
 				
 				for variant in mutationColumnVariants {
-					columnsSpecPerClonotypeNoAggregates += [ {
+					mutationColumns += [ {
 							column: alphabetShortMixcr + variant.name + coreFeature,
 							id: alphabetShortMixcr + variant.idPart + geneL,
 							allowNA: true,
@@ -498,7 +496,213 @@ inFrameFeatures := {
 		}
 	}
 
+	// All nucleotide mutations count for each feature (only for VDJRegion assembling feature)
+	if assemblingFeature == "VDJRegion" {
+		orderP = 9500
+		
+		// MixCR -allNMutationsCount exports columns for all features between specified boundaries.
+		// We add column specs for each feature and call -allNMutationsCount once with boundaries
+		// FR1Begin FR4End to cover all features. This exports all mutation types in one column.
+		for featureU in features {
+			// Skip CDR3 and VDJRegion features
+			if featureU == "CDR3" || featureU == "VDJRegion" || featureU == "FR4" {
+				continue
+			}
+			featureL := text.to_lower(formatId(featureU))
+			rateOrderP := orderP - 1
+			columnName := "nMutationsCount" + featureU
+			mutationColumns += [ {
+				column: columnName,
+				id: "n-mutations-count-" + featureL,
+				allowNA: true,
+				naRegex: "region_not_covered",
+				spec: {
+					valueType: "Int",
+					name: "pl7.app/vdj/sequence/nMutationsCount",
+					domain: {
+						"pl7.app/vdj/feature": featureU
+					},
+					annotations: a(orderP, false, {
+						"pl7.app/label": "Nt mutations count in " + featureU
+					})
+				}
+			} ]
+			columnName = "nMutationsRate" + featureU
+			mutationColumns += [ {
+				column: columnName,
+				id: "n-mutations-rate-" + featureL,
+				allowNA: true,
+				naRegex: "region_not_covered",
+				spec: {
+					valueType: "Double",
+					name: "pl7.app/vdj/sequence/nMutationsRate",
+					domain: {
+						"pl7.app/vdj/feature": featureU
+					},
+					annotations: a(rateOrderP, false, {
+						"pl7.app/label": "Nt mutations rate in " + featureU
+					})
+				}
+			} ]
+			exportArgs += [ [ "-nMutationRate", featureU ] ]
+			orderP -= 100
+		}
+		// Call -allNMutationsCount with boundaries FR1Begin FR4End (no mutation type parameter)
+		// This will export columns for all features between FR1Begin and FR4End with all mutation types
+		exportArgs += [ [ "-allNMutationsCount", "FR1Begin", "FR4End" ] ]
+		
+		// All amino acid mutations count for each feature (only for VDJRegion assembling feature)
+		orderP = 8500
+		
+		// MixCR -allAAMutationsCount exports columns for all features between specified boundaries.
+		// We add column specs for each feature and call -allAAMutationsCount once with boundaries
+		// FR1Begin FR4End to cover all features. This exports all mutation types in one column.
+		for featureU in features {
+			// Skip CDR3 and VDJRegion features
+			if featureU == "CDR3" || featureU == "VDJRegion" || featureU == "FR4" {
+				continue
+			}
+			featureL := text.to_lower(formatId(featureU))
+			rateOrderP := orderP - 1
+			columnName := "aaMutationsCount" + featureU
+			mutationColumns += [ {
+				column: columnName,
+				id: "aa-mutations-count-" + featureL,
+				allowNA: true,
+				naRegex: "region_not_covered",
+				spec: {
+					valueType: "Int",
+					name: "pl7.app/vdj/sequence/aaMutationsCount",
+					domain: {
+						"pl7.app/vdj/feature": featureU
+					},
+					annotations: a(orderP, false, {
+						"pl7.app/label": "AA mutations count in " + featureU
+					})
+				}
+			} ]
+			columnName = "aaMutationsRate" + featureU
+			mutationColumns += [ {
+				column: columnName,
+				id: "aa-mutations-rate-" + featureL,
+				allowNA: true,
+				naRegex: "region_not_covered",
+				spec: {
+					valueType: "Double",
+					name: "pl7.app/vdj/sequence/aaMutationsRate",
+					domain: {
+						"pl7.app/vdj/feature": featureU
+					},
+					annotations: a(rateOrderP, false, {
+						"pl7.app/label": "AA mutations rate in " + featureU
+					})
+				}
+			} ]
+			exportArgs += [ [ "-aaMutationRate", featureU ] ]
+			orderP -= 100
+		}
+		// Call -allAAMutationsCount with boundaries FR1Begin FR4End (no mutation type parameter)
+		// This will export columns for all features between FR1Begin and FR4End with all mutation types
+		exportArgs += [ [ "-allAAMutationsCount", "FR1Begin", "FR4End" ] ]
+		
+	}
+	
+	// Export germline CDR3 part mutations for both VDJRegion and CDR3 assembling features
+	// These will be summed to create the CDR3 mutations count columns
+	germlineVFeature := "GermlineVCDR3Part"
+	germlineJFeature := "GermlineJCDR3Part"
+	exportArgs += [ [ "-nMutationsCount", germlineVFeature ] ]
+	exportArgs += [ [ "-nMutationsCount", germlineJFeature ] ]
+	exportArgs += [ [ "-aaMutationsCount", germlineVFeature ] ]
+	exportArgs += [ [ "-aaMutationsCount", germlineJFeature ] ]
+	
+	// Add CDR3 mutations count columns (sum of V and J germline CDR3 part mutations)
+	// These work for both VDJRegion and CDR3 assembling features
+	orderP = 9400
+	cdr3Feature := "CDR3"
+	cdr3FeatureL := text.to_lower(formatId(cdr3Feature))
+
+	// Nucleotide mutations count
+	columnName := "nMutationsCount" + cdr3Feature
+	cdr3DistanceColumnsSpec := [ {
+		column: columnName,
+		id: "n-mutations-count-" + cdr3FeatureL,
+		allowNA: true,
+		naRegex: "region_not_covered",
+		spec: {
+			valueType: "Int",
+			name: "pl7.app/vdj/sequence/nMutationsCount",
+			domain: {
+				"pl7.app/vdj/feature": cdr3Feature
+			},
+			annotations: a(orderP, false, {
+				"pl7.app/label": "Nt mutations count in " + cdr3Feature
+			})
+		}
+	} ]
+
+	// Amino acid mutations count
+	orderP = 8400
+	columnName = "aaMutationsCount" + cdr3Feature
+	cdr3DistanceColumnsSpec = append(cdr3DistanceColumnsSpec, {
+		column: columnName,
+		id: "aa-mutations-count-" + cdr3FeatureL,
+		allowNA: true,
+		naRegex: "region_not_covered",
+		spec: {
+			valueType: "Int",
+			name: "pl7.app/vdj/sequence/aaMutationsCount",
+			domain: {
+				"pl7.app/vdj/feature": cdr3Feature
+			},
+			annotations: a(orderP, false, {
+				"pl7.app/label": "AA mutations count in " + cdr3Feature
+			})
+		}
+	} )
+
+	// Nucleotide mutations rate
+	orderP = 9300
+	columnName = "nMutationsRate" + cdr3Feature
+	cdr3DistanceColumnsSpec = append(cdr3DistanceColumnsSpec, {
+		column: columnName,
+		id: "n-mutations-rate-" + cdr3FeatureL,
+		allowNA: true,
+		naRegex: "region_not_covered",
+		spec: {
+			valueType: "Double",
+			name: "pl7.app/vdj/sequence/nMutationsRate",
+			domain: {
+				"pl7.app/vdj/feature": cdr3Feature
+			},
+			annotations: a(orderP, false, {
+				"pl7.app/label": "Nt mutations rate in " + cdr3Feature
+			})
+		}
+	})
+
+	// Amino acid mutations rate
+	orderP = 8300
+	columnName = "aaMutationsRate" + cdr3Feature
+	cdr3DistanceColumnsSpec = append(cdr3DistanceColumnsSpec, {
+		column: columnName,
+		id: "aa-mutations-rate-" + cdr3FeatureL,
+		allowNA: true,
+		naRegex: "region_not_covered",
+		spec: {
+			valueType: "Double",
+			name: "pl7.app/vdj/sequence/aaMutationsRate",
+			domain: {
+				"pl7.app/vdj/feature": cdr3Feature
+			},
+			annotations: a(orderP, false, {
+				"pl7.app/label": "AA mutations rate in " + cdr3Feature
+			})
+		}
+	})
+
 	// Flags: productive, oof, stop codons
+	orderP = 12000
 
 	flagColumnVariants := [ {
 			columnPrefix: "isProductive",
@@ -530,21 +734,9 @@ inFrameFeatures := {
 		orderP -= 100
 	}
 
-	// Isotype and chain
+	// Chain (isotype removed)
 
 	columnsSpecPerClonotypeNoAggregates += [ {
-			column: "isotypePrimary",
-			id: "isotype",
-			naRegex: "",
-			spec: {
-				valueType: "String",
-				name: "pl7.app/vdj/isotype",
-				annotations: a(orderP, true, {
-					"pl7.app/label": "IG isotype",
-					"pl7.app/isDiscreteFilter": "true"
-				})
-			}
-		}, {
 			column: "topChains",
 			id: "top-chains",
 			naRegex: "",
@@ -560,12 +752,12 @@ inFrameFeatures := {
 			}
 		} ]
 	exportArgs += [
-		[ "-isotype", "primary" ],
 		[ "-topChains" ]
 	]
 
 
 	// All columns are added
+	columnsSpecPerClonotypeNoAggregates += mutationColumns
 
 	columnsSpec := columnsSpecPerSample + columnsSpecPerClonotypeNoAggregates + columnsSpecPerClonotypeAggregates
 
@@ -623,6 +815,7 @@ inFrameFeatures := {
 		columnsSpecPerSample: columnsSpecPerSample,
 		columnsSpecPerClonotypeNoAggregates: columnsSpecPerClonotypeNoAggregates,
 		columnsSpecPerClonotypeAggregates: columnsSpecPerClonotypeAggregates,
+		cdr3DistanceColumnsSpec: cdr3DistanceColumnsSpec,
 
 		columnsSpec: columnsSpec,
 

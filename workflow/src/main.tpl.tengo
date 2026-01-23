@@ -58,6 +58,7 @@ wf.body(func(args) {
 		inputData: input.getFutureInputField("data"),
 		referenceLibrary: referenceLibrary,
 		limitInput: limitInput,
+		cdr3Sequences: args.cdr3Sequences,
 
 		params: smart.createJsonResource({
 			blockId: blockId,

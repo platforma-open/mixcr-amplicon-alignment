@@ -22,6 +22,7 @@ self.awaitState("InputsLocked")
 self.awaitState("params", "ResourceReady")
 self.awaitState("inputSpec", "ResourceReady")
 self.awaitState("referenceLibrary", "ResourceReady")
+self.awaitState("cdr3Sequences", "ResourceReady")
 
 self.body(func(inputs) {
 
@@ -86,6 +87,7 @@ self.body(func(inputs) {
 	columnsSpecPerSample := exportSpecs.columnsSpecPerSample
 	columnsSpecPerClonotypeNoAggregates := exportSpecs.columnsSpecPerClonotypeNoAggregates
 	columnsSpecPerClonotypeAggregates := exportSpecs.columnsSpecPerClonotypeAggregates
+	cdr3DistanceColumnsSpec := exportSpecs.cdr3DistanceColumnsSpec
 	clonotypeKeyColumns := exportSpecs.clonotypeKeyColumns
 	clonotypeKeyArgs := exportSpecs.clonotypeKeyArgs
 	exportArgs := exportSpecs.exportArgs
@@ -294,6 +296,18 @@ self.body(func(inputs) {
 		cpu: 2,
 		name: "aggregates",
 		path: ["tsv"]
+	}, {
+		type: "Xsv",
+		xsvType: "tsv",
+		settings: {
+			axes: axesByClonotypeKeyWithChain,
+			columns: cdr3DistanceColumnsSpec,
+			storageFormat: "Parquet"
+		},
+		mem: "8GB",
+		cpu: 1,
+		name: "cdr3Distances",
+		path: ["cdr3DistancesTsv"]
 	} ]
 
 	aggregationResults := pframes.processColumn(
@@ -310,7 +324,9 @@ self.body(func(inputs) {
 					mainAbundanceColumnUnnormalized: mainAbundanceColumnUnnormalized,
 					schemaPerClonotypeNoAggregates: columnsToSchema(columnsSpecPerClonotypeNoAggregates),
 					schemaPerClonotypeAggregates: columnsToSchema(columnsSpecPerClonotypeAggregates),
-					schemaPerSample: columnsToSchema(columnsSpecPerSample)
+					schemaPerSample: columnsToSchema(columnsSpecPerSample),
+					cdr3Sequences: inputs.cdr3Sequences,
+					cdr3DistanceColumnsSpec: cdr3DistanceColumnsSpec
 				}
 			}
 		}
@@ -320,6 +336,7 @@ self.body(func(inputs) {
 	clones := pframes.pFrameBuilder()
 	exportResults.addXsvOutputToBuilder(clones, "byCloneKeyBySample", "clonotypeProperties/bySample/" + chains + "/")
 	aggregationResults.addXsvOutputToBuilder(clones, "aggregates", "clonotypeProperties/aggregates/" + chains + "/")
+	aggregationResults.addXsvOutputToBuilder(clones, "cdr3Distances", "clonotypeProperties/cdr3Distances/" + chains + "/")
 
 	qcReportTable := render.create(exportReportTpl, {
 		clnsData: mixcrResults.outputData("clns"),
