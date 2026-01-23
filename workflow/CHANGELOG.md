@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow
 
+## 1.16.0
+
+### Minor Changes
+
+- 187f583: Fix repseqio fasta generation, dependencies updates
+
 ## 1.15.0
 
 ### Minor Changes
