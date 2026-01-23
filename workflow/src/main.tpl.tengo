@@ -32,27 +32,6 @@ wf.body(func(args) {
 	perProcessCPUs := args.perProcessCPUs
 	cloneClusteringMode := args.cloneClusteringMode
 
-	// Create V and J gene FASTA files
-	
-	fastaFileCmdBuilder := exec.builder().cmd("/usr/bin/env").arg("bash")
-	
-	// Save vGene to FASTA file if available
-	if args.vGenes != "" {
-		fastaFileCmdBuilder.writeFile("vGene.fasta", args.vGenes).
-            saveFile("vGene.fasta")
-	}
-	
-	// Save jGene to FASTA file if available
-	if args.jGenes != "" {
-		fastaFileCmdBuilder.writeFile("jGene.fasta", args.jGenes).
-            saveFile("jGene.fasta")
-	}
-
-    fastaFileCmd := fastaFileCmdBuilder.run()
-
-    vGeneFasta := fastaFileCmd.getFile("vGene.fasta")
-    jGeneFasta := fastaFileCmd.getFile("jGene.fasta")
-
 	chainInfos := {
 		"IGHeavy": { mixcrFilter: "IGH", name: "IG Heavy", shortName: "Heavy" },
 		"IGLight": { mixcrFilter: "IGK", name: "IG Light", shortName: "Light" },
@@ -65,8 +44,8 @@ wf.body(func(args) {
     // Generate reference library using repseqio if both V and J genes are available
   
 	repseqioResults := render.create(repseqioLibraryTpl, {
-		vGeneFasta: vGeneFasta,
-		jGeneFasta: jGeneFasta,
+		vGenes: args.vGenes,
+		jGenes: args.jGenes,
 		chains: chainInfos[chains].mixcrFilter
 	})
 	
