@@ -17,14 +17,14 @@ catalog:
   '@platforma-sdk/package-builder': 3.11.0
   '@platforma-sdk/block-tools': 2.6.31
   '@platforma-sdk/eslint-config': 1.2.0
-  '@platforma-sdk/test': 1.52.4
+  '@platforma-sdk/test': 1.52.5
   '@milaboratories/helpers': 1.12.1
 
   # Common dependencies - can use ^ or ~
   'vue': ^3.5.24
   'typescript': ~5.6.3
   'turbo': ^2.6.3
-  'vitest': ^4.0.17
+  'vitest': ^4.0.18
   'eslint': ^9.25.1
   '@changesets/cli': ^2.29.8
 
