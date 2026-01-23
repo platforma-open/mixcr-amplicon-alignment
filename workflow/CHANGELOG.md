@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow
 
+## 1.17.0
+
+### Minor Changes
+
+- 34824d1: mutations columns added, removed unused columns, dependency updates and migrate block code to latest layout
+
 ## 1.16.0
 
 ### Minor Changes
