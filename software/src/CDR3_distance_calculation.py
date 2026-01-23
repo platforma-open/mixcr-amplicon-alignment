@@ -235,12 +235,14 @@ def build_reference_set(fasta_path: str) -> List[RefEntry]:
     return refs
 
 
-def min_dist_to_refs(query: str, refs_pre: Iterable[MyersPrecomp]) -> int:
+def min_dist_to_refs(query: str, refs_pre: Iterable[MyersPrecomp]) -> tuple[int, int]:
     """
     Minimal Levenshtein distance from query to any reference pattern in refs_pre.
+    Returns (min_distance, best_ref_length).
     Uses a length-difference lower-bound to skip hopeless refs.
     """
     best = 10**9
+    best_ref_len = 0
     qlen = len(query)
     for pre in refs_pre:
         lb = abs(qlen - pre.m)
@@ -249,9 +251,12 @@ def min_dist_to_refs(query: str, refs_pre: Iterable[MyersPrecomp]) -> int:
         d = myers_distance(pre, query)
         if d < best:
             best = d
+            best_ref_len = pre.m
             if best == 0:
                 break
-    return best if best != 10**9 else 0
+    if best == 10**9:
+        return 0, 0
+    return best, best_ref_len
 
 
 def run(tsv_path: str, fasta_path: str, out_path: str | None) -> None:
@@ -275,23 +280,35 @@ def run(tsv_path: str, fasta_path: str, out_path: str | None) -> None:
 
     n_out: List[int] = []
     aa_out: List[int] = []
+    n_rate_out: List[float | None] = []
+    aa_rate_out: List[float | None] = []
 
     for n_q, aa_q in zip(n_seqs, aa_seqs):
         n_q = (n_q or "").upper().replace("U", "T")
         aa_q = (aa_q or "").upper()
 
         # Minimal distances vs reference sets
-        n_d = min_dist_to_refs(n_q, n_refs_pre)
-        aa_d = min_dist_to_refs(aa_q, aa_refs_pre)
+        n_d, n_ref_len = min_dist_to_refs(n_q, n_refs_pre)
+        aa_d, aa_ref_len = min_dist_to_refs(aa_q, aa_refs_pre)
+
+        n_len = len(n_q)
+        aa_len = len(aa_q)
 
         n_out.append(int(n_d))
         aa_out.append(int(aa_d))
+
+        n_norm_denom = max(n_len, n_ref_len)
+        aa_norm_denom = max(aa_len, aa_ref_len)
+        n_rate_out.append((n_d / n_norm_denom) if n_norm_denom > 0 else None)
+        aa_rate_out.append((aa_d / aa_norm_denom) if aa_norm_denom > 0 else None)
 
     out_df = pl.DataFrame(
         {
             "clonotypeKey": keys,
             "nMutationsCountCDR3": n_out,
             "aaMutationsCountCDR3": aa_out,
+            "nMutationsRateCDR3": n_rate_out,
+            "aaMutationsRateCDR3": aa_rate_out,
         }
     )
 
