@@ -113,7 +113,7 @@ export const AlignReport = z.object({
 export type AlignReport = z.infer<typeof AlignReport>;
 
 export function extractAlignmentChannels(
-  report: AlignReport
+  report: AlignReport,
 ): [AlignmentChannel, number][] {
   return AlignmentChannels.map((cId) => [
     cId,

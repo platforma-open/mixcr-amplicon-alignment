@@ -2,7 +2,6 @@
   "name": "@platforma-open/milaboratories.mixcr-amplicon-alignment",
   "version": "1.5.0",
   "scripts": {
-    "pretty": "prettier --write \"./**/*.{js,jsx,mjs,cjs,ts,tsx,json,vue}\"",
     "build": "rm -rf ./block-pack && block-tools pack",
     "mark-stable": "block-tools mark-stable -r 's3://milab-euce1-prod-pkgs-s3-block-registry/pub/releases/?region=eu-central-1'",
     "prepublishOnly": "block-tools pack && block-tools publish -r 's3://milab-euce1-prod-pkgs-s3-block-registry/pub/releases/?region=eu-central-1'",
@@ -13,7 +12,6 @@
     "index.js"
   ],
   "dependencies": {
-    "@platforma-sdk/model": "catalog:",
     "@platforma-open/milaboratories.mixcr-amplicon-alignment.workflow": "workspace:*",
     "@platforma-open/milaboratories.mixcr-amplicon-alignment.model": "workspace:*",
     "@platforma-open/milaboratories.mixcr-amplicon-alignment.ui": "workspace:*"

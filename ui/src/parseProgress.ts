@@ -21,7 +21,7 @@ type ParsedProgress = {
 // 'Queued'
 // 'Done'
 export function parseProgressString(
-  progressString: string | undefined | null
+  progressString: string | undefined | null,
 ): ParsedProgress {
   const raw = progressString ?? 'Unknown';
 

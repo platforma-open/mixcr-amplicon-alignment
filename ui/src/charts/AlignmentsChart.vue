@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { PlChartStackedBar } from "@platforma-sdk/ui-vue";
-import { computed } from "vue";
-import { useAlignmentChartSettings } from "./alignmentChartSettings";
-import type { AlignReport } from "../results";
+import { PlChartStackedBar } from '@platforma-sdk/ui-vue';
+import { computed } from 'vue';
+import { useAlignmentChartSettings } from './alignmentChartSettings';
+import type { AlignReport } from '../results';
 
 const props = defineProps<{
   alignReport?: AlignReport;

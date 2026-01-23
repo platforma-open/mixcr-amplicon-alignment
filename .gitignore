@@ -10,4 +10,5 @@ test-dry-run.json
 .turbo
 vite.config.*.timestamp-*
 .DS_Store
-.pnpm-store/
+.pnpm-store
+/.idea

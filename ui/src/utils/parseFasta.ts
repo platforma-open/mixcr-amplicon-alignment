@@ -3,6 +3,7 @@ export interface FastaParseResult {
   error?: string;
   vGenes?: string;
   jGenes?: string;
+  cdr3Sequences?: string;
 }
 
 interface FastaRecord {
@@ -112,6 +113,7 @@ export function parseFasta(content: string): FastaParseResult {
 
   const vGeneParts: string[] = [];
   const jGeneParts: string[] = [];
+  const cdr3Parts: string[] = [];
   const headers: string[] = [];
 
   // Validate each record
@@ -125,6 +127,7 @@ export function parseFasta(content: string): FastaParseResult {
     }
 
     const recordIdentifier = header ? `Record "${header}"` : `Record ${i + 1}`;
+    const headerRoot = header ? header.split('|')[0]?.trim() : '';
 
     // Clean the sequence (remove whitespace, convert to uppercase, and replace IUPAC wildcards with A)
     const cleanSequence = sequence
@@ -171,9 +174,9 @@ export function parseFasta(content: string): FastaParseResult {
       return { isValid: false, error };
     }
 
-    // Apply the regex validation: C[ACDEFGHIKLMNPQRSTVWY]+(?:[GAST])?[WFL]
+    // Apply the regex validation and capture CDR3 (up to the conserved W/F/L/Y/I)
     const validationRegex
-      = /C[ACDEFGHIKLMNPQRSTVWY]{4,50}[FWYLI][ACDEFGHIKLMNPQRSTVWY]{0,5}G[ACDEFGHIKLMNPQRSTVWY]G/;
+      = /C([ACDEFGHIKLMNPQRSTVWY]{4,50}[FWYLI])[ACDEFGHIKLMNPQRSTVWY]{0,5}G[ACDEFGHIKLMNPQRSTVWY]G/;
 
     // Only search from position 80 onwards (240 nucleotides)
     const searchStartPosition = 80; // 240 nucleotides / 3 = 80 amino acids
@@ -187,36 +190,53 @@ export function parseFasta(content: string): FastaParseResult {
 
     // Extract the two sequences with headers
     const patternStartInFullSequence = searchStartPosition + match.index;
-    const patternEndInFullSequence
-      = patternStartInFullSequence + match[0].length;
 
-    // First sequence: from beginning to first cysteine in pattern + 3 nucleotides
+    // Find CDR3 boundaries: from first C to the conserved W/F/L/Y/I captured by regex
     const firstCysteinePosition = patternStartInFullSequence; // First C in pattern
-    const vGeneEndNucleotides = (firstCysteinePosition + 3) * 3; // +2 for the cysteine, *3 for nucleotides
+    const cdr3AaLength = match[1].length + 1; // include leading C
+    const cdr3EndInFullSequence = patternStartInFullSequence + cdr3AaLength;
+
+    // Calculate CDR3 nucleotide boundaries
+    const cdr3StartNucleotides = firstCysteinePosition * 3; // Start of CDR3 (first C)
+    const cdr3EndNucleotides = cdr3EndInFullSequence * 3; // End of CDR3 (last W/F/L/Y/I)
+    const cdr3LengthNucleotides = cdr3EndNucleotides - cdr3StartNucleotides;
+    const cdr3HalfLengthNucleotides = Math.floor(cdr3LengthNucleotides / 2);
+
+    // V gene: from beginning to first cysteine + half of CDR3
+    const vGeneEndNucleotides = cdr3StartNucleotides + cdr3HalfLengthNucleotides;
     const vGeneSequence = referenceSequence.substring(0, vGeneEndNucleotides);
-    const vGeneHeader = header ? `${header}_Vgene` : 'ref_Vgene';
+    const vGeneHeader = headerRoot ? `${headerRoot}_Vgene` : 'ref_Vgene';
     const vGene = `>${vGeneHeader}\n${vGeneSequence}`;
 
-    // Second sequence: from 6 nucleotides before pattern end to sequence end
-    const patternEndNucleotides = patternEndInFullSequence * 3;
-    const jGeneStartNucleotides = patternEndNucleotides - 21; // 6 nucleotides before pattern end
+    // J gene: from second half of CDR3 to sequence end
+    const jGeneStartNucleotides = cdr3StartNucleotides + cdr3HalfLengthNucleotides;
     const jGeneSequence = referenceSequence.substring(jGeneStartNucleotides);
-    const jGeneHeader = header ? `${header}_Jgene` : 'ref_Jgene';
+    const jGeneHeader = headerRoot ? `${headerRoot}_Jgene` : 'ref_Jgene';
     const jGene = `>${jGeneHeader}\n${jGeneSequence}`;
+
+    const cdr3Sequence = referenceSequence.substring(
+      cdr3StartNucleotides,
+      cdr3EndNucleotides,
+    );
+    const cdr3Header = header ? `${header}_CDR3` : 'ref_CDR3';
+    const cdr3 = `>${cdr3Header}\n${cdr3Sequence}`;
 
     vGeneParts.push(vGene);
     jGeneParts.push(jGene);
+    cdr3Parts.push(cdr3);
     if (header) headers.push(header);
   }
 
   // Create single FASTA strings for all V and J genes
   const vGenes = vGeneParts.join('\n');
   const jGenes = jGeneParts.join('\n');
+  const cdr3Sequences = cdr3Parts.join('\n');
 
   return {
     isValid: true,
     vGenes,
     jGenes,
+    cdr3Sequences,
   };
 }
 
