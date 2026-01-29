@@ -1,5 +1,16 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow
 
+## 1.18.0
+
+### Minor Changes
+
+- 656f2fe: stop codon replacement and dep updates
+
+### Patch Changes
+
+- Updated dependencies [656f2fe]
+  - @platforma-open/milaboratories.mixcr-amplicon-alignment.software@1.1.0
+
 ## 1.17.0
 
 ### Minor Changes

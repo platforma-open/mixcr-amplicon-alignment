@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment.model
 
+## 1.14.0
+
+### Minor Changes
+
+- 656f2fe: stop codon replacement and dep updates
+
 ## 1.13.0
 
 ### Minor Changes
