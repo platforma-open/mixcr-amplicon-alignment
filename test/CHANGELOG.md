@@ -1,5 +1,16 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment.test
 
+## 1.7.0
+
+### Minor Changes
+
+- 656f2fe: stop codon replacement and dep updates
+
+### Patch Changes
+
+- Updated dependencies [656f2fe]
+  - @platforma-open/milaboratories.mixcr-amplicon-alignment.model@1.14.0
+
 ## 1.6.0
 
 ### Minor Changes
