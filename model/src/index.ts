@@ -11,13 +11,6 @@ import { ProgressPrefix } from './progress';
 
 export type CloneClusteringMode = 'relaxed' | 'default' | 'off';
 export type AssemblingFeature = 'VDJRegion' | 'CDR3';
-export type StopCodonType = 'amber' | 'ochre' | 'opal';
-
-export interface StopCodonReplacements {
-  amber?: string;
-  ochre?: string;
-  opal?: string;
-}
 
 export interface BlockArgs {
   defaultBlockLabel?: string;
@@ -34,8 +27,6 @@ export interface BlockArgs {
   perProcessCPUs?: number; // 1 or more required
   cloneClusteringMode?: CloneClusteringMode; // default: 'relaxed'
   assemblingFeature?: AssemblingFeature; // default: 'VDJRegion'
-  stopCodonTypes?: StopCodonType[];
-  stopCodonReplacements?: StopCodonReplacements;
 }
 
 export interface UiState {

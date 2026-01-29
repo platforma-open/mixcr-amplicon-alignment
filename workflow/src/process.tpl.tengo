@@ -94,11 +94,7 @@ self.body(func(inputs) {
 	mainAbundanceColumnNormalized := exportSpecs.mainAbundanceColumnNormalized
 	mainAbundanceColumnUnnormalized := exportSpecs.mainAbundanceColumnUnnormalized
 	mainIsProductiveColumn := exportSpecs.mainIsProductiveColumn
-	productiveFeature := exportSpecs.productiveFeature
 	axesByClonotypeKey := exportSpecs.axesByClonotypeKey
-	aminoAcidSeqColumns := exportSpecs.aminoAcidSeqColumns
-	aminoAcidSeqColumnPairs := exportSpecs.aminoAcidSeqColumnPairs
-	cdr3SeqColumns := exportSpecs.cdr3SeqColumns
 
 	columnsToSchema := func(columns) {
 		schema := []
@@ -260,18 +256,13 @@ self.body(func(inputs) {
 		exportOutputs,
 		{
 			extra: {
-				params: maps.clone({
+				params: {
 					clonotypeKeyColumns: clonotypeKeyColumns,
 					exportArgs: exportArgs,
 					referenceLibrary: referenceLibrary,
-					mixcrChains: mixcrChains,
-					mainIsProductiveColumn: mainIsProductiveColumn,
-					aminoAcidSeqColumns: aminoAcidSeqColumns,
-					aminoAcidSeqColumnPairs: aminoAcidSeqColumnPairs,
-					cdr3SeqColumns: cdr3SeqColumns,
-					stopCodonTypes: params.stopCodonTypes,
-					stopCodonReplacements: params.stopCodonReplacements
-				}, { removeUndefs: true })
+						mixcrChains: mixcrChains,
+						mainIsProductiveColumn: mainIsProductiveColumn
+				}
 			}
 		}
 	)
@@ -355,10 +346,7 @@ self.body(func(inputs) {
 		isLibraryFileGzipped: false,
 		clonotypeTablesData: clonotypeTablesData,
 		hasUmi: hasUMI,
-		umiTags: umiTags,
-		productiveFeature: productiveFeature,
-		stopCodonTypes: params.stopCodonTypes,
-		stopCodonReplacements: params.stopCodonReplacements
+		umiTags: umiTags
 	})
 
 	return {
