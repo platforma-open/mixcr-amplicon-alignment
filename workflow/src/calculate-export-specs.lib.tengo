@@ -298,9 +298,6 @@ calculateExportSpecs := func(presetSpecForBack, blockId) {
 	columnsSpecPerClonotypeAggregates += [ sampleCountColumn ]
 
 	orderP := 80000
-	aminoAcidSeqColumns := []
-	aminoAcidSeqColumnPairs := []
-	cdr3SeqColumns := []
 
 	// Sequences
 
@@ -328,16 +325,6 @@ inFrameFeatures := {
 			alphabetShortMixcr := isAminoAcid ? "aa" : "n"
 			columnName := alphabetShortMixcr + "Seq" + featureInFrameU
 			visibility := featureU == "VDJRegion" || featureU == "CDR3"
-			if featureU == "CDR3" {
-				cdr3SeqColumns += [ columnName ]
-			}
-			if isAminoAcid {
-				aminoAcidSeqColumns += [ columnName ]
-				aminoAcidSeqColumnPairs += [ {
-						aa: columnName,
-						nt: "nSeq" + featureU
-					} ]
-			}
 			columnsSpecPerClonotypeNoAggregates += [ {
 					column: columnName,
 					id: alphabetShortMixcr + "-seq-" + featureInFrameL,
@@ -820,7 +807,6 @@ inFrameFeatures := {
 	} ]
 
 	return {
-		productiveFeature: productiveFeature,
 		clonotypeKeyColumns: clonotypeKeyColumns,
 		clonotypeKeyArgs: clonotypeKeyArgs,
 
@@ -830,9 +816,6 @@ inFrameFeatures := {
 		columnsSpecPerClonotypeNoAggregates: columnsSpecPerClonotypeNoAggregates,
 		columnsSpecPerClonotypeAggregates: columnsSpecPerClonotypeAggregates,
 		cdr3DistanceColumnsSpec: cdr3DistanceColumnsSpec,
-		aminoAcidSeqColumns: aminoAcidSeqColumns,
-		aminoAcidSeqColumnPairs: aminoAcidSeqColumnPairs,
-		cdr3SeqColumns: cdr3SeqColumns,
 
 		columnsSpec: columnsSpec,
 
