@@ -572,6 +572,38 @@ getQcReportColumns := func(hasUmi, sampleIdAxisSpec, chains, umiTags) {
         }
     },
     {
+        column: "assemble.clonotypesDroppedByStopCodons",
+        id: "assemble-clonotypes-dropped-by-stop-codons",
+        allowNA: true,
+        naRegex: "NaN",
+        spec: {
+            name: "mixcr.com/reports/assemble/clonotypesDroppedByStopCodons",
+            valueType: "Long",
+            annotations: {
+                "pl7.app/min": "0",
+                "pl7.app/table/orderPriority": "108200",
+                "pl7.app/table/visibility": "optional",
+                "pl7.app/label": "Clonotypes Dropped - Stop Codons"
+            }
+        }
+    },
+    {
+        column: "assemble.clonotypesDroppedByOutOfFrame",
+        id: "assemble-clonotypes-dropped-by-out-of-frame",
+        allowNA: true,
+        naRegex: "NaN",
+        spec: {
+            name: "mixcr.com/reports/assemble/clonotypesDroppedByOutOfFrame",
+            valueType: "Long",
+            annotations: {
+                "pl7.app/min": "0",
+                "pl7.app/table/orderPriority": "108100",
+                "pl7.app/table/visibility": "optional",
+                "pl7.app/label": "Clonotypes Dropped - Out of Frame"
+            }
+        }
+    },
+    {
         column: "totalClonotypes",
         id: "total-clonotypes",
         allowNA: true,
