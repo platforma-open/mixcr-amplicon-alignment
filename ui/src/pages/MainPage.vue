@@ -62,8 +62,15 @@ watchEffect(() => {
 });
 
 const result = computed(() =>
-  resultMap.value ? [...resultMap.value.values()] : [],
+  resultMap.value ? [...resultMap.value.values()] : undefined,
 );
+
+const loadingOverlayParams = computed(() => {
+  if (app.model.outputs.started) {
+    return { variant: 'running' as const, runningText: 'Loading Sample List' };
+  }
+  return { variant: 'not-ready' as const };
+});
 
 const data = reactive<{
   settingsOpen: boolean;
@@ -82,7 +89,10 @@ ModuleRegistry.registerModules([ClientSideRowModelModule]);
 watch(
   () => app.model.outputs.started,
   (newVal, oldVal) => {
-    if (oldVal === false && newVal === true) data.settingsOpen = false;
+    if (oldVal === false && newVal === true) {
+      data.settingsOpen = false;
+      gridApi.value?.showLoadingOverlay();
+    }
     if (oldVal === true && newVal === false) data.settingsOpen = true;
   },
 );
@@ -210,7 +220,7 @@ const showLogs = () => {
         :defaultColDef="defaultColumnDef"
         :columnDefs="columnDefs"
         :grid-options="gridOptions"
-        :loadingOverlayComponentParams="{ notReady: true }"
+        :loadingOverlayComponentParams="loadingOverlayParams"
         :loadingOverlayComponent="PlAgOverlayLoading"
         :noRowsOverlayComponent="PlAgOverlayNoRows"
         @grid-ready="onGridReady"
