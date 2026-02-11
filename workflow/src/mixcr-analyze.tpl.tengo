@@ -59,7 +59,8 @@ self.body(func(inputs) {
 		software(mixcrSw).
 		secret("MI_LICENSE", "MI_LICENSE").
 		env("MI_LICENSE_DEBUG", "MI_LICENSE_DEBUG").
-		arg("analyze")
+		arg("analyze").
+		arg("--use-local-temp")
 
 	// Select preset based on UMI presence
 	if !is_undefined(params.hasUMI) && params.hasUMI {
