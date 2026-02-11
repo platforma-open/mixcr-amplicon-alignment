@@ -58,6 +58,7 @@ self.body(func(inputs) {
 		env("MI_PROGRESS_PREFIX", progressPrefix).
 		software(mixcrSw).
 		secret("MI_LICENSE", "MI_LICENSE").
+		env("MI_LICENSE_DEBUG", "MI_LICENSE_DEBUG").
 		arg("analyze")
 
 	// Select preset based on UMI presence

@@ -191,6 +191,7 @@ self.body(func(inputs) {
 			printErrStreamToStdout().
 			software(mixcrSw).
 			secret("MI_LICENSE", "MI_LICENSE").
+			env("MI_LICENSE_DEBUG", "MI_LICENSE_DEBUG").
 			arg("exportClones").
 			arg("--dont-split-files").
 			arg("--drop-default-fields").
