@@ -63,13 +63,11 @@ export const platforma = BlockModel.create('Heavy')
     tableState: createPlDataTableStateV2(),
   })
 
-  .output('qc', (ctx) =>
-    parseResourceMap(
-      ctx.outputs?.resolve('qc'),
-      (acc) => acc.getFileHandle(),
-      true,
-    ),
-  )
+  .output('qc', (ctx) => {
+    const acc = ctx.outputs?.resolve('qc');
+    if (!acc || !acc.getInputsLocked()) return undefined;
+    return parseResourceMap(acc, (acc) => acc.getFileHandle(), true);
+  })
 
   .output('reports', (ctx) =>
     parseResourceMap(
