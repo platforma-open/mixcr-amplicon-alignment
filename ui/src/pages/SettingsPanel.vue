@@ -19,8 +19,8 @@ const app = useApp();
 
 function parseNumber(v: string): number {
   const parsed = Number(v);
-  if (!Number.isFinite(parsed)) {
-    throw Error('Not a number');
+  if (!Number.isFinite(parsed) || !Number.isInteger(parsed)) {
+    throw Error('Must be an integer');
   }
   return parsed;
 }
