@@ -201,7 +201,7 @@ self.body(func(inputs) {
 			traceSteps: [{type: "milaboratories.mixcr-amplicon-alignment", id: blockId, importance: 20, label: "MiXCR generic amplicon"}],
 
 			extra: {
-				params: {
+				params: maps.clone({
 					fileExtension: fileExtension,
 					referenceLibrary: referenceLibrary,
 					cloneClusteringMode: cloneClusteringMode,
@@ -209,7 +209,7 @@ self.body(func(inputs) {
 					tagPattern: tagPattern,
 					assemblingFeature: params.assemblingFeature,
 					badQualityThreshold: params.badQualityThreshold
-				},
+				}, { removeUndefs: true }),
 				limitInput: limitInput
 			},
 
