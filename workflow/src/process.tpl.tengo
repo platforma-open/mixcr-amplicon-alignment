@@ -207,7 +207,8 @@ self.body(func(inputs) {
 					cloneClusteringMode: cloneClusteringMode,
 					hasUMI: hasUMI,
 					tagPattern: tagPattern,
-					assemblingFeature: params.assemblingFeature
+					assemblingFeature: params.assemblingFeature,
+					badQualityThreshold: params.badQualityThreshold
 				},
 				limitInput: limitInput
 			},

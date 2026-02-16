@@ -69,6 +69,7 @@ wf.body(func(args) {
 			cloneClusteringMode: cloneClusteringMode,
 			tagPattern: args.tagPattern,
 			assemblingFeature: args.assemblingFeature,
+			badQualityThreshold: args.badQualityThreshold,
 			stopCodonTypes: args.stopCodonTypes,
 			stopCodonReplacements: args.stopCodonReplacements
 		})

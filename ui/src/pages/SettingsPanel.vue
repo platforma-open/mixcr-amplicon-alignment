@@ -17,6 +17,14 @@ import { parseFasta } from '../utils/parseFasta';
 
 const app = useApp();
 
+function parseNumber(v: string): number {
+  const parsed = Number(v);
+  if (!Number.isFinite(parsed)) {
+    throw Error('Not a number');
+  }
+  return parsed;
+}
+
 type AssemblingFeature = 'VDJRegion' | 'CDR3';
 type StopCodonType = 'amber' | 'ochre' | 'opal';
 
@@ -229,6 +237,20 @@ ATCGATCGATCG..."
         correction.
       </template>
     </PlDropdown>
+    <PlTextField
+      v-model="app.model.args.badQualityThreshold"
+      :parse="parseNumber"
+      :clearable="() => undefined"
+      label="Assembly quality threshold"
+      placeholder="15 (default)"
+    >
+      <template #tooltip>
+        Per-position base quality threshold for clonotype assembly. Reads where all positions meet this threshold
+        directly seed new clonotypes; reads with any position below it are deferred and mapped to existing clonotypes
+        instead. Increase this value (e.g. 20–25) for long-read data (ONT, PacBio) to reduce memory usage and
+        prevent erroneous reads from creating spurious clonotypes. Leave empty to use the MiXCR default (15).
+      </template>
+    </PlTextField>
     <PlNumberField
       v-model="app.model.args.limitInput"
       label="Take only this number of reads into analysis"
