@@ -1,5 +1,18 @@
 ## 1.0.0
 
+## 1.8.0
+
+### Minor Changes
+
+- b6a7c08: Add assembly quality threshold setting to advanced options, allowing users to control the base quality cutoff for clonotype seeding during assembly (MiXCR badQualityThreshold parameter)
+
+### Patch Changes
+
+- Updated dependencies [b6a7c08]
+  - @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow@1.19.0
+  - @platforma-open/milaboratories.mixcr-amplicon-alignment.model@1.15.0
+  - @platforma-open/milaboratories.mixcr-amplicon-alignment.ui@1.15.0
+
 ## 1.7.1
 
 ### Patch Changes
