@@ -34,6 +34,7 @@ export interface BlockArgs {
   perProcessCPUs?: number; // 1 or more required
   cloneClusteringMode?: CloneClusteringMode; // default: 'relaxed'
   assemblingFeature?: AssemblingFeature; // default: 'VDJRegion'
+  badQualityThreshold?: number; // default: 15 (MiXCR default)
   stopCodonTypes?: StopCodonType[];
   stopCodonReplacements?: StopCodonReplacements;
 }

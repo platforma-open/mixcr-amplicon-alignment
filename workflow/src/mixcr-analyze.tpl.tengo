@@ -91,6 +91,12 @@ self.body(func(inputs) {
 		mixcrCmdBuilder.arg("-Massemble.cloneAssemblerParameters.cloneClusteringParameters=null")
 	}
 
+	// Assembly quality threshold
+	badQualityThreshold := params.badQualityThreshold
+	if !is_undefined(badQualityThreshold) {
+		mixcrCmdBuilder.arg("-Massemble.cloneAssemblerParameters.badQualityThreshold=" + string(int(badQualityThreshold)))
+	}
+
 		// if (!is_undefined(threePrimePrimer)) {
 		// 	mixcrCmdBuilder.arg("--floating-left-alignment-boundary")
 		// } else {
