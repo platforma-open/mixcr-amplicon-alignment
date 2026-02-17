@@ -60,7 +60,7 @@ wf.body(func(args) {
 		limitInput: limitInput,
 		cdr3Sequences: args.cdr3Sequences,
 
-		params: smart.createJsonResource({
+		params: smart.createJsonResource(maps.clone({
 			blockId: blockId,
 			perProcessMemGB: perProcessMemGB,
 			perProcessCPUs: perProcessCPUs,
@@ -69,9 +69,10 @@ wf.body(func(args) {
 			cloneClusteringMode: cloneClusteringMode,
 			tagPattern: args.tagPattern,
 			assemblingFeature: args.assemblingFeature,
+			badQualityThreshold: args.badQualityThreshold,
 			stopCodonTypes: args.stopCodonTypes,
 			stopCodonReplacements: args.stopCodonReplacements
-		})
+		}, { removeUndefs: true }))
 	})
 
 	exports := {
