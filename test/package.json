@@ -1,7 +1,7 @@
 {
   "name": "@platforma-open/milaboratories.mixcr-amplicon-alignment.test",
   "private": true,
-  "version": "1.7.1",
+  "version": "1.7.2",
   "description": "MiXCR Amplicon Alignment Tests",
   "type": "module",
   "scripts": {
