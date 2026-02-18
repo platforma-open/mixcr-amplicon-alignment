@@ -8,6 +8,7 @@ exec := import("@platforma-sdk/workflow-tengo:exec")
 pt := import("@platforma-sdk/workflow-tengo:pt")
 clonotypeLabel := import(":clonotype-label")
 
+math := import("math")
 json := import("json")
 text := import("text")
 
@@ -176,6 +177,15 @@ self.body(func(inputs) {
 
 	useProductiveFilter := is_undefined(stopCodonTypes) || len(stopCodonTypes) == 0
 
+	// Memory for downstream operations, linked to user override with hardcoded floors
+	baseMemGB := 64
+	if !is_undefined(params.perProcessMemGB) {
+		baseMemGB = params.perProcessMemGB
+	}
+	memGB := func(floorGB, divisor) {
+		return string(int(math.max(floorGB, baseMemGB / divisor))) + "GB"
+	}
+
 	hashKeyDerivationExpressionPt := func(sourceColumns) {
 		return pt.concatStr(
 			slices.map(sourceColumns, func(colName) { return pt.col(colName) }),
@@ -186,7 +196,7 @@ self.body(func(inputs) {
 	createExport := func(additionalAction) {
 		mixcrCmdBuilder := exec.builder().
 			inMediumQueue().
-			mem("12GB").
+			mem(memGB(12, 4)).
 		    cpu(2).
 			printErrStreamToStdout().
 			software(mixcrSw).
@@ -233,7 +243,7 @@ self.body(func(inputs) {
 	// Simplified PTabler processing for main TSV output
 	wfMain := pt.workflow().
 		inMediumQueue().
-		mem("8GB").
+		mem(memGB(8, 4)).
 		cpu(2)
 		
 	frameInputMap := {
