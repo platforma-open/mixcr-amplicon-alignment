@@ -11,7 +11,7 @@ clonotypeLabel := import(":clonotype-label")
 json := import("json")
 text := import("text")
 
-mixcrSw := assets.importSoftware("@platforma-open/milaboratories.software-mixcr:main")
+mixcrSw := assets.importSoftware("@platforma-open/milaboratories.software-mixcr:memory-from-limits")
 
 self.defineOutputs("tsv")
 
