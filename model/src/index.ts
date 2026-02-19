@@ -1,4 +1,4 @@
-import type { InferHrefType, PlDataTableStateV2, PlRef } from '@platforma-sdk/model';
+import type { ImportFileHandle, InferHrefType, PlDataTableStateV2, PlRef } from '@platforma-sdk/model';
 import {
   BlockModel,
   createPlDataTableV2,
@@ -37,6 +37,7 @@ export interface BlockArgs {
   badQualityThreshold?: number; // default: 15 (MiXCR default)
   stopCodonTypes?: StopCodonType[];
   stopCodonReplacements?: StopCodonReplacements;
+  referenceFileHandle?: ImportFileHandle;
 }
 
 export interface UiState {
@@ -183,7 +184,8 @@ export const platforma = BlockModel.create('Heavy')
   })
 
   .argsValid((ctx) => {
-    return ctx.args.datasetRef !== undefined && ctx.uiState.librarySequence !== undefined;
+    return ctx.args.datasetRef !== undefined
+      && (ctx.uiState.librarySequence !== undefined || ctx.args.vGenes !== undefined);
   })
 
   .output('isRunning', (ctx) => ctx.outputs?.getIsReadyOrError() === false)
