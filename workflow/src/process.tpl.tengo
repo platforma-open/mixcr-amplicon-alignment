@@ -9,6 +9,7 @@ pframes := import("@platforma-sdk/workflow-tengo:pframes")
 slices := import("@platforma-sdk/workflow-tengo:slices")
 maps := import("@platforma-sdk/workflow-tengo:maps")
 
+math := import("math")
 json := import("json")
 text := import("text")
 
@@ -71,6 +72,18 @@ self.body(func(inputs) {
 	limitInput := inputs.limitInput
 	perProcessMemGB := params.perProcessMemGB
 	perProcessCPUs := params.perProcessCPUs
+
+	// Base memory for scheduling downstream operations, linked to user override
+	// with current hardcoded values as floors (see memGB helper below)
+	baseMemGB := 64
+	if !is_undefined(perProcessMemGB) {
+		baseMemGB = perProcessMemGB
+	}
+	// Returns max(floor, baseMemGB / divisor) as a string like "32GB"
+	memGB := func(floorGB, divisor) {
+		return string(int(math.max(floorGB, baseMemGB / divisor))) + "GB"
+	}
+
 	fileExtension := inputSpec.domain["pl7.app/fileExtension"]
 	sampleIdAxisSpec := inputSpec.axesSpec[0]
 
@@ -249,7 +262,7 @@ self.body(func(inputs) {
 			storageFormat: "Parquet",
 			partitionKeyLength: 0
 		},
-		mem: "16GB",
+		mem: memGB(16, 2),
 		cpu: 2,
 		name: "byCloneKeyBySample",
 		path: ["tsv"]
@@ -271,7 +284,8 @@ self.body(func(inputs) {
 					aminoAcidSeqColumnPairs: aminoAcidSeqColumnPairs,
 					cdr3SeqColumns: cdr3SeqColumns,
 					stopCodonTypes: params.stopCodonTypes,
-					stopCodonReplacements: params.stopCodonReplacements
+					stopCodonReplacements: params.stopCodonReplacements,
+					perProcessMemGB: perProcessMemGB
 				}, { removeUndefs: true })
 			}
 		}
@@ -302,7 +316,7 @@ self.body(func(inputs) {
 			columns: columnsSpecPerClonotypeNoAggregates + columnsSpecPerClonotypeAggregates,
 			storageFormat: "Parquet"
 		},
-		mem: "12GB",
+		mem: memGB(12, 4),
 		cpu: 2,
 		name: "aggregates",
 		path: ["tsv"]
@@ -314,7 +328,7 @@ self.body(func(inputs) {
 			columns: cdr3DistanceColumnsSpec,
 			storageFormat: "Parquet"
 		},
-		mem: "8GB",
+		mem: memGB(8, 8),
 		cpu: 1,
 		name: "cdr3Distances",
 		path: ["cdr3DistancesTsv"]
