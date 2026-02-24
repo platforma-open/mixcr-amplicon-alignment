@@ -1,5 +1,17 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow
 
+## 1.19.2
+
+### Patch Changes
+
+- 4aeac00: Link memory limits of downstream operations (XSV conversion, MiXCR export, PTabler) to user-specified perProcessMemGB override to prevent over-scheduling on local runs
+
+## 1.19.1
+
+### Patch Changes
+
+- f8abb41: Switch MiXCR software endpoint from `main` to `memory-from-limits` for analyze and export steps to respect block memory quota instead of using MaxRAMPercentage
+
 ## 1.19.0
 
 ### Minor Changes
