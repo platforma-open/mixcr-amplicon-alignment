@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment.model
 
+## 1.16.0
+
+### Minor Changes
+
+- 0af1197: Allow to upload reference sequence from file
+
 ## 1.15.0
 
 ### Minor Changes
