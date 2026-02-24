@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import type { PlRef } from '@platforma-sdk/model';
+import type { ImportFileHandle, LocalImportFileHandle, PlRef } from '@platforma-sdk/model';
+import { getRawPlatformaInstance } from '@platforma-sdk/model';
 import {
   PlAccordionSection,
   PlDropdown,
   PlDropdownMulti,
   PlDropdownRef,
+  PlFileInput,
   PlNumberField,
   PlSectionSeparator,
   PlTextArea,
@@ -40,11 +42,52 @@ function setInput(inputRef: PlRef | undefined) {
   else app.model.args.title = undefined;
 }
 
+const fileError = ref<string | undefined>();
+
+async function setReferenceFile(file: ImportFileHandle | undefined) {
+  if (!file) {
+    fileError.value = undefined;
+    app.model.args.vGenes = undefined;
+    app.model.args.jGenes = undefined;
+    app.model.args.cdr3Sequences = undefined;
+    return;
+  }
+
+  try {
+    const data = await getRawPlatformaInstance().lsDriver.getLocalFileContent(file as LocalImportFileHandle);
+    const content = new TextDecoder().decode(data);
+    const result = parseFasta(content);
+
+    if (result.isValid) {
+      fileError.value = undefined;
+      app.model.args.vGenes = result.vGenes;
+      app.model.args.jGenes = result.jGenes;
+      app.model.args.cdr3Sequences = result.cdr3Sequences;
+      // Clear paste input when file is set
+      app.model.ui.librarySequence = undefined;
+    } else {
+      fileError.value = result.error;
+      app.model.args.vGenes = undefined;
+      app.model.args.jGenes = undefined;
+      app.model.args.cdr3Sequences = undefined;
+    }
+  } catch (e) {
+    fileError.value = `Failed to read file: ${e instanceof Error ? e.message : 'Unknown error'}`;
+    app.model.args.vGenes = undefined;
+    app.model.args.jGenes = undefined;
+    app.model.args.cdr3Sequences = undefined;
+  }
+}
+
 // Watch for sequence changes and validate
 watch(
   () => app.model.ui.librarySequence,
   (newSequence) => {
     if ((newSequence || '').trim()) {
+      // Clear file input when text is entered
+      app.model.args.referenceFileHandle = undefined;
+      fileError.value = undefined;
+
       const result = parseFasta(newSequence || '');
 
       // If validation is successful, save the extracted sequences to args
@@ -182,13 +225,25 @@ watch(stopCodonSelection, (selected) => {
     @update:model-value="setInput"
   />
 
+  <PlFileInput
+    v-model="app.model.args.referenceFileHandle"
+    label="Reference sequence file (FASTA)"
+    :extensions="['fasta', 'fa']"
+    :error="fileError"
+    clearable
+    @update:model-value="setReferenceFile"
+  >
+    <template #tooltip>
+      Import a FASTA file with nucleotide reference sequence(s). Multiple FASTA records are supported. The header will be used as part of V and J gene names (e.g., header_Vgene, header_Jgene). The sequence must cover VDJRegion.
+    </template>
+  </PlFileInput>
+
   <PlTextArea
     v-model="app.model.ui.librarySequence"
-    label="Reference sequence (FASTA format)"
+    label="Or paste reference sequence (FASTA format)"
     placeholder=">ref_name
 ATCGATCGATCG..."
     :rows="8"
-    :required="true"
     :error="fastaError"
   >
     <template #tooltip>
