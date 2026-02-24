@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow
 
+## 1.19.3
+
+### Patch Changes
+
+- 8685e8d: Add new mutation columns
+
 ## 1.19.2
 
 ### Patch Changes
