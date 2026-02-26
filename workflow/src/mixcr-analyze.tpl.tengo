@@ -95,6 +95,7 @@ self.body(func(inputs) {
 	badQualityThreshold := params.badQualityThreshold
 	if !is_undefined(badQualityThreshold) {
 		mixcrCmdBuilder.arg("-Massemble.cloneAssemblerParameters.badQualityThreshold=" + string(int(badQualityThreshold)))
+		mixcrCmdBuilder.arg("-Massemble.cloneAssemblerParameters.minimalQuality=" + string(int(badQualityThreshold)))
 	}
 
 		// if (!is_undefined(threePrimePrimer)) {
