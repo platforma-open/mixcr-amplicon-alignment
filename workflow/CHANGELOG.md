@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow
 
+## 1.19.4
+
+### Patch Changes
+
+- 0f80c38: Add minimalQuality arg to mixcr tool
+
 ## 1.19.3
 
 ### Patch Changes
