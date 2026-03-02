@@ -129,16 +129,16 @@ export function parseFasta(content: string): FastaParseResult {
     const recordIdentifier = header ? `Record "${header}"` : `Record ${i + 1}`;
     const headerRoot = header ? header.split('|')[0]?.trim() : '';
 
-    // Clean the sequence (remove whitespace, convert to uppercase, and replace IUPAC wildcards with A)
+    // Clean the sequence (remove whitespace, convert to uppercase, and normalize IUPAC wildcards to N)
     const cleanSequence = sequence
       .toUpperCase()
       .replace(/\s/g, '')
-      .replace(/[NRYWSKMBDHV]/g, 'A'); // Replace all IUPAC wildcards with A
+      .replace(/[RYWSKMBDHV]/g, 'N'); // Replace all IUPAC wildcards with N
 
     // Validate sequence contains only valid DNA characters (excluding wildcards which we already replaced)
-    const validDNACars = /^[ACGT]+$/;
+    const validDNACars = /^[ACGTN]+$/;
     if (!cleanSequence || !validDNACars.test(cleanSequence)) {
-      const invalidChars = cleanSequence.match(/[^ACGT]/g);
+      const invalidChars = cleanSequence.match(/[^ACGTN]/g);
       const error = `${recordIdentifier}: Invalid DNA characters: ${invalidChars?.join(
         ', ',
       )}`;
@@ -157,7 +157,9 @@ export function parseFasta(content: string): FastaParseResult {
       return { isValid: false, error };
     }
 
-    // If the whole reference sequence (record) is in frame, append one nucleotide
+    // repseqio fromFasta rejects sequences with wildcards, so replace N→A for V/J genes.
+    // CDR3 sequences keep N's for the distance calculation tool.
+    const sequenceWithoutN = cleanSequence.replace(/N/g, 'A');
     const referenceSequence = cleanSequence;
 
     // Translate DNA to protein for pattern validation using the adjusted reference sequence
@@ -168,15 +170,9 @@ export function parseFasta(content: string): FastaParseResult {
       return { isValid: false, error };
     }
 
-    // Check if translation contains unknown amino acids
-    if (translatedSequence.includes('X')) {
-      const error = `${recordIdentifier}: Translation contains unknown amino acids (X) due to invalid codons`;
-      return { isValid: false, error };
-    }
-
     // Apply the regex validation and capture CDR3 (up to the conserved W/F/L/Y/I)
     const validationRegex
-      = /C([ACDEFGHIKLMNPQRSTVWY]{4,50}[FWYLI])[ACDEFGHIKLMNPQRSTVWY]{0,5}G[ACDEFGHIKLMNPQRSTVWY]G/;
+      = /C([ACDEFGHIKLMNPQRSTVWYX]{4,50}[FWYLIX])[ACDEFGHIKLMNPQRSTVWYX]{0,5}G[ACDEFGHIKLMNPQRSTVWYX]G/;
 
     // Only search from position 80 onwards (240 nucleotides)
     const searchStartPosition = 80; // 240 nucleotides / 3 = 80 amino acids
@@ -203,14 +199,16 @@ export function parseFasta(content: string): FastaParseResult {
     const cdr3HalfLengthNucleotides = Math.floor(cdr3LengthNucleotides / 2);
 
     // V gene: from beginning to first cysteine + half of CDR3
+    // Use sequenceWithoutN (N→A) since repseqio fromFasta rejects wildcard nucleotides
     const vGeneEndNucleotides = cdr3StartNucleotides + cdr3HalfLengthNucleotides;
-    const vGeneSequence = referenceSequence.substring(0, vGeneEndNucleotides);
+    const vGeneSequence = sequenceWithoutN.substring(0, vGeneEndNucleotides);
     const vGeneHeader = headerRoot ? `${headerRoot}_Vgene` : 'ref_Vgene';
     const vGene = `>${vGeneHeader}\n${vGeneSequence}`;
 
     // J gene: from second half of CDR3 to sequence end
+    // Use sequenceWithoutN (N→A) since repseqio fromFasta rejects wildcard nucleotides
     const jGeneStartNucleotides = cdr3StartNucleotides + cdr3HalfLengthNucleotides;
-    const jGeneSequence = referenceSequence.substring(jGeneStartNucleotides);
+    const jGeneSequence = sequenceWithoutN.substring(jGeneStartNucleotides);
     const jGeneHeader = headerRoot ? `${headerRoot}_Jgene` : 'ref_Jgene';
     const jGene = `>${jGeneHeader}\n${jGeneSequence}`;
 
