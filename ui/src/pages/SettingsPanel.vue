@@ -15,7 +15,7 @@ import {
 } from '@platforma-sdk/ui-vue';
 import { computed, ref, watch } from 'vue';
 import { useApp } from '../app';
-import { parseFasta } from '../utils/parseFasta';
+import { parseFasta, parseFastaRecords } from '../utils/parseFasta';
 
 const app = useApp();
 
@@ -32,6 +32,61 @@ type StopCodonType = 'amber' | 'ochre' | 'opal';
 
 // Validation state management
 const fastaError = ref<string | undefined>();
+
+// Record selection state
+const allRecordHeaders = ref<string[]>([]);
+const fileContent = ref<string | undefined>();
+
+const recordOptions = computed(() =>
+  allRecordHeaders.value.map((h) => ({ value: h, label: h })),
+);
+
+const selectedHeaders = computed({
+  get: () => app.model.ui.selectedRecordHeaders ?? allRecordHeaders.value,
+  set: (value: string[]) => {
+    app.model.ui.selectedRecordHeaders = value;
+  },
+});
+
+function revalidateFromContent(content: string) {
+  const effectiveSelection = app.model.ui.selectedRecordHeaders;
+  const result = parseFasta(content, effectiveSelection);
+
+  if (result.isValid) {
+    fastaError.value = undefined;
+    fileError.value = undefined;
+    app.model.args.vGenes = result.vGenes;
+    app.model.args.jGenes = result.jGenes;
+    app.model.args.cdr3Sequences = result.cdr3Sequences;
+  } else {
+    fastaError.value = result.error;
+    app.model.args.vGenes = undefined;
+    app.model.args.jGenes = undefined;
+    app.model.args.cdr3Sequences = undefined;
+  }
+
+  return result;
+}
+
+function processContent(content: string) {
+  const records = parseFastaRecords(content);
+  const headers = records.map((r) => r.header).filter((h) => h.length > 0);
+  allRecordHeaders.value = headers;
+
+  // Prune stale selections
+  if (app.model.ui.selectedRecordHeaders) {
+    const valid = app.model.ui.selectedRecordHeaders.filter((h) => headers.includes(h));
+    app.model.ui.selectedRecordHeaders = valid.length > 0 ? valid : undefined;
+  }
+
+  return revalidateFromContent(content);
+}
+
+function clearRecordSelection() {
+  allRecordHeaders.value = [];
+  app.model.ui.selectedRecordHeaders = undefined;
+  fileContent.value = undefined;
+}
 
 function setInput(inputRef: PlRef | undefined) {
   app.model.args.datasetRef = inputRef;
@@ -50,32 +105,29 @@ async function setReferenceFile(file: ImportFileHandle | undefined) {
     app.model.args.vGenes = undefined;
     app.model.args.jGenes = undefined;
     app.model.args.cdr3Sequences = undefined;
+    clearRecordSelection();
     return;
   }
 
   try {
     const data = await getRawPlatformaInstance().lsDriver.getLocalFileContent(file as LocalImportFileHandle);
     const content = new TextDecoder().decode(data);
-    const result = parseFasta(content);
+    fileContent.value = content;
+    app.model.ui.selectedRecordHeaders = undefined;
+    const result = processContent(content);
 
     if (result.isValid) {
-      fileError.value = undefined;
-      app.model.args.vGenes = result.vGenes;
-      app.model.args.jGenes = result.jGenes;
-      app.model.args.cdr3Sequences = result.cdr3Sequences;
       // Clear paste input when file is set
       app.model.ui.librarySequence = undefined;
     } else {
       fileError.value = result.error;
-      app.model.args.vGenes = undefined;
-      app.model.args.jGenes = undefined;
-      app.model.args.cdr3Sequences = undefined;
     }
   } catch (e) {
     fileError.value = `Failed to read file: ${e instanceof Error ? e.message : 'Unknown error'}`;
     app.model.args.vGenes = undefined;
     app.model.args.jGenes = undefined;
     app.model.args.cdr3Sequences = undefined;
+    clearRecordSelection();
   }
 }
 
@@ -87,30 +139,30 @@ watch(
       // Clear file input when text is entered
       app.model.args.referenceFileHandle = undefined;
       fileError.value = undefined;
+      fileContent.value = undefined;
+      app.model.ui.selectedRecordHeaders = undefined;
 
-      const result = parseFasta(newSequence || '');
-
-      // If validation is successful, save the extracted sequences to args
-      if (result.isValid) {
-        fastaError.value = undefined;
-        app.model.args.vGenes = result.vGenes;
-        app.model.args.jGenes = result.jGenes;
-        app.model.args.cdr3Sequences = result.cdr3Sequences;
-      } else {
-        // show error and clear sequences if validation fails
-        fastaError.value = result.error;
-        app.model.args.vGenes = undefined;
-        app.model.args.jGenes = undefined;
-        app.model.args.cdr3Sequences = undefined;
-      }
+      processContent(newSequence || '');
     } else {
       fastaError.value = undefined;
       app.model.args.vGenes = undefined;
       app.model.args.jGenes = undefined;
       app.model.args.cdr3Sequences = undefined;
+      clearRecordSelection();
     }
   },
   { immediate: true },
+);
+
+// Watch for selection changes and re-validate (does NOT write back to selectedRecordHeaders)
+watch(
+  () => app.model.ui.selectedRecordHeaders,
+  () => {
+    const content = fileContent.value ?? app.model.ui.librarySequence;
+    if (content && content.trim()) {
+      revalidateFromContent(content);
+    }
+  },
 );
 
 const chainOptions = [
@@ -250,6 +302,19 @@ ATCGATCGATCG..."
       Paste the nucleotide sequence(s) in FASTA format. Multiple FASTA records are supported. The header will be used as part of V and J gene names (e.g., header_Vgene, header_Jgene). The sequence must cover VDJRegion.
     </template>
   </PlTextArea>
+
+  <PlDropdownMulti
+    v-if="allRecordHeaders.length >= 2"
+    v-model="selectedHeaders"
+    :options="recordOptions"
+    label="Select reference sequences"
+    clearable
+  >
+    <template #tooltip>
+      Choose which FASTA records to use. By default all records are selected.
+    </template>
+  </PlDropdownMulti>
+
   <PlDropdown
     v-model="chains"
     :options="chainOptions"
