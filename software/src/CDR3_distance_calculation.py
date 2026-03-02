@@ -131,24 +131,36 @@ class MyersPrecomp:
     m: int
     mask: int
     last: int
+    wildcard_mask: int  # bitmask of positions with wildcard chars (always match)
+    effective_m: int  # pattern length excluding wildcard positions
 
 
-def myers_precompute(pattern: str) -> MyersPrecomp:
+def myers_precompute(pattern: str, wildcards: frozenset[str] = frozenset()) -> MyersPrecomp:
     """
     Precompute bitmasks for Myers algorithm for a given pattern.
     Works for any pattern length m >= 0, using Python big ints.
+
+    Positions where pattern[i] is in `wildcards` will match any text character,
+    so they never contribute to the edit distance.
     """
     m = len(pattern)
     if m == 0:
-        return MyersPrecomp(peq={}, m=0, mask=0, last=0)
+        return MyersPrecomp(peq={}, m=0, mask=0, last=0, wildcard_mask=0, effective_m=0)
 
     peq: Dict[str, int] = {}
+    wildcard_mask = 0
+    wildcard_count = 0
     for i, ch in enumerate(pattern):
-        peq[ch] = peq.get(ch, 0) | (1 << i)
+        if ch in wildcards:
+            wildcard_mask |= (1 << i)
+            wildcard_count += 1
+        else:
+            peq[ch] = peq.get(ch, 0) | (1 << i)
 
     mask = (1 << m) - 1
     last = 1 << (m - 1)
-    return MyersPrecomp(peq=peq, m=m, mask=mask, last=last)
+    return MyersPrecomp(peq=peq, m=m, mask=mask, last=last,
+                        wildcard_mask=wildcard_mask, effective_m=m - wildcard_count)
 
 
 def myers_distance(pre: MyersPrecomp, text: str, best_so_far: int | None = None) -> int:
@@ -169,6 +181,7 @@ def myers_distance(pre: MyersPrecomp, text: str, best_so_far: int | None = None)
     peq = pre.peq
     mask = pre.mask
     last = pre.last
+    wc = pre.wildcard_mask
 
     # Initialize state
     pv = mask
@@ -176,7 +189,7 @@ def myers_distance(pre: MyersPrecomp, text: str, best_so_far: int | None = None)
     score = m
 
     for ch in text:
-        eq = peq.get(ch, 0)
+        eq = peq.get(ch, 0) | wc  # wildcard positions always match
 
         xv = eq | mv
         xh = (((eq & pv) + pv) ^ pv) | eq
@@ -215,6 +228,9 @@ def build_reference_set(fasta_path: str) -> List[RefEntry]:
     if not refs_raw:
         raise ValueError(f"No reference sequences found in FASTA: {fasta_path}")
 
+    nuc_wildcards = frozenset({"N"})
+    aa_wildcards = frozenset({"X"})
+
     refs: List[RefEntry] = []
     for hdr, n_seq in refs_raw:
         if not n_seq:
@@ -224,8 +240,8 @@ def build_reference_set(fasta_path: str) -> List[RefEntry]:
             RefEntry(
                 n_seq=n_seq,
                 aa_seq=aa_seq,
-                n_pre=myers_precompute(n_seq),
-                aa_pre=myers_precompute(aa_seq),
+                n_pre=myers_precompute(n_seq, nuc_wildcards),
+                aa_pre=myers_precompute(aa_seq, aa_wildcards),
             )
         )
 
@@ -238,8 +254,10 @@ def build_reference_set(fasta_path: str) -> List[RefEntry]:
 def min_dist_to_refs(query: str, refs_pre: Iterable[MyersPrecomp]) -> tuple[int, int]:
     """
     Minimal Levenshtein distance from query to any reference pattern in refs_pre.
-    Returns (min_distance, best_ref_length).
+    Returns (min_distance, best_ref_effective_length).
     Uses a length-difference lower-bound to skip hopeless refs.
+    The returned ref length excludes wildcard positions (N/X) since those
+    always match and shouldn't factor into mutation rate denominators.
     """
     best = 10**9
     best_ref_len = 0
@@ -251,7 +269,7 @@ def min_dist_to_refs(query: str, refs_pre: Iterable[MyersPrecomp]) -> tuple[int,
         d = myers_distance(pre, query)
         if d < best:
             best = d
-            best_ref_len = pre.m
+            best_ref_len = pre.effective_m
             if best == 0:
                 break
     if best == 10**9:
