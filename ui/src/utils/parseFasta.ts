@@ -6,7 +6,7 @@ export interface FastaParseResult {
   cdr3Sequences?: string;
 }
 
-interface FastaRecord {
+export interface FastaRecord {
   header: string;
   sequence: string;
 }
@@ -72,7 +72,7 @@ export function parseFastaRecords(content: string): FastaRecord[] {
  * @param content - The FASTA content to validate
  * @returns FastaParseResult with validation details
  */
-export function parseFasta(content: string): FastaParseResult {
+export function parseFasta(content: string, selectedHeaders?: string[]): FastaParseResult {
   // Check if content is empty
   if (!content.trim()) {
     return {
@@ -94,7 +94,12 @@ export function parseFasta(content: string): FastaParseResult {
   }
 
   // Parse FASTA content
-  const records = parseFastaRecords(content);
+  let records = parseFastaRecords(content);
+
+  // Filter to selected records if specified
+  if (selectedHeaders && selectedHeaders.length > 0) {
+    records = records.filter((r) => selectedHeaders.includes(r.header));
+  }
 
   if (records.length === 0) {
     return {
