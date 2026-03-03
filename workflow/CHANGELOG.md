@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow
 
+## 1.19.5
+
+### Patch Changes
+
+- 3881c3e: Upgrade MiXCR to 4.7.0-309-develop
+
 ## 1.19.4
 
 ### Patch Changes
