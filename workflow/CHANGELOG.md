@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow
 
+## 1.19.6
+
+### Patch Changes
+
+- 8fb37ed: Increase memory limit for mixcr export step to avoid OOM
+
 ## 1.19.5
 
 ### Patch Changes
