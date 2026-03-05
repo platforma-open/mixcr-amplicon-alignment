@@ -1,5 +1,16 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment.ui
 
+## 1.17.0
+
+### Minor Changes
+
+- 0b08dfc: Support wildcards in reference sequence, allow to select sequences from references
+
+### Patch Changes
+
+- Updated dependencies [0b08dfc]
+  - @platforma-open/milaboratories.mixcr-amplicon-alignment.model@1.17.0
+
 ## 1.16.0
 
 ### Minor Changes
