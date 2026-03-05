@@ -42,6 +42,7 @@ export interface BlockArgs {
 
 export interface UiState {
   librarySequence?: string;
+  selectedRecordHeaders?: string[];
   tableState: PlDataTableStateV2;
 }
 
