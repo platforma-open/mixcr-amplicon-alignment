@@ -37,11 +37,6 @@ toCombinedDomainValue := func(spec) {
  *     - V: formatted identifier for the V gene core feature
  *     - J: formatted identifier for the J gene core feature (if applicable)
  */
-assemblingFeature := "VDJRegion"
-productiveFeature := "VDJRegion"
-coreVFeature := "{FR1Begin:FR3End}"
-coreJFeature := "FR4"
-splitByC := false
 
 // sometimes we need to format assembling feature to be used in column ids
 formatId := func(input) {
@@ -57,22 +52,130 @@ addSpec := func(columns, additionalSpec) {
 	})
 }
 
+parseAssemblingFeature := func(assemblingFeature) {
+	if assemblingFeature == "VDJRegion" || assemblingFeature == "CDR3" {
+		return {
+			imputed: [],
+			nonImputed: assemblingFeature == "CDR3" ? ["CDR3"] : ["CDR1", "FR1", "FR2", "CDR2", "FR3", "CDR3", "FR4", "VDJRegion"],
+			coreGeneFeatures: {
+				V: "{FR1Begin:FR3End}",
+				J: "FR4"
+			}
+		}
+	}
+
+	be := text.split(assemblingFeature, ":")
+	if len(be) != 2 {
+		ll.panic("assemblingFeature must be in the format of 'begin:end', got " + assemblingFeature)
+	}
+	begin := be[0]
+	end := be[1]
+
+	features := ["FR1", "CDR1", "FR2", "CDR2", "FR3", "CDR3", "FR4"]
+
+	iBegin := -1
+	iEnd := -1
+
+	for i, f in features {
+		if f == begin {
+			iBegin = i
+		}
+		if f == end {
+			iEnd = i
+		}
+	}
+
+	if iBegin == -1 || iEnd == -1 {
+		ll.panic("begin or end not found in features: " + assemblingFeature)
+	}
+
+	if iBegin > iEnd {
+		ll.panic("begin is after end: " + assemblingFeature)
+	}
+
+	imputed := []
+	nonImputed := []
+
+	for i := 0; i < iBegin; i++ {
+		imputed = append(imputed, features[i])
+	}
+
+	for i := iEnd + 1; i < len(features); i++ {
+		imputed = append(imputed, features[i])
+	}
+
+	for i := iBegin; i <= iEnd; i++ {
+		nonImputed = append(nonImputed, features[i])
+	}
+
+	coreVFeature := undefined
+	coreJFeature := undefined
+
+	if begin != "CDR3" {
+		coreVFeature = "{"+begin+"Begin:FR3End}"
+	}
+
+	if end == "FR4" {
+		coreJFeature = "FR4"
+	}
+
+	if begin == "FR1" && end == "FR4" {
+		nonImputed = append(nonImputed, "VDJRegion")
+	} else {
+		imputed = append(imputed, "VDJRegion")
+	}
+
+	return {
+		imputed: imputed,
+		nonImputed: nonImputed,
+		coreGeneFeatures: {
+			V: coreVFeature,
+			J: coreJFeature
+		}
+	}
+}
+
 calculateExportSpecs := func(presetSpecForBack, blockId) {
 
-	assemblingFeature = presetSpecForBack.assemblingFeature
+	assemblingFeature := presetSpecForBack.assemblingFeature
+	imputeGermline := presetSpecForBack.imputeGermline
+	if is_undefined(imputeGermline) {
+		imputeGermline = false
+	}
 
 	splitByC := false
 
-	productiveFeature := assemblingFeature
-	coreGeneFeatures := {
-		V: "{FR1Begin:FR3End}",
-		J: "FR4"
+	parsedFeature := parseAssemblingFeature(assemblingFeature)
+
+	imputedFeaturesMap := {}
+	for f in parsedFeature.imputed {
+		imputedFeaturesMap[f] = true
 	}
+
+	formatAssemblingFeature := func(fstr) {
+		if fstr == "VDJRegion" || fstr == "CDR3" {
+			return fstr
+		}
+		parts := text.split(fstr, ":")
+		if len(parts) == 1 {
+			return "{" + parts[0] + "Begin:" + parts[0] + "End}"
+		}
+		return "{" + parts[0] + "Begin:" + parts[1] + "End}"
+	}
+
+	productiveFeature := formatAssemblingFeature(assemblingFeature)
+	
+	outputProductiveFeature := productiveFeature
+	
+	coreGeneFeatures := parsedFeature.coreGeneFeatures
 
 	// column with nucleotide sequence of this feature will be marked as anchor
 	anchorFeature := assemblingFeature
 
-	features := assemblingFeature == "CDR3" ? ["CDR3"] : ["CDR1", "FR1", "FR2", "CDR2", "FR3", "CDR3", "FR4", "VDJRegion"]
+	features := parsedFeature.nonImputed
+	if imputeGermline {
+		features = features + parsedFeature.imputed
+	}
 
 	clonotypeKeyColumns := []
 	clonotypeKeyArgs := []
@@ -84,9 +187,13 @@ calculateExportSpecs := func(presetSpecForBack, blockId) {
 			[ "-jGene" ]
 		]
 	} else {
-		clonotypeKeyColumns = ["nSeqVDJRegion", "bestVGene", "bestJGene"]
+		isVdjImputed := !is_undefined(imputedFeaturesMap["VDJRegion"]) && imputeGermline
+		vdjColName := "nSeq" + (isVdjImputed ? "Imputed" : "") + "VDJRegion"
+		vdjArgLabel := "-nFeature" + (isVdjImputed ? "Imputed" : "")
+
+		clonotypeKeyColumns = [vdjColName, "bestVGene", "bestJGene"]
 		clonotypeKeyArgs = [
-			[ "-nFeature", "VDJRegion" ],
+			[ vdjArgLabel, "VDJRegion" ],
 			[ "-vGene" ],
 			[ "-jGene" ]
 		]
@@ -314,100 +421,113 @@ inFrameFeatures := {
 		"CDR3": "CDR3"
 	}
 
-	for featureU in features {
-		featureL := text.to_lower(formatId(featureU))
-		for isAminoAcid in [true, false] {
-			featureInFrameU := isAminoAcid ? inFrameFeatures[featureU] : featureU
-			if is_undefined(featureInFrameU) {
-				featureInFrameU = featureU
-			}
-			featureInFrameL := text.to_lower(formatId(featureInFrameU))
+	for isImputed in [false, true] {
+		featuresList := isImputed ? parsedFeature.imputed : parsedFeature.nonImputed
+		if len(featuresList) == 0 {
+			continue
+		}
+		if isImputed && !imputeGermline {
+			continue
+		}
 
-			alphabet := isAminoAcid ? "aminoacid" : "nucleotide"
-			alphabetShort := isAminoAcid ? "aa" : "nt"
-			alphabetShortMixcr := isAminoAcid ? "aa" : "n"
-			columnName := alphabetShortMixcr + "Seq" + featureInFrameU
-			visibility := featureU == "VDJRegion" || featureU == "CDR3"
-			if featureU == "CDR3" {
-				cdr3SeqColumns += [ columnName ]
-			}
-			if isAminoAcid {
-				aminoAcidSeqColumns += [ columnName ]
-				aminoAcidSeqColumnPairs += [ {
-						aa: columnName,
-						nt: "nSeq" + featureU
-					} ]
-			}
-			columnsSpecPerClonotypeNoAggregates += [ {
-					column: columnName,
-					id: alphabetShortMixcr + "-seq-" + featureInFrameL,
-					naRegex: "region_not_covered",
-					spec: {
-						name: "pl7.app/vdj/sequence",
-						valueType: "String",
-						domain: {
-							"pl7.app/vdj/feature": featureInFrameU,
-							"pl7.app/alphabet": alphabet
-						},
-						annotations: a(orderP, visibility, {
-							"pl7.app/vdj/isAssemblingFeature": featureU == anchorFeature ? "true" : "false",
-							"pl7.app/vdj/isMainSequence": featureU == anchorFeature ? "true" : "false",
-							"pl7.app/vdj/imputed": "false",
-							"pl7.app/table/fontFamily": "monospace",
-							"pl7.app/label": featureInFrameU + " " + alphabetShort
-						})
-					}
-				} ]
-			exportArgs += [ [ "-" + alphabetShortMixcr + "Feature", featureInFrameU ] ]
-			orderP -= 100
-			
-			// Adding sequence annotation columns for assembling feature
-			if featureU == assemblingFeature {
-				for annotationType in annotationTypes {
-					columnName := alphabetShortMixcr + "AnnotationOf" + annotationType + "For" + featureInFrameU
-					columnsSpecPerClonotypeNoAggregates += [ {
+		imputedU := isImputed ? "Imputed" : ""
+		imputedL := text.to_lower(imputedU)
+
+		for featureU in featuresList {
+			featureL := text.to_lower(formatId(featureU))
+			for isAminoAcid in [true, false] {
+				featureInFrameU := isAminoAcid ? inFrameFeatures[featureU] : featureU
+				if is_undefined(featureInFrameU) {
+					featureInFrameU = featureU
+				}
+				featureInFrameL := text.to_lower(formatId(featureInFrameU))
+
+				alphabet := isAminoAcid ? "aminoacid" : "nucleotide"
+				alphabetShort := isAminoAcid ? "aa" : "nt"
+				alphabetShortMixcr := isAminoAcid ? "aa" : "n"
+				columnName := alphabetShortMixcr + "Seq" + imputedU + featureInFrameU
+				visibility := featureU == "VDJRegion" || featureU == "CDR3"
+				if featureU == "CDR3" {
+					cdr3SeqColumns += [ columnName ]
+				}
+				if isAminoAcid {
+					aminoAcidSeqColumns += [ columnName ]
+					aminoAcidSeqColumnPairs += [ {
+							aa: columnName,
+							nt: "nSeq" + imputedU + featureU
+						} ]
+				}
+				columnsSpecPerClonotypeNoAggregates += [ {
 						column: columnName,
-						id: alphabetShortMixcr + "-annotation-" + annotationType + "-" + featureInFrameL,
+						id: alphabetShortMixcr + "-seq-" + featureInFrameL + (isImputed ? "-imputed" : ""),
 						naRegex: "region_not_covered",
 						spec: {
-							name: "pl7.app/vdj/sequence/annotation",
+							name: "pl7.app/vdj/sequence",
 							valueType: "String",
 							domain: {
 								"pl7.app/vdj/feature": featureInFrameU,
-								"pl7.app/alphabet": alphabet,
-								"pl7.app/sequence/annotation/type": annotationType
+								"pl7.app/alphabet": alphabet
 							},
-							annotations: a(orderP, undefined, {
-								"pl7.app/label": annotationType + " annotation for " + featureInFrameU + " " + alphabetShort,
-								"pl7.app/sequence/annotation/mapping": annotationMappings[annotationType],
-								"pl7.app/sequence/isAnnotation": "true"
+							annotations: a(orderP, visibility, {
+								"pl7.app/vdj/isAssemblingFeature": featureU == anchorFeature ? "true" : "false",
+								"pl7.app/vdj/isMainSequence": featureU == anchorFeature ? "true" : "false",
+								"pl7.app/vdj/imputed": string(isImputed),
+								"pl7.app/table/fontFamily": "monospace",
+								"pl7.app/label": (isImputed ? "Imputed " : "") + featureInFrameU + " " + alphabetShort
 							})
 						}
 					} ]
-					exportArgs += [ [ "-" + alphabetShortMixcr + "AnnotationString", annotationType, featureInFrameU ] ]
-					orderP -= 100
-				}
-			}
-			
-			// For now calculate length only for CDR3 to keep the number of columns manageable
-			if featureU == "CDR3" {
-				columnsSpecPerClonotypeNoAggregates += [ {
-					column: alphabetShortMixcr + "Length" + featureU,
-					id: alphabetShortMixcr + "-length-" + featureL,
-					naRegex: "region_not_covered",
-					spec: {
-						name: "pl7.app/vdj/sequenceLength",
-						valueType: "Int",
-						domain: {
-							"pl7.app/vdj/feature": featureU,
-							"pl7.app/alphabet": alphabet
-						},
-						annotations: a(orderP, false, {
-							"pl7.app/label": "Length of " + featureU + " " + alphabetShort
-						})
+				exportArgs += [ [ "-" + alphabetShortMixcr + "Feature" + imputedU, featureInFrameU ] ]
+				orderP -= 100
+				
+				// Adding sequence annotation columns for assembling feature
+				if !isImputed && featureU == assemblingFeature {
+					for annotationType in annotationTypes {
+						columnName := alphabetShortMixcr + "AnnotationOf" + annotationType + "For" + featureInFrameU
+						columnsSpecPerClonotypeNoAggregates += [ {
+							column: columnName,
+							id: alphabetShortMixcr + "-annotation-" + annotationType + "-" + featureInFrameL,
+							naRegex: "region_not_covered",
+							spec: {
+								name: "pl7.app/vdj/sequence/annotation",
+								valueType: "String",
+								domain: {
+									"pl7.app/vdj/feature": featureInFrameU,
+									"pl7.app/alphabet": alphabet,
+									"pl7.app/sequence/annotation/type": annotationType
+								},
+								annotations: a(orderP, undefined, {
+									"pl7.app/label": annotationType + " annotation for " + featureInFrameU + " " + alphabetShort,
+									"pl7.app/sequence/annotation/mapping": annotationMappings[annotationType],
+									"pl7.app/sequence/isAnnotation": "true"
+								})
+							}
+						} ]
+						exportArgs += [ [ "-" + alphabetShortMixcr + "AnnotationString", annotationType, featureInFrameU ] ]
+						orderP -= 100
 					}
-				} ]
-				exportArgs += [ [ "-" + alphabetShortMixcr + "Length", featureU ] ]
+				}
+				
+				// For now calculate length only for CDR3 to keep the number of columns manageable
+				if !isImputed && featureU == "CDR3" {
+					columnsSpecPerClonotypeNoAggregates += [ {
+						column: alphabetShortMixcr + "Length" + featureU,
+						id: alphabetShortMixcr + "-length-" + featureL,
+						naRegex: "region_not_covered",
+						spec: {
+							name: "pl7.app/vdj/sequenceLength",
+							valueType: "Int",
+							domain: {
+								"pl7.app/vdj/feature": featureU,
+								"pl7.app/alphabet": alphabet
+							},
+							annotations: a(orderP, false, {
+								"pl7.app/label": "Length of " + featureU + " " + alphabetShort
+							})
+						}
+					} ]
+					exportArgs += [ [ "-" + alphabetShortMixcr + "Length", featureU ] ]
+				}
 			}
 		}
 	}
@@ -509,8 +629,8 @@ inFrameFeatures := {
 		}
 	}
 
-	// All nucleotide mutations count for each feature (only for VDJRegion assembling feature)
-	if assemblingFeature == "VDJRegion" {
+	// All nucleotide mutations count for each feature (only for VDJRegion or FR1:FR4 assembling feature)
+	if assemblingFeature == "VDJRegion" || assemblingFeature == "FR1:FR4" {
 		orderP = 9500
 		
 		// MixCR -allNMutationsCount exports columns for all features between specified boundaries.
@@ -793,11 +913,11 @@ inFrameFeatures := {
 			visibility: false
 		}
 	]
-	mainIsProductiveColumn := flagColumnVariants[0].columnPrefix + productiveFeature
+	mainIsProductiveColumn := flagColumnVariants[0].columnPrefix + outputProductiveFeature
 	mainIsProductiveArgs := [ [ flagColumnVariants[0].arg, productiveFeature ] ]
 	for variant in flagColumnVariants {
 		columnsSpecPerClonotypeNoAggregates += [ {
-				column: variant.columnPrefix + productiveFeature,
+				column: variant.columnPrefix + outputProductiveFeature,
 				id: variant.id,
 				allowNA: false,
 				spec: {
