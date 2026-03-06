@@ -37,4 +37,6 @@ catalog:
   '@vueuse/core': ^13.5.0
   '@zip.js/zip.js': ^2.8.2
   '@types/wicg-file-system-access': ^2023.10.6
+  '@platforma-open/milaboratories.samples-and-data': ^1.10.14
+  '@platforma-open/milaboratories.samples-and-data.model': ^1.11.2
   'zod': ^3.23.8
