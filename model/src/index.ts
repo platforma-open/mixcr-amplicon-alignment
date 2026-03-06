@@ -10,7 +10,7 @@ import {
 import { ProgressPrefix } from './progress';
 
 export type CloneClusteringMode = 'relaxed' | 'default' | 'off';
-export type AssemblingFeature = 'VDJRegion' | 'CDR3';
+export type AssemblingFeature = string;
 export type StopCodonType = 'amber' | 'ochre' | 'opal';
 
 export interface StopCodonReplacements {
@@ -38,6 +38,7 @@ export interface BlockArgs {
   stopCodonTypes?: StopCodonType[];
   stopCodonReplacements?: StopCodonReplacements;
   referenceFileHandle?: ImportFileHandle;
+  imputeGermline?: boolean;
 }
 
 export interface UiState {
@@ -61,6 +62,7 @@ export const platforma = BlockModel.create('Heavy')
     cloneClusteringMode: 'relaxed',
     tagPattern: '',
     assemblingFeature: 'VDJRegion',
+    imputeGermline: false,
   })
   .withUiState<UiState>({
     tableState: createPlDataTableStateV2(),

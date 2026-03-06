@@ -11,6 +11,7 @@ assets := import("@platforma-sdk/workflow-tengo:assets")
 pcolumn := import("@platforma-sdk/workflow-tengo:pframes.pcolumn")
 times := import("times")
 maps := import("@platforma-sdk/workflow-tengo:maps")
+text := import("text")
 
 json := import("json")
 
@@ -69,8 +70,19 @@ self.body(func(inputs) {
 		mixcrCmdBuilder.arg("generic-amplicon")
 	}
 
+	formatAssemblingFeature := func(fstr) {
+		if fstr == "VDJRegion" || fstr == "CDR3" {
+			return fstr
+		}
+		parts := text.split(fstr, ":")
+		if len(parts) == 1 {
+			return "{" + parts[0] + "Begin:" + parts[0] + "End}"
+		}
+		return "{" + parts[0] + "Begin:" + parts[1] + "End}"
+	}
+
     mixcrCmdBuilder.
-        arg("--assemble-clonotypes-by").arg(params.assemblingFeature).
+        arg("--assemble-clonotypes-by").arg(formatAssemblingFeature(params.assemblingFeature)).
         arg("--species").arg("custom").
 		arg("--library").arg("library.json").
 		addFile("library.json", params.referenceLibrary).

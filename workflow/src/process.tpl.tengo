@@ -90,6 +90,7 @@ self.body(func(inputs) {
 	// Use calculateExportSpecs for output columns
 	presetSpecForBack := {
 		assemblingFeature: params.assemblingFeature,
+		imputeGermline: params.imputeGermline,
 		splitByC: true,
 		umiTags: hasUMI ? umiTags : undefined,
 		cellTags: []
@@ -221,6 +222,7 @@ self.body(func(inputs) {
 					hasUMI: hasUMI,
 					tagPattern: tagPattern,
 					assemblingFeature: params.assemblingFeature,
+					imputeGermline: params.imputeGermline,
 					badQualityThreshold: params.badQualityThreshold
 				}, { removeUndefs: true }),
 				limitInput: limitInput
