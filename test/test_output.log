@@ -1,0 +1,278 @@
+ WARN  Issue while reading "/Users/poslavskysv/Projects/milab/platforma/platforma-uber-repo/blocks/vdj/mixcr-amplicon-alignment/.npmrc". Failed to replace env in config: ${NPMJS_TOKEN}
+
+> @platforma-open/milaboratories.mixcr-amplicon-alignment.test@1.7.6 test /Users/poslavskysv/Projects/milab/platforma/platforma-uber-repo/blocks/vdj/mixcr-amplicon-alignment/test
+> vitest --run --passWithNoTests
+
+
+[1m[46m RUN [49m[22m [36mv4.0.18 [39m[90m/Users/poslavskysv/Projects/milab/platforma/platforma-uber-repo/blocks/vdj/mixcr-amplicon-alignment/test[39m
+
+ [32m✓[39m src/debugOutput.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 1[2mms[22m[39m
+ [32m✓[39m src/alignmentChartSettings.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2mempty inputs
+[22m[39mPFrames HTTP server started on https://[::1]:49230/
+
+parseTemplate in worker took 110.2471660000001ms
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2msimple project
+[22m[39mPFrames HTTP server started on https://[::1]:49234/
+
+parseTemplate in worker took 107.20591700000023ms
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2msimple project
+[22m[39mstarted to upload blob 3174020, parts overall: 1, parts remained: 1, number of concurrent uploads: 10
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2msimple project
+[22m[39muploaded chunk 1/1 of resource: 3174020
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2msimple project
+[22m[39muploading of resource 3174020 finished.
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2msimple project
+[22m[39mstarted to upload blob 3174018, parts overall: 1, parts remained: 1, number of concurrent uploads: 10
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2msimple project
+[22m[39muploaded chunk 1/1 of resource: 3174018
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2msimple project
+[22m[39muploading of resource 3174018 finished.
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2msimple project
+[22m[39mPFrame 3ca6106282a45cb6164efbfe5587a366837f8de6740ba320617f51c3f3c64b49 created
+PFrame 7e4bc2fb80b33f92b1617e24a2d8ad555d7ae4c0b18caa404853a58ee59409e8 created
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2msimple project
+[22m[39mPFrames blob store requesting content for 3179769, range [0..=8362]
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2msimple project
+[22m[39mPFrames blob store requesting content for 3179769, range [0..=8362]
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2msimple project
+[22m[39mblob {"id":"NG:0x2b98b0","type":{"name":"Blob/primary","version":"1"}} download started, url: http://127.0.0.1:6347/api/storage/primary/download/irb/eq6/qr2/irbeq6qr2e2xqzr9qe2nifymg3zdnaxedtfrhqayego6rgr4b3fgvix4w4ee0ijt.report.json?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=%2F20260306%2Fpl%2Ffs%2Faws4_request&X-Amz-Date=20260306T174725Z&X-Amz-Expires=3600&X-Amz-SignedHeaders=host&X-Amz-Signature=7cdba55df9255b94b97d693e759084fb416619d2c8bd106ae9d34abf8dacdaee, range: null
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2msimple project
+[22m[39mblob {"id":"NG:0x2b98b1","type":{"name":"Blob/primary","version":"1"}} download started, url: http://127.0.0.1:6347/api/storage/primary/download/fmo/joi/h5l/fmojoih5lxrez7xqo34kdm3zvltanv6glyss4dag1x551eyngdyg70f1n507hgyw.report.json?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=%2F20260306%2Fpl%2Ffs%2Faws4_request&X-Amz-Date=20260306T174725Z&X-Amz-Expires=3600&X-Amz-SignedHeaders=host&X-Amz-Signature=e2912efc1259500a3e152c42be8f1553ebea4c5a226867faa431cf1c555d9263, range: null
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2msimple project
+[22m[39mblob {"id":"NG:0x2b98a9","type":{"name":"Blob/primary","version":"1"}} download started, url: http://127.0.0.1:6347/api/storage/primary/download/2f3/5xt/2ef/2f35xt2efbsjqw61wh48jwn338x6ktjnxb1gqnx43ve1qmrnxkkv2s7n7dgrgd40.txt?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=%2F20260306%2Fpl%2Ffs%2Faws4_request&X-Amz-Date=20260306T174725Z&X-Amz-Expires=3600&X-Amz-SignedHeaders=host&X-Amz-Signature=ba3eef87f32abace89b0af17b4cb774bc11d1f0d88daf72fedbb79bda3360c05, range: null
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2msimple project
+[22m[39mblob {"id":"NG:0x2b98ae","type":{"name":"Blob/primary","version":"1"}} download started, url: http://127.0.0.1:6347/api/storage/primary/download/3lf/3qk/7kh/3lf3qk7khre0n32no0a20ddzie3vs4amvjv4nhnq02an3734ksg2wnw0flob36mb.report.txt?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=%2F20260306%2Fpl%2Ffs%2Faws4_request&X-Amz-Date=20260306T174725Z&X-Amz-Expires=3600&X-Amz-SignedHeaders=host&X-Amz-Signature=584a103ca3a046bb2b974f91c901db87c0429fa3330d2eb8f349c135893133c1, range: null
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2msimple project
+[22m[39mblob {"id":"NG:0x2b98af","type":{"name":"Blob/primary","version":"1"}} download started, url: http://127.0.0.1:6347/api/storage/primary/download/r8j/a4r/we3/r8ja4rwe3qab6lns602hm3dowslj3tirsh42n758weja6rx8hh2dobm63vixr02d.report.txt?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=%2F20260306%2Fpl%2Ffs%2Faws4_request&X-Amz-Date=20260306T174725Z&X-Amz-Expires=3600&X-Amz-SignedHeaders=host&X-Amz-Signature=be1deb1d93197d276e3ddb3abc64b68b0a35d66e31513cbb72f6c0060b21313b, range: null
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2msimple project
+[22m[39mblob {"id":"NG:0x2b98c5","type":{"name":"Blob/primary","version":"1"}} download started, url: http://127.0.0.1:6347/api/storage/primary/download/ft9/6a8/hto/ft96a8htoy2ijg46ednbxv9zzwd5dhgdqaqd1a3y7f8wrafia6q56vbexzsi2xld.qc.json?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=%2F20260306%2Fpl%2Ffs%2Faws4_request&X-Amz-Date=20260306T174725Z&X-Amz-Expires=3600&X-Amz-SignedHeaders=host&X-Amz-Signature=90718c918b80fcaabdb6752ce007249cd6370abcf032d288300472071cd66d04, range: null
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2msimple project
+[22m[39mblob {"id":"NG:0x2b98a9","type":{"name":"Blob/primary","version":"1"}} download finished, took: 9ms
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2msimple project
+[22m[39mblob {"id":"NG:0x3084f9","type":{"name":"Blob/primary","version":"1"}} download started, url: http://127.0.0.1:6347/api/storage/primary/download/t3x/4bz/6rw/t3x4bz6rwqyif7tb33xtfo2txkt6l3bb6zhfh5btf69gqqda2sfy9dz4b83dg2i6.parquet?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=%2F20260306%2Fpl%2Ffs%2Faws4_request&X-Amz-Date=20260306T174725Z&X-Amz-Expires=3600&X-Amz-SignedHeaders=host&X-Amz-Signature=37e2b081356ddc5e1af0cbef6e683e7cd585cc9202ea2d110e612a140b252fd7, range: {"from":0,"to":8363}
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2msimple project
+[22m[39mblob {"id":"NG:0x3084f9","type":{"name":"Blob/primary","version":"1"}} download started, url: http://127.0.0.1:6347/api/storage/primary/download/t3x/4bz/6rw/t3x4bz6rwqyif7tb33xtfo2txkt6l3bb6zhfh5btf69gqqda2sfy9dz4b83dg2i6.parquet?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=%2F20260306%2Fpl%2Ffs%2Faws4_request&X-Amz-Date=20260306T174725Z&X-Amz-Expires=3600&X-Amz-SignedHeaders=host&X-Amz-Signature=37e2b081356ddc5e1af0cbef6e683e7cd585cc9202ea2d110e612a140b252fd7, range: {"from":0,"to":8363}
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2msimple project
+[22m[39mblob {"id":"NG:0x2b98c5","type":{"name":"Blob/primary","version":"1"}} download finished, took: 11ms
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2msimple project
+[22m[39mblob {"id":"NG:0x3084f9","type":{"name":"Blob/primary","version":"1"}} download finished, took: 4ms
+blob {"id":"NG:0x3084f9","type":{"name":"Blob/primary","version":"1"}} download finished, took: 5ms
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2msimple project
+[22m[39mblob {"id":"NG:0x2b98b0","type":{"name":"Blob/primary","version":"1"}} download finished, took: 17ms
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2msimple project
+[22m[39mblob {"id":"NG:0x2b98ae","type":{"name":"Blob/primary","version":"1"}} download finished, took: 17ms
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2msimple project
+[22m[39mblob {"id":"NG:0x2b98b1","type":{"name":"Blob/primary","version":"1"}} download finished, took: 18ms
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2msimple project
+[22m[39mblob {"id":"NG:0x2b98af","type":{"name":"Blob/primary","version":"1"}} download finished, took: 18ms
+
+[90mstderr[2m | src/wf.test.ts[2m > [22m[2msimple project
+[22m[39merror while creating a file atomically: ENOENT: no such file or directory, open '/Users/poslavskysv/Projects/milab/platforma/platforma-uber-repo/blocks/vdj/mixcr-amplicon-alignment/test/work/e2fc7478-f4fd-4660-a977-3556c8f68e12/downloadRangesCache/3179769.ranges.json.tmp.d073f85a40ba07fa'
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2mFR2:FR4 with imputation
+[22m[39mPFrames HTTP server started on https://[::1]:49265/
+
+[90mstderr[2m | src/wf.test.ts[2m > [22m[2mFR2:FR4 with imputation
+[22m[39mError: Channel has been shut down
+    at InternalChannel.createCall (/Users/poslavskysv/Projects/milab/platforma/platforma-uber-repo/blocks/vdj/mixcr-amplicon-alignment/node_modules/[4m.pnpm[24m/@grpc+grpc-js@1.13.4/node_modules/[4m@grpc[24m/grpc-js/build/src/internal-channel.js:596:19)
+    at ChannelImplementation.createCall (/Users/poslavskysv/Projects/milab/platforma/platforma-uber-repo/blocks/vdj/mixcr-amplicon-alignment/node_modules/[4m.pnpm[24m/@grpc+grpc-js@1.13.4/node_modules/[4m@grpc[24m/grpc-js/build/src/channel.js:64:37)
+    at getCall (/Users/poslavskysv/Projects/milab/platforma/platforma-uber-repo/blocks/vdj/mixcr-amplicon-alignment/node_modules/[4m.pnpm[24m/@grpc+grpc-js@1.13.4/node_modules/[4m@grpc[24m/grpc-js/build/src/client-interceptors.js:254:26)
+    at getBottomInterceptingCall (/Users/poslavskysv/Projects/milab/platforma/platforma-uber-repo/blocks/vdj/mixcr-amplicon-alignment/node_modules/[4m.pnpm[24m/@grpc+grpc-js@1.13.4/node_modules/[4m@grpc[24m/grpc-js/build/src/client-interceptors.js:377:18)
+    at /Users/poslavskysv/Projects/milab/platforma/platforma-uber-repo/blocks/vdj/mixcr-amplicon-alignment/node_modules/[4m.pnpm[24m/@grpc+grpc-js@1.13.4/node_modules/[4m@grpc[24m/grpc-js/build/src/client-interceptors.js:425:26
+    at file:///Users/poslavskysv/Projects/milab/platforma/platforma-uber-repo/blocks/vdj/mixcr-amplicon-alignment/node_modules/[4m.pnpm[24m/@milaboratories+pl-client@2.16.29/node_modules/[4m@milaboratories[24m/pl-client/dist/core/ll_client.js:319:41
+    at /Users/poslavskysv/Projects/milab/platforma/platforma-uber-repo/blocks/vdj/mixcr-amplicon-alignment/node_modules/[4m.pnpm[24m/@grpc+grpc-js@1.13.4/node_modules/[4m@grpc[24m/grpc-js/build/src/client-interceptors.js:424:34
+    at file:///Users/poslavskysv/Projects/milab/platforma/platforma-uber-repo/blocks/vdj/mixcr-amplicon-alignment/node_modules/[4m.pnpm[24m/@milaboratories+pl-client@2.16.29/node_modules/[4m@milaboratories[24m/pl-client/dist/core/ll_client.js:354:41
+    at /Users/poslavskysv/Projects/milab/platforma/platforma-uber-repo/blocks/vdj/mixcr-amplicon-alignment/node_modules/[4m.pnpm[24m/@grpc+grpc-js@1.13.4/node_modules/[4m@grpc[24m/grpc-js/build/src/client-interceptors.js:424:34
+    at getInterceptingCall (/Users/poslavskysv/Projects/milab/platforma/platforma-uber-repo/blocks/vdj/mixcr-amplicon-alignment/node_modules/[4m.pnpm[24m/@grpc+grpc-js@1.13.4/node_modules/[4m@grpc[24m/grpc-js/build/src/client-interceptors.js:426:12)
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2mFR2:FR4 with imputation
+[22m[39mPFrame 3ca6106282a45cb6164efbfe5587a366837f8de6740ba320617f51c3f3c64b49 disposed
+PFrame 7e4bc2fb80b33f92b1617e24a2d8ad555d7ae4c0b18caa404853a58ee59409e8 disposed
+
+parseTemplate in worker took 149.83837499999936ms
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2mFR2:FR4 with imputation
+[22m[39mstarted to upload blob 3180356, parts overall: 1, parts remained: 1, number of concurrent uploads: 10
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2mFR2:FR4 with imputation
+[22m[39muploaded chunk 1/1 of resource: 3180356
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2mFR2:FR4 with imputation
+[22m[39muploading of resource 3180356 finished.
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2mFR2:FR4 with imputation
+[22m[39mstarted to upload blob 3180354, parts overall: 1, parts remained: 1, number of concurrent uploads: 10
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2mFR2:FR4 with imputation
+[22m[39muploaded chunk 1/1 of resource: 3180354
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2mFR2:FR4 with imputation
+[22m[39muploading of resource 3180354 finished.
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2mFR2:FR4 with imputation
+[22m[39mTEST FAILED TMP FOLDER IS PRESERVED: /Users/poslavskysv/Projects/milab/platforma/platforma-uber-repo/blocks/vdj/mixcr-amplicon-alignment/test/work/c75e1e00-851d-41e6-93f2-7c71a443d035
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2mFR2:FR4 with imputation
+[22m[39mTEST FAILED SO ALTERNATIVE ROOT IS PRESERVED IN PL: test_1772819245807_66fcd93b-7d5e-402c-9f89-29109e65aa9c (NG:0x30861e)
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2mFR2:FR4 with imputation
+[22m[39mPFrames HTTP server started on https://[::1]:49271/
+
+[90mstderr[2m | src/wf.test.ts[2m > [22m[2mFR2:FR4 with imputation
+[22m[39mError: Channel has been shut down
+    at InternalChannel.createCall (/Users/poslavskysv/Projects/milab/platforma/platforma-uber-repo/blocks/vdj/mixcr-amplicon-alignment/node_modules/[4m.pnpm[24m/@grpc+grpc-js@1.13.4/node_modules/[4m@grpc[24m/grpc-js/build/src/internal-channel.js:596:19)
+    at ChannelImplementation.createCall (/Users/poslavskysv/Projects/milab/platforma/platforma-uber-repo/blocks/vdj/mixcr-amplicon-alignment/node_modules/[4m.pnpm[24m/@grpc+grpc-js@1.13.4/node_modules/[4m@grpc[24m/grpc-js/build/src/channel.js:64:37)
+    at getCall (/Users/poslavskysv/Projects/milab/platforma/platforma-uber-repo/blocks/vdj/mixcr-amplicon-alignment/node_modules/[4m.pnpm[24m/@grpc+grpc-js@1.13.4/node_modules/[4m@grpc[24m/grpc-js/build/src/client-interceptors.js:254:26)
+    at getBottomInterceptingCall (/Users/poslavskysv/Projects/milab/platforma/platforma-uber-repo/blocks/vdj/mixcr-amplicon-alignment/node_modules/[4m.pnpm[24m/@grpc+grpc-js@1.13.4/node_modules/[4m@grpc[24m/grpc-js/build/src/client-interceptors.js:377:18)
+    at /Users/poslavskysv/Projects/milab/platforma/platforma-uber-repo/blocks/vdj/mixcr-amplicon-alignment/node_modules/[4m.pnpm[24m/@grpc+grpc-js@1.13.4/node_modules/[4m@grpc[24m/grpc-js/build/src/client-interceptors.js:425:26
+    at file:///Users/poslavskysv/Projects/milab/platforma/platforma-uber-repo/blocks/vdj/mixcr-amplicon-alignment/node_modules/[4m.pnpm[24m/@milaboratories+pl-client@2.16.29/node_modules/[4m@milaboratories[24m/pl-client/dist/core/ll_client.js:319:41
+    at /Users/poslavskysv/Projects/milab/platforma/platforma-uber-repo/blocks/vdj/mixcr-amplicon-alignment/node_modules/[4m.pnpm[24m/@grpc+grpc-js@1.13.4/node_modules/[4m@grpc[24m/grpc-js/build/src/client-interceptors.js:424:34
+    at file:///Users/poslavskysv/Projects/milab/platforma/platforma-uber-repo/blocks/vdj/mixcr-amplicon-alignment/node_modules/[4m.pnpm[24m/@milaboratories+pl-client@2.16.29/node_modules/[4m@milaboratories[24m/pl-client/dist/core/ll_client.js:354:41
+    at /Users/poslavskysv/Projects/milab/platforma/platforma-uber-repo/blocks/vdj/mixcr-amplicon-alignment/node_modules/[4m.pnpm[24m/@grpc+grpc-js@1.13.4/node_modules/[4m@grpc[24m/grpc-js/build/src/client-interceptors.js:424:34
+    at getInterceptingCall (/Users/poslavskysv/Projects/milab/platforma/platforma-uber-repo/blocks/vdj/mixcr-amplicon-alignment/node_modules/[4m.pnpm[24m/@grpc+grpc-js@1.13.4/node_modules/[4m@grpc[24m/grpc-js/build/src/client-interceptors.js:426:12)
+
+parseTemplate in worker took 100.99004100000457ms
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2mFR2:FR4 with imputation
+[22m[39mstarted to upload blob 3183562, parts overall: 1, parts remained: 1, number of concurrent uploads: 10
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2mFR2:FR4 with imputation
+[22m[39muploaded chunk 1/1 of resource: 3183562
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2mFR2:FR4 with imputation
+[22m[39muploading of resource 3183562 finished.
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2mFR2:FR4 with imputation
+[22m[39mstarted to upload blob 3183564, parts overall: 1, parts remained: 1, number of concurrent uploads: 10
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2mFR2:FR4 with imputation
+[22m[39muploaded chunk 1/1 of resource: 3183564
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2mFR2:FR4 with imputation
+[22m[39muploading of resource 3183564 finished.
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2mFR2:FR4 with imputation
+[22m[39mTEST FAILED TMP FOLDER IS PRESERVED: /Users/poslavskysv/Projects/milab/platforma/platforma-uber-repo/blocks/vdj/mixcr-amplicon-alignment/test/work/0d0713a6-49a6-4135-aa83-166eb04e3fa4
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2mFR2:FR4 with imputation
+[22m[39mTEST FAILED SO ALTERNATIVE ROOT IS PRESERVED IN PL: test_1772819262565_cf304493-12af-492f-ab52-33f739aac5cc (NG:0x3092a3)
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2mFR2:FR4 with imputation
+[22m[39mPFrames HTTP server started on https://[::1]:49278/
+
+[90mstderr[2m | src/wf.test.ts[2m > [22m[2mFR2:FR4 with imputation
+[22m[39mError: Channel has been shut down
+    at InternalChannel.createCall (/Users/poslavskysv/Projects/milab/platforma/platforma-uber-repo/blocks/vdj/mixcr-amplicon-alignment/node_modules/[4m.pnpm[24m/@grpc+grpc-js@1.13.4/node_modules/[4m@grpc[24m/grpc-js/build/src/internal-channel.js:596:19)
+    at ChannelImplementation.createCall (/Users/poslavskysv/Projects/milab/platforma/platforma-uber-repo/blocks/vdj/mixcr-amplicon-alignment/node_modules/[4m.pnpm[24m/@grpc+grpc-js@1.13.4/node_modules/[4m@grpc[24m/grpc-js/build/src/channel.js:64:37)
+    at getCall (/Users/poslavskysv/Projects/milab/platforma/platforma-uber-repo/blocks/vdj/mixcr-amplicon-alignment/node_modules/[4m.pnpm[24m/@grpc+grpc-js@1.13.4/node_modules/[4m@grpc[24m/grpc-js/build/src/client-interceptors.js:254:26)
+    at getBottomInterceptingCall (/Users/poslavskysv/Projects/milab/platforma/platforma-uber-repo/blocks/vdj/mixcr-amplicon-alignment/node_modules/[4m.pnpm[24m/@grpc+grpc-js@1.13.4/node_modules/[4m@grpc[24m/grpc-js/build/src/client-interceptors.js:377:18)
+    at /Users/poslavskysv/Projects/milab/platforma/platforma-uber-repo/blocks/vdj/mixcr-amplicon-alignment/node_modules/[4m.pnpm[24m/@grpc+grpc-js@1.13.4/node_modules/[4m@grpc[24m/grpc-js/build/src/client-interceptors.js:425:26
+    at file:///Users/poslavskysv/Projects/milab/platforma/platforma-uber-repo/blocks/vdj/mixcr-amplicon-alignment/node_modules/[4m.pnpm[24m/@milaboratories+pl-client@2.16.29/node_modules/[4m@milaboratories[24m/pl-client/dist/core/ll_client.js:319:41
+    at /Users/poslavskysv/Projects/milab/platforma/platforma-uber-repo/blocks/vdj/mixcr-amplicon-alignment/node_modules/[4m.pnpm[24m/@grpc+grpc-js@1.13.4/node_modules/[4m@grpc[24m/grpc-js/build/src/client-interceptors.js:424:34
+    at file:///Users/poslavskysv/Projects/milab/platforma/platforma-uber-repo/blocks/vdj/mixcr-amplicon-alignment/node_modules/[4m.pnpm[24m/@milaboratories+pl-client@2.16.29/node_modules/[4m@milaboratories[24m/pl-client/dist/core/ll_client.js:354:41
+    at /Users/poslavskysv/Projects/milab/platforma/platforma-uber-repo/blocks/vdj/mixcr-amplicon-alignment/node_modules/[4m.pnpm[24m/@grpc+grpc-js@1.13.4/node_modules/[4m@grpc[24m/grpc-js/build/src/client-interceptors.js:424:34
+    at getInterceptingCall (/Users/poslavskysv/Projects/milab/platforma/platforma-uber-repo/blocks/vdj/mixcr-amplicon-alignment/node_modules/[4m.pnpm[24m/@grpc+grpc-js@1.13.4/node_modules/[4m@grpc[24m/grpc-js/build/src/client-interceptors.js:426:12)
+
+parseTemplate in worker took 107.9306660000002ms
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2mFR2:FR4 with imputation
+[22m[39mstarted to upload blob 3186819, parts overall: 1, parts remained: 1, number of concurrent uploads: 10
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2mFR2:FR4 with imputation
+[22m[39muploaded chunk 1/1 of resource: 3186819
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2mFR2:FR4 with imputation
+[22m[39muploading of resource 3186819 finished.
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2mFR2:FR4 with imputation
+[22m[39mstarted to upload blob 3186821, parts overall: 1, parts remained: 1, number of concurrent uploads: 10
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2mFR2:FR4 with imputation
+[22m[39muploaded chunk 1/1 of resource: 3186821
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2mFR2:FR4 with imputation
+[22m[39muploading of resource 3186821 finished.
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2mFR2:FR4 with imputation
+[22m[39mTEST FAILED TMP FOLDER IS PRESERVED: /Users/poslavskysv/Projects/milab/platforma/platforma-uber-repo/blocks/vdj/mixcr-amplicon-alignment/test/work/d8bcf48c-2c37-4cd4-837c-c33b8b312748
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2mFR2:FR4 with imputation
+[22m[39mTEST FAILED SO ALTERNATIVE ROOT IS PRESERVED IN PL: test_1772819278440_cb2ccd87-e384-4f7f-9dd1-841c20e99cb2 (NG:0x309f60)
+
+ [31m❯[39m src/wf.test.ts [2m([22m[2m3 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[33m 81658[2mms[22m[39m
+   [33m[2m✓[22m[39m empty inputs [33m 3934[2mms[22m[39m
+   [33m[2m✓[22m[39m simple project [33m 26714[2mms[22m[39m
+[31m   [31m×[31m FR2:FR4 with imputation[39m[33m 51009[2mms[22m[39m[33m (retry x2)[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 1 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m src/wf.test.ts[2m > [22mFR2:FR4 with imputation
+[31m[1mError[22m[39m: Block error: {"errorType":"","message":"[I] \"NG:0x30885D/clonotypeTables\": has input errors:\n[I] \"NG:0x308F11/IGH.data\": has input errors:\n[I] \"NG:0x309069/[\\\"4JJBTUTSSDZBOEO4X77LPGMX\\\"]\": has input errors:\n[I] \"NG:0x30906A/blob\": has input errors:\n[I] \"NG:0x30905F/resource\": has input errors:\n[I] \"NG:0x309078/output.tsv\": has input errors:\n[I] \"NG:0x309077/resource\": has input errors:\n[I] \"NG:0x3090B7/resource\": has input errors:\n[I] \"NG:0x3090B4/inputs\": has input errors:\nworking directory: \"workdirs/0x3090D5\"\nfailed to run command: \"python\" exited with code 1.\nHere is the latest command output:\n\tError during workflow execution: unable to find column \"isProductive{FR2Begin:FR4End}\"; valid columns: [\"readCount\", \"readFraction\", \"aaSeqFR2\", \"nSeqFR2\", \"aaSeqCDR2\", \"nSeqCDR2\", \"aaSeqFR3\", \"nSeqFR3\", \"aaSeqCDR3\", \"aaLengthCDR3\", \"nSeqCDR3\", \"nLengthCDR3\", \"aaSeqFR4\", \"nSeqFR4\", \"aaSeqImputedFR1\", \"nSeqImputedFR1\", \"aaSeqImputedCDR1\", \"nSeqImputedCDR1\", \"aaSeqImputedVDJRegion\", \"nSeqImputedVDJRegion\", \"bestVHit\", \"bestVGene\", \"bestJHit\", \"bestJGene\", \"nMutationsCount{FR2Begin:FR3End}\", \"nMutationsRate{FR2Begin:FR3End}\", \"nMutationsCountFR4\", \"nMutationsRateFR4\", \"aaMutationsCount{FR2Begin:FR3End}\", \"aaMutationsRate{FR2Begin:FR3End}\", \"aaMutationsCountFR4\", \"aaMutationsRateFR4\", \"nMutationsCountGermlineVCDR3Part\", \"nMutationsCountGermlineJCDR3Part\", \"aaMutationsCountGermlineVCDR3Part\", \"aaMutationsCountGermlineJCDR3Part\", \"isProductiveFR2_TO_FR4\", \"topChains\"]\n\t\n\tResolved plan until failure:\n\t\n\t\t---\u003e FAILED HERE RESOLVING 'vertical concat' \u003c---\n\t WITH_COLUMNS:\n\t [col(\"readCount\").round().cast(Int64)] \n\t  Csv SCAN [/Users/poslavskysv/.platforma/backend/work/workdirs/0x3090D5/anonymous_1.tsv]\n\t  PROJECT */38 COLUMNS, content: {\"workflow\":[{\"delimiter\":\"\\t\",\"file\":\"anonymous_1.tsv\",\"inferSchema\":false,\"name\":\"input_table\",\"schema\":[{\"column\":\"readCount\",\"type\":\"Double\"}],\"type\":\"read_csv\"},{\"columns\":[{\"name\":\"readCount\",\"type\":\"alias\",\"value\":{\"dtype\":\"Long\",\"strict\":false,\"type\":\"cast\",\"value\":{\"type\":\"round\",\"value\":{\"name\":\"readCount\",\"type\":\"col\"}}}}],\"table\":\"input_table\",\"type\":\"add_columns\"},{\"columns\":[{\"name\":\"isProductive{FR2Begin:FR4End}\",\"type\":\"alias\",\"value\":{\"conditions\":[{\"then\":{\"type\":\"const\",\"value\":\"true\"},\"when\":{\"lhs\":{\"type\":\"to_upper\",\"value\":{\"name\":\"isProductive{FR2Begin:FR4End}\",\"type\":\"col\"}},\"rhs\":{\"type\":\"const\",\"value\":\"TRUE\"},\"type\":\"eq\"}}],\"otherwise\":{\"type\":\"const\",\"value\":\"false\"},\"type\":\"when_then_otherwise\"}}],\"table\":\"input_table\",\"type\":\"add_columns\"},{\"columns\":[{\"name\":\"clonotypeKey\",\"type\":\"alias\",\"value\":{\"bits\":120,\"encoding\":\"base64_alphanumeric\",\"hashType\":\"sha256\",\"type\":\"hash\",\"value\":{\"delimiter\":\"#\",\"operands\":[{\"name\":\"nSeqImputedVDJRegion\",\"type\":\"col\"},{\"name\":\"bestVGene\",\"type\":\"col\"},{\"name\":\"bestJGene\",\"type\":\"col\"}],\"type\":\"str_join\"}}}],\"table\":\"input_table\",\"type\":\"add_columns\"},{\"columns\":[{\"name\":\"clonotypeLabel_prefix_temp\",\"type\":\"alias\",\"value\":{\"type\":\"to_upper\",\"value\":{\"length\":{\"type\":\"const\",\"value\":5},\"start\":{\"type\":\"const\",\"value\":0},\"type\":\"substring\",\"value\":{\"literal\":false,\"pattern\":{\"type\":\"const\",\"value\":\"\\\\d\"},\"replaceAll\":true,\"replacement\":{\"type\":\"const\",\"value\":\"\"},\"type\":\"str_replace\",\"value\":{\"name\":\"clonotypeKey\",\"type\":\"col\"}}}}}],\"inputTable\":\"input_table\",\"outputTable\":\"anonymous_1\",\"type\":\"with_columns\"},{\"columns\":[{\"name\":\"clonotypeLabel_rank_temp\",\"type\":\"alias\",\"value\":{\"descending\":false,\"orderBy\":[{\"name\":\"clonotypeKey\",\"type\":\"col\"}],\"partitionBy\":[{\"name\":\"clonotypeLabel_prefix_temp\",\"type\":\"col\"}],\"type\":\"rank\"}}],\"inputTable\":\"anonymous_1\",\"outputTable\":\"anonymous_2\",\"type\":\"with_columns\"},{\"columns\":[{\"name\":\"clonotypeLabel\",\"type\":\"alias\",\"value\":{\"conditions\":[{\"then\":{\"delimiter\":\"-\",\"operands\":[{\"type\":\"const\",\"value\":\"C\"},{\"name\":\"clonotypeLabel_prefix_temp\",\"type\":\"col\"},{\"dtype\":\"String\",\"strict\":false,\"type\":\"cast\",\"value\":{\"name\":\"clonotypeLabel_rank_temp\",\"type\":\"col\"}}],\"type\":\"str_join\"},\"when\":{\"lhs\":{\"name\":\"clonotypeLabel_rank_temp\",\"type\":\"col\"},\"rhs\":{\"type\":\"const\",\"value\":1},\"type\":\"gt\"}}],\"otherwise\":{\"delimiter\":\"-\",\"operands\":[{\"type\":\"const\",\"value\":\"C\"},{\"name\":\"clonotypeLabel_prefix_temp\",\"type\":\"col\"}],\"type\":\"str_join\"},\"type\":\"when_then_otherwise\"}}],\"inputTable\":\"anonymous_2\",\"outputTable\":\"anonymous_3\",\"type\":\"with_columns\"},{\"columns\":[\"clonotypeLabel_prefix_temp\",\"clonotypeLabel_rank_temp\"],\"inputTable\":\"anonymous_3\",\"outputTable\":\"anonymous_4\",\"type\":\"without_columns\"},{\"delimiter\":\"\\t\",\"file\":\"output.tsv\",\"table\":\"anonymous_4\",\"type\":\"write_csv\"}]}\n\tTraceback (most recent call last):\n\t  File \"/Users/poslavskysv/.platforma/backend/packages/installed/platforma-open/software/platforma-open/milaboratories.software-ptabler/main/1.14.1.0x2A109D/main.py\", line 98, in main\n\t    ptw.execute(global_settings=global_settings)\n\t  File \"/Users/poslavskysv/.platforma/backend/packages/installed/platforma-open/software/platforma-open/milaboratories.software-ptabler/main/1.14.1.0x2A109D/ptabler/workflow/workflow.py\", line 111, in execute\n\t    _ = pl.collect_all(sink_frames, engine=\"streaming\")\n\t        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n\t  File \"/Users/poslavskysv/.platforma/backend/packages/run-environments/0x2A11BC/venv/lib/python3.12/site-packages/polars/_utils/deprecation.py\", line 97, in wrapper\n\t    return function(*args, **kwargs)\n\t           ^^^^^^^^^^^^^^^^^^^^^^^^^\n\t  File \"/Users/poslavskysv/.platforma/backend/packages/run-environments/0x2A11BC/venv/lib/python3.12/site-packages/polars/lazyframe/opt_flags.py\", line 330, in wrapper\n\t    return function(*args, **kwargs)\n\t           ^^^^^^^^^^^^^^^^^^^^^^^^^\n\t  File \"/Users/poslavskysv/.platforma/backend/packages/run-environments/0x2A11BC/venv/lib/python3.12/site-packages/polars/functions/lazy.py\", line 2088, in collect_all\n\t    out = plr.collect_all(lfs, engine, optimizations._pyoptflags)\n\t          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n\tpolars.exceptions.ColumnNotFoundError: unable to find column \"isProductive{FR2Begin:FR4End}\"; valid columns: [\"readCount\", \"readFraction\", \"aaSeqFR2\", \"nSeqFR2\", \"aaSeqCDR2\", \"nSeqCDR2\", \"aaSeqFR3\", \"nSeqFR3\", \"aaSeqCDR3\", \"aaLengthCDR3\", \"nSeqCDR3\", \"nLengthCDR3\", \"aaSeqFR4\", \"nSeqFR4\", \"aaSeqImputedFR1\", \"nSeqImputedFR1\", \"aaSeqImputedCDR1\", \"nSeqImputedCDR1\", \"aaSeqImputedVDJRegion\", \"nSeqImputedVDJRegion\", \"bestVHit\", \"bestVGene\", \"bestJHit\", \"bestJGene\", \"nMutationsCount{FR2Begin:FR3End}\", \"nMutationsRate{FR2Begin:FR3End}\", \"nMutationsCountFR4\", \"nMutationsRateFR4\", \"aaMutationsCount{FR2Begin:FR3End}\", \"aaMutationsRate{FR2Begin:FR3End}\", \"aaMutationsCountFR4\", \"aaMutationsRateFR4\", \"nMutationsCountGermlineVCDR3Part\", \"nMutationsCountGermlineJCDR3Part\", \"aaMutationsCountGermlineVCDR3Part\", \"aaMutationsCountGermlineJCDR3Part\", \"isProductiveFR2_TO_FR4\", \"topChains\"]\n\t\n\tResolved plan until failure:\n\t\n\t\t---\u003e FAILED HERE RESOLVING 'vertical concat' \u003c---\n\t WITH_COLUMNS:\n\t [col(\"readCount\").round().cast(Int64)] \n\t  Csv SCAN [/Users/poslavskysv/.platforma/backend/work/workdirs/0x3090D5/anonymous_1.tsv]\n\t  PROJECT */38 COLUMNS\n\tWorkflow file: /Users/poslavskysv/.platforma/backend/work/workdirs/0x3090D5/workflow_sc.json\n\tRoot directory: /Users/poslavskysv/.platforma/backend/work/workdirs/0x3090D5\n\tExecuting workflow...\n"}
+[90m [2m❯[22m awaitBlockDone ../node_modules/.pnpm/@platforma-sdk+test@1.54.3_@bytecodealliance+preview2-shim@0.17.8_@types+node@25.0.2_yaml@2.8.2/node_modules/@platforma-sdk/test/src/test-block.ts:[2m61:15[22m[39m
+[90m [2m❯[22m Object.awaitBlockDoneAndGetStableBlockState ../node_modules/.pnpm/@platforma-sdk+test@1.54.3_@bytecodealliance+preview2-shim@0.17.8_@types+node@25.0.2_yaml@2.8.2/node_modules/@platforma-sdk/test/src/test-block.ts:[2m138:9[22m[39m
+[36m [2m❯[22m src/wf.test.ts:[2m238:31[22m[39m
+    [90m236| [39m
+    [90m237| [39m    [35mawait[39m project[33m.[39m[34mrunBlock[39m(alignBlockId)[33m;[39m
+    [90m238| [39m    const alignStableState3 = await helpers.awaitBlockDoneAndGetStable…
+    [90m   | [39m                              [31m^[39m
+    [90m239| [39m      alignBlockId[33m,[39m
+    [90m240| [39m      [34m250000[39m[33m,[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/wf.test.ts[2m > [22mFR2:FR4 with imputation
+[31m[1mError[22m[39m: Block error: {"errorType":"","message":"[I] \"NG:0x30952A/clonotypeTables\": has input errors:\n[I] \"NG:0x309CDD/IGH.data\": has input errors:\n[I] \"NG:0x309CFC/[\\\"A4KNBDRMRV5XHYP5X66LLZRA\\\"]\": has input errors:\n[I] \"NG:0x309CFD/blob\": has input errors:\n[I] \"NG:0x309CF6/resource\": has input errors:\n[I] \"NG:0x309D08/output.tsv\": has input errors:\n[I] \"NG:0x309D07/resource\": has input errors:\n[I] \"NG:0x309D44/resource\": has input errors:\n[I] \"NG:0x309D41/inputs\": has input errors:\nworking directory: \"workdirs/0x309D65\"\nfailed to run command: \"python\" exited with code 1.\nHere is the latest command output:\n\tError during workflow execution: unable to find column \"isProductive{FR2Begin:FR4End}\"; valid columns: [\"readCount\", \"readFraction\", \"aaSeqFR2\", \"nSeqFR2\", \"aaSeqCDR2\", \"nSeqCDR2\", \"aaSeqFR3\", \"nSeqFR3\", \"aaSeqCDR3\", \"aaLengthCDR3\", \"nSeqCDR3\", \"nLengthCDR3\", \"aaSeqFR4\", \"nSeqFR4\", \"aaSeqImputedFR1\", \"nSeqImputedFR1\", \"aaSeqImputedCDR1\", \"nSeqImputedCDR1\", \"aaSeqImputedVDJRegion\", \"nSeqImputedVDJRegion\", \"bestVHit\", \"bestVGene\", \"bestJHit\", \"bestJGene\", \"nMutationsCount{FR2Begin:FR3End}\", \"nMutationsRate{FR2Begin:FR3End}\", \"nMutationsCountFR4\", \"nMutationsRateFR4\", \"aaMutationsCount{FR2Begin:FR3End}\", \"aaMutationsRate{FR2Begin:FR3End}\", \"aaMutationsCountFR4\", \"aaMutationsRateFR4\", \"nMutationsCountGermlineVCDR3Part\", \"nMutationsCountGermlineJCDR3Part\", \"aaMutationsCountGermlineVCDR3Part\", \"aaMutationsCountGermlineJCDR3Part\", \"isProductiveFR2_TO_FR4\", \"topChains\"]\n\t\n\tResolved plan until failure:\n\t\n\t\t---\u003e FAILED HERE RESOLVING 'vertical concat' \u003c---\n\t WITH_COLUMNS:\n\t [col(\"readCount\").round().cast(Int64)] \n\t  Csv SCAN [/Users/poslavskysv/.platforma/backend/work/workdirs/0x309D65/anonymous_1.tsv]\n\t  PROJECT */38 COLUMNS, content: {\"workflow\":[{\"delimiter\":\"\\t\",\"file\":\"anonymous_1.tsv\",\"inferSchema\":false,\"name\":\"input_table\",\"schema\":[{\"column\":\"readCount\",\"type\":\"Double\"}],\"type\":\"read_csv\"},{\"columns\":[{\"name\":\"readCount\",\"type\":\"alias\",\"value\":{\"dtype\":\"Long\",\"strict\":false,\"type\":\"cast\",\"value\":{\"type\":\"round\",\"value\":{\"name\":\"readCount\",\"type\":\"col\"}}}}],\"table\":\"input_table\",\"type\":\"add_columns\"},{\"columns\":[{\"name\":\"isProductive{FR2Begin:FR4End}\",\"type\":\"alias\",\"value\":{\"conditions\":[{\"then\":{\"type\":\"const\",\"value\":\"true\"},\"when\":{\"lhs\":{\"type\":\"to_upper\",\"value\":{\"name\":\"isProductive{FR2Begin:FR4End}\",\"type\":\"col\"}},\"rhs\":{\"type\":\"const\",\"value\":\"TRUE\"},\"type\":\"eq\"}}],\"otherwise\":{\"type\":\"const\",\"value\":\"false\"},\"type\":\"when_then_otherwise\"}}],\"table\":\"input_table\",\"type\":\"add_columns\"},{\"columns\":[{\"name\":\"clonotypeKey\",\"type\":\"alias\",\"value\":{\"bits\":120,\"encoding\":\"base64_alphanumeric\",\"hashType\":\"sha256\",\"type\":\"hash\",\"value\":{\"delimiter\":\"#\",\"operands\":[{\"name\":\"nSeqImputedVDJRegion\",\"type\":\"col\"},{\"name\":\"bestVGene\",\"type\":\"col\"},{\"name\":\"bestJGene\",\"type\":\"col\"}],\"type\":\"str_join\"}}}],\"table\":\"input_table\",\"type\":\"add_columns\"},{\"columns\":[{\"name\":\"clonotypeLabel_prefix_temp\",\"type\":\"alias\",\"value\":{\"type\":\"to_upper\",\"value\":{\"length\":{\"type\":\"const\",\"value\":5},\"start\":{\"type\":\"const\",\"value\":0},\"type\":\"substring\",\"value\":{\"literal\":false,\"pattern\":{\"type\":\"const\",\"value\":\"\\\\d\"},\"replaceAll\":true,\"replacement\":{\"type\":\"const\",\"value\":\"\"},\"type\":\"str_replace\",\"value\":{\"name\":\"clonotypeKey\",\"type\":\"col\"}}}}}],\"inputTable\":\"input_table\",\"outputTable\":\"anonymous_1\",\"type\":\"with_columns\"},{\"columns\":[{\"name\":\"clonotypeLabel_rank_temp\",\"type\":\"alias\",\"value\":{\"descending\":false,\"orderBy\":[{\"name\":\"clonotypeKey\",\"type\":\"col\"}],\"partitionBy\":[{\"name\":\"clonotypeLabel_prefix_temp\",\"type\":\"col\"}],\"type\":\"rank\"}}],\"inputTable\":\"anonymous_1\",\"outputTable\":\"anonymous_2\",\"type\":\"with_columns\"},{\"columns\":[{\"name\":\"clonotypeLabel\",\"type\":\"alias\",\"value\":{\"conditions\":[{\"then\":{\"delimiter\":\"-\",\"operands\":[{\"type\":\"const\",\"value\":\"C\"},{\"name\":\"clonotypeLabel_prefix_temp\",\"type\":\"col\"},{\"dtype\":\"String\",\"strict\":false,\"type\":\"cast\",\"value\":{\"name\":\"clonotypeLabel_rank_temp\",\"type\":\"col\"}}],\"type\":\"str_join\"},\"when\":{\"lhs\":{\"name\":\"clonotypeLabel_rank_temp\",\"type\":\"col\"},\"rhs\":{\"type\":\"const\",\"value\":1},\"type\":\"gt\"}}],\"otherwise\":{\"delimiter\":\"-\",\"operands\":[{\"type\":\"const\",\"value\":\"C\"},{\"name\":\"clonotypeLabel_prefix_temp\",\"type\":\"col\"}],\"type\":\"str_join\"},\"type\":\"when_then_otherwise\"}}],\"inputTable\":\"anonymous_2\",\"outputTable\":\"anonymous_3\",\"type\":\"with_columns\"},{\"columns\":[\"clonotypeLabel_prefix_temp\",\"clonotypeLabel_rank_temp\"],\"inputTable\":\"anonymous_3\",\"outputTable\":\"anonymous_4\",\"type\":\"without_columns\"},{\"delimiter\":\"\\t\",\"file\":\"output.tsv\",\"table\":\"anonymous_4\",\"type\":\"write_csv\"}]}\n\tTraceback (most recent call last):\n\t  File \"/Users/poslavskysv/.platforma/backend/packages/installed/platforma-open/software/platforma-open/milaboratories.software-ptabler/main/1.14.1.0x2A109D/main.py\", line 98, in main\n\t    ptw.execute(global_settings=global_settings)\n\t  File \"/Users/poslavskysv/.platforma/backend/packages/installed/platforma-open/software/platforma-open/milaboratories.software-ptabler/main/1.14.1.0x2A109D/ptabler/workflow/workflow.py\", line 111, in execute\n\t    _ = pl.collect_all(sink_frames, engine=\"streaming\")\n\t        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n\t  File \"/Users/poslavskysv/.platforma/backend/packages/run-environments/0x2A11BC/venv/lib/python3.12/site-packages/polars/_utils/deprecation.py\", line 97, in wrapper\n\t    return function(*args, **kwargs)\n\t           ^^^^^^^^^^^^^^^^^^^^^^^^^\n\t  File \"/Users/poslavskysv/.platforma/backend/packages/run-environments/0x2A11BC/venv/lib/python3.12/site-packages/polars/lazyframe/opt_flags.py\", line 330, in wrapper\n\t    return function(*args, **kwargs)\n\t           ^^^^^^^^^^^^^^^^^^^^^^^^^\n\t  File \"/Users/poslavskysv/.platforma/backend/packages/run-environments/0x2A11BC/venv/lib/python3.12/site-packages/polars/functions/lazy.py\", line 2088, in collect_all\n\t    out = plr.collect_all(lfs, engine, optimizations._pyoptflags)\n\t          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n\tpolars.exceptions.ColumnNotFoundError: unable to find column \"isProductive{FR2Begin:FR4End}\"; valid columns: [\"readCount\", \"readFraction\", \"aaSeqFR2\", \"nSeqFR2\", \"aaSeqCDR2\", \"nSeqCDR2\", \"aaSeqFR3\", \"nSeqFR3\", \"aaSeqCDR3\", \"aaLengthCDR3\", \"nSeqCDR3\", \"nLengthCDR3\", \"aaSeqFR4\", \"nSeqFR4\", \"aaSeqImputedFR1\", \"nSeqImputedFR1\", \"aaSeqImputedCDR1\", \"nSeqImputedCDR1\", \"aaSeqImputedVDJRegion\", \"nSeqImputedVDJRegion\", \"bestVHit\", \"bestVGene\", \"bestJHit\", \"bestJGene\", \"nMutationsCount{FR2Begin:FR3End}\", \"nMutationsRate{FR2Begin:FR3End}\", \"nMutationsCountFR4\", \"nMutationsRateFR4\", \"aaMutationsCount{FR2Begin:FR3End}\", \"aaMutationsRate{FR2Begin:FR3End}\", \"aaMutationsCountFR4\", \"aaMutationsRateFR4\", \"nMutationsCountGermlineVCDR3Part\", \"nMutationsCountGermlineJCDR3Part\", \"aaMutationsCountGermlineVCDR3Part\", \"aaMutationsCountGermlineJCDR3Part\", \"isProductiveFR2_TO_FR4\", \"topChains\"]\n\t\n\tResolved plan until failure:\n\t\n\t\t---\u003e FAILED HERE RESOLVING 'vertical concat' \u003c---\n\t WITH_COLUMNS:\n\t [col(\"readCount\").round().cast(Int64)] \n\t  Csv SCAN [/Users/poslavskysv/.platforma/backend/work/workdirs/0x309D65/anonymous_1.tsv]\n\t  PROJECT */38 COLUMNS\n\tWorkflow file: /Users/poslavskysv/.platforma/backend/work/workdirs/0x309D65/workflow_sc.json\n\tRoot directory: /Users/poslavskysv/.platforma/backend/work/workdirs/0x309D65\n\tExecuting workflow...\n"}
+[90m [2m❯[22m awaitBlockDone ../node_modules/.pnpm/@platforma-sdk+test@1.54.3_@bytecodealliance+preview2-shim@0.17.8_@types+node@25.0.2_yaml@2.8.2/node_modules/@platforma-sdk/test/src/test-block.ts:[2m61:15[22m[39m
+[90m [2m❯[22m Object.awaitBlockDoneAndGetStableBlockState ../node_modules/.pnpm/@platforma-sdk+test@1.54.3_@bytecodealliance+preview2-shim@0.17.8_@types+node@25.0.2_yaml@2.8.2/node_modules/@platforma-sdk/test/src/test-block.ts:[2m138:9[22m[39m
+[36m [2m❯[22m src/wf.test.ts:[2m238:31[22m[39m
+    [90m236| [39m
+    [90m237| [39m    [35mawait[39m project[33m.[39m[34mrunBlock[39m(alignBlockId)[33m;[39m
+    [90m238| [39m    const alignStableState3 = await helpers.awaitBlockDoneAndGetStable…
+    [90m   | [39m                              [31m^[39m
+    [90m239| [39m      alignBlockId[33m,[39m
+    [90m240| [39m      [34m250000[39m[33m,[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/wf.test.ts[2m > [22mFR2:FR4 with imputation
+[31m[1mError[22m[39m: Block error: {"errorType":"","message":"[I] \"NG:0x30A1A4/clonotypeTables\": has input errors:\n[I] \"NG:0x30A9F4/IGH.data\": has input errors:\n[I] \"NG:0x30AA13/[\\\"CENVB4CDQMVEFU2QZN4MOHSY\\\"]\": has input errors:\n[I] \"NG:0x30AA14/blob\": has input errors:\n[I] \"NG:0x30AA0A/resource\": has input errors:\n[I] \"NG:0x30AA1F/output.tsv\": has input errors:\n[I] \"NG:0x30AA1E/resource\": has input errors:\n[I] \"NG:0x30AA5B/resource\": has input errors:\n[I] \"NG:0x30AA58/inputs\": has input errors:\nworking directory: \"workdirs/0x30AA70\"\nfailed to run command: \"python\" exited with code 1.\nHere is the latest command output:\n\tError during workflow execution: unable to find column \"isProductive{FR2Begin:FR4End}\"; valid columns: [\"readCount\", \"readFraction\", \"aaSeqFR2\", \"nSeqFR2\", \"aaSeqCDR2\", \"nSeqCDR2\", \"aaSeqFR3\", \"nSeqFR3\", \"aaSeqCDR3\", \"aaLengthCDR3\", \"nSeqCDR3\", \"nLengthCDR3\", \"aaSeqFR4\", \"nSeqFR4\", \"aaSeqImputedFR1\", \"nSeqImputedFR1\", \"aaSeqImputedCDR1\", \"nSeqImputedCDR1\", \"aaSeqImputedVDJRegion\", \"nSeqImputedVDJRegion\", \"bestVHit\", \"bestVGene\", \"bestJHit\", \"bestJGene\", \"nMutationsCount{FR2Begin:FR3End}\", \"nMutationsRate{FR2Begin:FR3End}\", \"nMutationsCountFR4\", \"nMutationsRateFR4\", \"aaMutationsCount{FR2Begin:FR3End}\", \"aaMutationsRate{FR2Begin:FR3End}\", \"aaMutationsCountFR4\", \"aaMutationsRateFR4\", \"nMutationsCountGermlineVCDR3Part\", \"nMutationsCountGermlineJCDR3Part\", \"aaMutationsCountGermlineVCDR3Part\", \"aaMutationsCountGermlineJCDR3Part\", \"isProductiveFR2_TO_FR4\", \"topChains\"]\n\t\n\tResolved plan until failure:\n\t\n\t\t---\u003e FAILED HERE RESOLVING 'vertical concat' \u003c---\n\t WITH_COLUMNS:\n\t [col(\"readCount\").round().cast(Int64)] \n\t  Csv SCAN [/Users/poslavskysv/.platforma/backend/work/workdirs/0x30AA70/anonymous_1.tsv]\n\t  PROJECT */38 COLUMNS, content: {\"workflow\":[{\"delimiter\":\"\\t\",\"file\":\"anonymous_1.tsv\",\"inferSchema\":false,\"name\":\"input_table\",\"schema\":[{\"column\":\"readCount\",\"type\":\"Double\"}],\"type\":\"read_csv\"},{\"columns\":[{\"name\":\"readCount\",\"type\":\"alias\",\"value\":{\"dtype\":\"Long\",\"strict\":false,\"type\":\"cast\",\"value\":{\"type\":\"round\",\"value\":{\"name\":\"readCount\",\"type\":\"col\"}}}}],\"table\":\"input_table\",\"type\":\"add_columns\"},{\"columns\":[{\"name\":\"isProductive{FR2Begin:FR4End}\",\"type\":\"alias\",\"value\":{\"conditions\":[{\"then\":{\"type\":\"const\",\"value\":\"true\"},\"when\":{\"lhs\":{\"type\":\"to_upper\",\"value\":{\"name\":\"isProductive{FR2Begin:FR4End}\",\"type\":\"col\"}},\"rhs\":{\"type\":\"const\",\"value\":\"TRUE\"},\"type\":\"eq\"}}],\"otherwise\":{\"type\":\"const\",\"value\":\"false\"},\"type\":\"when_then_otherwise\"}}],\"table\":\"input_table\",\"type\":\"add_columns\"},{\"columns\":[{\"name\":\"clonotypeKey\",\"type\":\"alias\",\"value\":{\"bits\":120,\"encoding\":\"base64_alphanumeric\",\"hashType\":\"sha256\",\"type\":\"hash\",\"value\":{\"delimiter\":\"#\",\"operands\":[{\"name\":\"nSeqImputedVDJRegion\",\"type\":\"col\"},{\"name\":\"bestVGene\",\"type\":\"col\"},{\"name\":\"bestJGene\",\"type\":\"col\"}],\"type\":\"str_join\"}}}],\"table\":\"input_table\",\"type\":\"add_columns\"},{\"columns\":[{\"name\":\"clonotypeLabel_prefix_temp\",\"type\":\"alias\",\"value\":{\"type\":\"to_upper\",\"value\":{\"length\":{\"type\":\"const\",\"value\":5},\"start\":{\"type\":\"const\",\"value\":0},\"type\":\"substring\",\"value\":{\"literal\":false,\"pattern\":{\"type\":\"const\",\"value\":\"\\\\d\"},\"replaceAll\":true,\"replacement\":{\"type\":\"const\",\"value\":\"\"},\"type\":\"str_replace\",\"value\":{\"name\":\"clonotypeKey\",\"type\":\"col\"}}}}}],\"inputTable\":\"input_table\",\"outputTable\":\"anonymous_1\",\"type\":\"with_columns\"},{\"columns\":[{\"name\":\"clonotypeLabel_rank_temp\",\"type\":\"alias\",\"value\":{\"descending\":false,\"orderBy\":[{\"name\":\"clonotypeKey\",\"type\":\"col\"}],\"partitionBy\":[{\"name\":\"clonotypeLabel_prefix_temp\",\"type\":\"col\"}],\"type\":\"rank\"}}],\"inputTable\":\"anonymous_1\",\"outputTable\":\"anonymous_2\",\"type\":\"with_columns\"},{\"columns\":[{\"name\":\"clonotypeLabel\",\"type\":\"alias\",\"value\":{\"conditions\":[{\"then\":{\"delimiter\":\"-\",\"operands\":[{\"type\":\"const\",\"value\":\"C\"},{\"name\":\"clonotypeLabel_prefix_temp\",\"type\":\"col\"},{\"dtype\":\"String\",\"strict\":false,\"type\":\"cast\",\"value\":{\"name\":\"clonotypeLabel_rank_temp\",\"type\":\"col\"}}],\"type\":\"str_join\"},\"when\":{\"lhs\":{\"name\":\"clonotypeLabel_rank_temp\",\"type\":\"col\"},\"rhs\":{\"type\":\"const\",\"value\":1},\"type\":\"gt\"}}],\"otherwise\":{\"delimiter\":\"-\",\"operands\":[{\"type\":\"const\",\"value\":\"C\"},{\"name\":\"clonotypeLabel_prefix_temp\",\"type\":\"col\"}],\"type\":\"str_join\"},\"type\":\"when_then_otherwise\"}}],\"inputTable\":\"anonymous_2\",\"outputTable\":\"anonymous_3\",\"type\":\"with_columns\"},{\"columns\":[\"clonotypeLabel_prefix_temp\",\"clonotypeLabel_rank_temp\"],\"inputTable\":\"anonymous_3\",\"outputTable\":\"anonymous_4\",\"type\":\"without_columns\"},{\"delimiter\":\"\\t\",\"file\":\"output.tsv\",\"table\":\"anonymous_4\",\"type\":\"write_csv\"}]}\n\tTraceback (most recent call last):\n\t  File \"/Users/poslavskysv/.platforma/backend/packages/installed/platforma-open/software/platforma-open/milaboratories.software-ptabler/main/1.14.1.0x2A109D/main.py\", line 98, in main\n\t    ptw.execute(global_settings=global_settings)\n\t  File \"/Users/poslavskysv/.platforma/backend/packages/installed/platforma-open/software/platforma-open/milaboratories.software-ptabler/main/1.14.1.0x2A109D/ptabler/workflow/workflow.py\", line 111, in execute\n\t    _ = pl.collect_all(sink_frames, engine=\"streaming\")\n\t        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n\t  File \"/Users/poslavskysv/.platforma/backend/packages/run-environments/0x2A11BC/venv/lib/python3.12/site-packages/polars/_utils/deprecation.py\", line 97, in wrapper\n\t    return function(*args, **kwargs)\n\t           ^^^^^^^^^^^^^^^^^^^^^^^^^\n\t  File \"/Users/poslavskysv/.platforma/backend/packages/run-environments/0x2A11BC/venv/lib/python3.12/site-packages/polars/lazyframe/opt_flags.py\", line 330, in wrapper\n\t    return function(*args, **kwargs)\n\t           ^^^^^^^^^^^^^^^^^^^^^^^^^\n\t  File \"/Users/poslavskysv/.platforma/backend/packages/run-environments/0x2A11BC/venv/lib/python3.12/site-packages/polars/functions/lazy.py\", line 2088, in collect_all\n\t    out = plr.collect_all(lfs, engine, optimizations._pyoptflags)\n\t          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n\tpolars.exceptions.ColumnNotFoundError: unable to find column \"isProductive{FR2Begin:FR4End}\"; valid columns: [\"readCount\", \"readFraction\", \"aaSeqFR2\", \"nSeqFR2\", \"aaSeqCDR2\", \"nSeqCDR2\", \"aaSeqFR3\", \"nSeqFR3\", \"aaSeqCDR3\", \"aaLengthCDR3\", \"nSeqCDR3\", \"nLengthCDR3\", \"aaSeqFR4\", \"nSeqFR4\", \"aaSeqImputedFR1\", \"nSeqImputedFR1\", \"aaSeqImputedCDR1\", \"nSeqImputedCDR1\", \"aaSeqImputedVDJRegion\", \"nSeqImputedVDJRegion\", \"bestVHit\", \"bestVGene\", \"bestJHit\", \"bestJGene\", \"nMutationsCount{FR2Begin:FR3End}\", \"nMutationsRate{FR2Begin:FR3End}\", \"nMutationsCountFR4\", \"nMutationsRateFR4\", \"aaMutationsCount{FR2Begin:FR3End}\", \"aaMutationsRate{FR2Begin:FR3End}\", \"aaMutationsCountFR4\", \"aaMutationsRateFR4\", \"nMutationsCountGermlineVCDR3Part\", \"nMutationsCountGermlineJCDR3Part\", \"aaMutationsCountGermlineVCDR3Part\", \"aaMutationsCountGermlineJCDR3Part\", \"isProductiveFR2_TO_FR4\", \"topChains\"]\n\t\n\tResolved plan until failure:\n\t\n\t\t---\u003e FAILED HERE RESOLVING 'vertical concat' \u003c---\n\t WITH_COLUMNS:\n\t [col(\"readCount\").round().cast(Int64)] \n\t  Csv SCAN [/Users/poslavskysv/.platforma/backend/work/workdirs/0x30AA70/anonymous_1.tsv]\n\t  PROJECT */38 COLUMNS\n\tWorkflow file: /Users/poslavskysv/.platforma/backend/work/workdirs/0x30AA70/workflow_sc.json\n\tRoot directory: /Users/poslavskysv/.platforma/backend/work/workdirs/0x30AA70\n\tExecuting workflow...\n"}
+[90m [2m❯[22m awaitBlockDone ../node_modules/.pnpm/@platforma-sdk+test@1.54.3_@bytecodealliance+preview2-shim@0.17.8_@types+node@25.0.2_yaml@2.8.2/node_modules/@platforma-sdk/test/src/test-block.ts:[2m61:15[22m[39m
+[90m [2m❯[22m Object.awaitBlockDoneAndGetStableBlockState ../node_modules/.pnpm/@platforma-sdk+test@1.54.3_@bytecodealliance+preview2-shim@0.17.8_@types+node@25.0.2_yaml@2.8.2/node_modules/@platforma-sdk/test/src/test-block.ts:[2m138:9[22m[39m
+[36m [2m❯[22m src/wf.test.ts:[2m238:31[22m[39m
+    [90m236| [39m
+    [90m237| [39m    [35mawait[39m project[33m.[39m[34mrunBlock[39m(alignBlockId)[33m;[39m
+    [90m238| [39m    const alignStableState3 = await helpers.awaitBlockDoneAndGetStable…
+    [90m   | [39m                              [31m^[39m
+    [90m239| [39m      alignBlockId[33m,[39m
+    [90m240| [39m      [34m250000[39m[33m,[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m2 passed[39m[22m[90m (3)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m7 passed[39m[22m[90m (8)[39m
+[2m   Start at [22m 18:46:53
+[2m   Duration [22m 83.10s[2m (transform 238ms, setup 0ms, import 1.42s, tests 81.66s, environment 0ms)[22m
+
+ ELIFECYCLE  Test failed. See above for more details.

@@ -16,14 +16,10 @@ function formatAssemblingFeature(fstr: string): string {
   return `{${parts[0]}Begin:${parts[1]}End}`;
 }
 
-// Mirrors the outputProductiveFeature logic
+// MiXCR uses {XBegin:YEnd} notation in column names for range features
+// This is the same as productiveFeature / formatAssemblingFeature
 function outputProductiveFeature(assemblingFeature: string): string {
-  const productive = formatAssemblingFeature(assemblingFeature);
-  if (assemblingFeature !== 'VDJRegion' && assemblingFeature !== 'CDR3') {
-    const parts = assemblingFeature.split(':');
-    if (parts.length === 2) return `${parts[0]}_TO_${parts[1]}`;
-  }
-  return productive;
+  return formatAssemblingFeature(assemblingFeature);
 }
 
 // Mirrors parseAssemblingFeature in calculate-export-specs.lib.tengo
@@ -60,7 +56,7 @@ function parseAssemblingFeature(assemblingFeature: string) {
 
 type ClonotypeKeyResult = {
   clonotypeKeyColumns: string[];
-  exportArgs: string[][];
+  clonotypeKeyArgs: string[][];
   needsAssemblingFeatureExport: boolean;
   assemblingFeatureColumn?: string;
 };
@@ -80,20 +76,26 @@ function computeClonotypeKeyAndExport(
   const outputProductive = outputProductiveFeature(assemblingFeature);
 
   let clonotypeKeyColumns: string[];
+  let clonotypeKeyArgs: string[][];
   const exportArgs: string[][] = [];
 
   if (assemblingFeature === 'CDR3') {
     clonotypeKeyColumns = ['nSeqCDR3', 'bestVGene', 'bestJGene'];
+    clonotypeKeyArgs = [['-nFeature', 'CDR3'], ['-vGene'], ['-jGene']];
   } else {
     const isVdjImputed = imputedFeaturesMap['VDJRegion'] === true && imputeGermline;
     const vdjAvailable = imputedFeaturesMap['VDJRegion'] === undefined || imputeGermline;
 
     if (vdjAvailable) {
       const vdjColName = `nSeq${isVdjImputed ? 'Imputed' : ''}VDJRegion`;
+      const vdjArgLabel = `-nFeature${isVdjImputed ? 'Imputed' : ''}`;
       clonotypeKeyColumns = [vdjColName, 'bestVGene', 'bestJGene'];
+      clonotypeKeyArgs = [[vdjArgLabel, 'VDJRegion'], ['-vGene'], ['-jGene']];
     } else {
+      // MiXCR uses {XBegin:YEnd} in column names
       const keyColName = `nSeq${outputProductive}`;
       clonotypeKeyColumns = [keyColName, 'bestVGene', 'bestJGene'];
+      clonotypeKeyArgs = [['-nFeature', productive], ['-vGene'], ['-jGene']];
     }
   }
 
@@ -109,7 +111,7 @@ function computeClonotypeKeyAndExport(
 
   return {
     clonotypeKeyColumns,
-    exportArgs,
+    clonotypeKeyArgs,
     needsAssemblingFeatureExport,
     assemblingFeatureColumn,
   };
@@ -133,7 +135,7 @@ describe('formatAssemblingFeature', () => {
   });
 });
 
-describe('outputProductiveFeature', () => {
+describe('outputProductiveFeature (MiXCR column naming)', () => {
   test('CDR3 returns CDR3', () => {
     expect(outputProductiveFeature('CDR3')).toBe('CDR3');
   });
@@ -142,11 +144,11 @@ describe('outputProductiveFeature', () => {
     expect(outputProductiveFeature('VDJRegion')).toBe('VDJRegion');
   });
 
-  test('range feature converts to X_TO_Y format (MiXCR column naming)', () => {
-    expect(outputProductiveFeature('CDR1:FR4')).toBe('CDR1_TO_FR4');
-    expect(outputProductiveFeature('FR2:FR4')).toBe('FR2_TO_FR4');
-    expect(outputProductiveFeature('CDR1:CDR3')).toBe('CDR1_TO_CDR3');
-    expect(outputProductiveFeature('FR1:FR4')).toBe('FR1_TO_FR4');
+  test('range features use {XBegin:YEnd} notation (MiXCR column naming)', () => {
+    expect(outputProductiveFeature('CDR1:FR4')).toBe('{CDR1Begin:FR4End}');
+    expect(outputProductiveFeature('FR2:FR4')).toBe('{FR2Begin:FR4End}');
+    expect(outputProductiveFeature('CDR1:CDR3')).toBe('{CDR1Begin:CDR3End}');
+    expect(outputProductiveFeature('FR1:FR4')).toBe('{FR1Begin:FR4End}');
   });
 });
 
@@ -210,35 +212,34 @@ describe('clonotype key columns', () => {
     expect(result.needsAssemblingFeatureExport).toBe(false);
   });
 
-  test('CDR1:CDR3 without imputation: VDJRegion unavailable, uses nSeqCDR1_TO_CDR3', () => {
+  test('CDR1:CDR3 without imputation: uses nSeq{CDR1Begin:CDR3End}', () => {
     const result = computeClonotypeKeyAndExport('CDR1:CDR3', false);
-    expect(result.clonotypeKeyColumns[0]).toBe('nSeqCDR1_TO_CDR3');
+    expect(result.clonotypeKeyColumns[0]).toBe('nSeq{CDR1Begin:CDR3End}');
     expect(result.needsAssemblingFeatureExport).toBe(true);
-    expect(result.assemblingFeatureColumn).toBe('nSeqCDR1_TO_CDR3');
-    // Export args should pass the MiXCR feature format
-    expect(result.exportArgs[0]).toEqual(['-nFeature', '{CDR1Begin:CDR3End}']);
+    expect(result.assemblingFeatureColumn).toBe('nSeq{CDR1Begin:CDR3End}');
+    expect(result.clonotypeKeyArgs[0]).toEqual(['-nFeature', '{CDR1Begin:CDR3End}']);
   });
 
-  test('CDR1:FR4 without imputation: VDJRegion unavailable, uses nSeqCDR1_TO_FR4', () => {
+  test('CDR1:FR4 without imputation: uses nSeq{CDR1Begin:FR4End}', () => {
     const result = computeClonotypeKeyAndExport('CDR1:FR4', false);
-    expect(result.clonotypeKeyColumns[0]).toBe('nSeqCDR1_TO_FR4');
+    expect(result.clonotypeKeyColumns[0]).toBe('nSeq{CDR1Begin:FR4End}');
     expect(result.needsAssemblingFeatureExport).toBe(true);
-    expect(result.assemblingFeatureColumn).toBe('nSeqCDR1_TO_FR4');
+    expect(result.assemblingFeatureColumn).toBe('nSeq{CDR1Begin:FR4End}');
   });
 
-  test('FR2:FR4 without imputation: VDJRegion unavailable, uses nSeqFR2_TO_FR4', () => {
+  test('FR2:FR4 without imputation: uses nSeq{FR2Begin:FR4End}', () => {
     const result = computeClonotypeKeyAndExport('FR2:FR4', false);
-    expect(result.clonotypeKeyColumns[0]).toBe('nSeqFR2_TO_FR4');
+    expect(result.clonotypeKeyColumns[0]).toBe('nSeq{FR2Begin:FR4End}');
     expect(result.needsAssemblingFeatureExport).toBe(true);
   });
 
-  test('CDR1:CDR3 WITH imputation: VDJRegion available (imputed), uses nSeqImputedVDJRegion', () => {
+  test('CDR1:CDR3 WITH imputation: VDJRegion available, uses nSeqImputedVDJRegion', () => {
     const result = computeClonotypeKeyAndExport('CDR1:CDR3', true);
     expect(result.clonotypeKeyColumns[0]).toBe('nSeqImputedVDJRegion');
     expect(result.needsAssemblingFeatureExport).toBe(false);
   });
 
-  test('FR2:FR4 WITH imputation: VDJRegion available (imputed), uses nSeqImputedVDJRegion', () => {
+  test('FR2:FR4 WITH imputation: VDJRegion available, uses nSeqImputedVDJRegion', () => {
     const result = computeClonotypeKeyAndExport('FR2:FR4', true);
     expect(result.clonotypeKeyColumns[0]).toBe('nSeqImputedVDJRegion');
     expect(result.needsAssemblingFeatureExport).toBe(false);
@@ -251,7 +252,7 @@ describe('clonotype key columns', () => {
   });
 });
 
-describe('isProductive column name', () => {
+describe('isProductive column name (must match MiXCR output)', () => {
   test('CDR3: isProductiveCDR3', () => {
     expect(`isProductive${outputProductiveFeature('CDR3')}`).toBe('isProductiveCDR3');
   });
@@ -260,15 +261,18 @@ describe('isProductive column name', () => {
     expect(`isProductive${outputProductiveFeature('VDJRegion')}`).toBe('isProductiveVDJRegion');
   });
 
-  test('CDR1:FR4: isProductiveCDR1_TO_FR4 (matches MiXCR output)', () => {
-    expect(`isProductive${outputProductiveFeature('CDR1:FR4')}`).toBe('isProductiveCDR1_TO_FR4');
+  test('CDR1:CDR3: isProductive{CDR1Begin:CDR3End}', () => {
+    const col = `isProductive${outputProductiveFeature('CDR1:CDR3')}`;
+    expect(col).toBe('isProductive{CDR1Begin:CDR3End}');
   });
 
-  test('FR2:FR4: isProductiveFR2_TO_FR4 (matches MiXCR output)', () => {
-    expect(`isProductive${outputProductiveFeature('FR2:FR4')}`).toBe('isProductiveFR2_TO_FR4');
+  test('CDR1:FR4: isProductive{CDR1Begin:FR4End}', () => {
+    const col = `isProductive${outputProductiveFeature('CDR1:FR4')}`;
+    expect(col).toBe('isProductive{CDR1Begin:FR4End}');
   });
 
-  test('CDR1:CDR3: isProductiveCDR1_TO_CDR3 (matches MiXCR output)', () => {
-    expect(`isProductive${outputProductiveFeature('CDR1:CDR3')}`).toBe('isProductiveCDR1_TO_CDR3');
+  test('FR2:FR4: isProductive{FR2Begin:FR4End}', () => {
+    const col = `isProductive${outputProductiveFeature('FR2:FR4')}`;
+    expect(col).toBe('isProductive{FR2Begin:FR4End}');
   });
 });
