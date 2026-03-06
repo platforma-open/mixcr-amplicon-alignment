@@ -164,8 +164,16 @@ calculateExportSpecs := func(presetSpecForBack, blockId) {
 	}
 
 	productiveFeature := formatAssemblingFeature(assemblingFeature)
-	
+
+	// outputProductiveFeature is the format MiXCR uses in column names
+	// For range features like CDR1:FR4, MiXCR uses CDR1_TO_FR4 (not {CDR1Begin:FR4End})
 	outputProductiveFeature := productiveFeature
+	if assemblingFeature != "VDJRegion" && assemblingFeature != "CDR3" {
+		parts := text.split(assemblingFeature, ":")
+		if len(parts) == 2 {
+			outputProductiveFeature = parts[0] + "_TO_" + parts[1]
+		}
+	}
 	
 	coreGeneFeatures := parsedFeature.coreGeneFeatures
 
@@ -188,20 +196,65 @@ calculateExportSpecs := func(presetSpecForBack, blockId) {
 		]
 	} else {
 		isVdjImputed := !is_undefined(imputedFeaturesMap["VDJRegion"]) && imputeGermline
-		vdjColName := "nSeq" + (isVdjImputed ? "Imputed" : "") + "VDJRegion"
-		vdjArgLabel := "-nFeature" + (isVdjImputed ? "Imputed" : "")
+		// VDJRegion is available if it's not in the imputed list, or if it is imputed and imputeGermline is on
+		vdjAvailable := is_undefined(imputedFeaturesMap["VDJRegion"]) || imputeGermline
 
-		clonotypeKeyColumns = [vdjColName, "bestVGene", "bestJGene"]
-		clonotypeKeyArgs = [
-			[ vdjArgLabel, "VDJRegion" ],
-			[ "-vGene" ],
-			[ "-jGene" ]
-		]
+		if vdjAvailable {
+			vdjColName := "nSeq" + (isVdjImputed ? "Imputed" : "") + "VDJRegion"
+			vdjArgLabel := "-nFeature" + (isVdjImputed ? "Imputed" : "")
+
+			clonotypeKeyColumns = [vdjColName, "bestVGene", "bestJGene"]
+			clonotypeKeyArgs = [
+				[ vdjArgLabel, "VDJRegion" ],
+				[ "-vGene" ],
+				[ "-jGene" ]
+			]
+		} else {
+			// VDJRegion is not available (imputed but imputeGermline is off)
+			// Use the assembling feature itself as the key column
+			// MiXCR names the column using X_TO_Y format (outputProductiveFeature)
+			keyColName := "nSeq" + outputProductiveFeature
+			clonotypeKeyColumns = [keyColName, "bestVGene", "bestJGene"]
+			clonotypeKeyArgs = [
+				[ "-nFeature", productiveFeature ],
+				[ "-vGene" ],
+				[ "-jGene" ]
+			]
+		}
 	}
 
 	columnsSpecPerSample := []
 	columnsSpecPerClonotypeNoAggregates := []
 	mutationColumns := []
+
+	// If VDJRegion is not available as key, we need to add the combined assembling feature
+	// sequence column explicitly to the export (individual features are exported in the loop below,
+	// but the combined feature like {CDR1Begin:CDR3End} is not)
+	needsAssemblingFeatureExport := assemblingFeature != "CDR3" && assemblingFeature != "VDJRegion" && !is_undefined(imputedFeaturesMap["VDJRegion"]) && !imputeGermline
+	if needsAssemblingFeatureExport {
+		featureIdL := text.to_lower(formatId(assemblingFeature))
+		keyColName := "nSeq" + outputProductiveFeature
+		columnsSpecPerClonotypeNoAggregates += [ {
+			column: keyColName,
+			id: "n-seq-" + featureIdL,
+			naRegex: "region_not_covered",
+			spec: {
+				name: "pl7.app/vdj/sequence",
+				valueType: "String",
+				domain: {
+					"pl7.app/vdj/feature": outputProductiveFeature,
+					"pl7.app/alphabet": "nucleotide"
+				},
+				annotations: a(80100, false, {
+					"pl7.app/vdj/isAssemblingFeature": "true",
+					"pl7.app/vdj/isMainSequence": "false",
+					"pl7.app/vdj/imputed": "false",
+					"pl7.app/table/fontFamily": "monospace",
+					"pl7.app/label": outputProductiveFeature + " nt"
+				})
+			}
+		} ]
+	}
 
 	clonotypeLabelColumn := {
 		column: "clonotypeLabel",
@@ -218,6 +271,11 @@ calculateExportSpecs := func(presetSpecForBack, blockId) {
 
 	// array of array of arg groups
 	exportArgs := []
+
+	// Add the assembling feature export arg if needed (column spec was added above)
+	if needsAssemblingFeatureExport {
+		exportArgs += [ [ "-nFeature", productiveFeature ] ]
+	}
 
 	// Abundance - reads by default; switch to UMI columns if umiTags are present
 
