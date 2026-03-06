@@ -71,7 +71,7 @@ type ClonotypeKeyResult = {
 
 function computeClonotypeKeyAndExport(
   assemblingFeature: string,
-  imputeGermline: boolean,
+  _imputeGermline: boolean,
 ): ClonotypeKeyResult {
   const parsed = parseAssemblingFeature(assemblingFeature);
   const imputedFeaturesMap: Record<string, boolean> = {};
@@ -84,13 +84,14 @@ function computeClonotypeKeyAndExport(
   if (assemblingFeature === 'CDR3') {
     clonotypeKeyColumns = ['nSeqCDR3', 'bestVGene', 'bestJGene'];
   } else {
-    const isVdjImputed = imputedFeaturesMap['VDJRegion'] === true && imputeGermline;
-    const vdjAvailable = imputedFeaturesMap['VDJRegion'] === undefined || imputeGermline;
+    // VDJRegion is the assembling feature itself only when it's NOT in the imputed list
+    const vdjIsAssemblingFeature = imputedFeaturesMap['VDJRegion'] === undefined;
 
-    if (vdjAvailable) {
-      const vdjColName = `nSeq${isVdjImputed ? 'Imputed' : ''}VDJRegion`;
-      clonotypeKeyColumns = [vdjColName, 'bestVGene', 'bestJGene'];
+    if (vdjIsAssemblingFeature) {
+      // VDJRegion IS the assembling feature, use it directly
+      clonotypeKeyColumns = ['nSeqVDJRegion', 'bestVGene', 'bestJGene'];
     } else {
+      // Range feature: always use assembling feature as key (not imputed VDJRegion)
       const keyColName = `nSeq${outputProductive}`;
       clonotypeKeyColumns = [keyColName, 'bestVGene', 'bestJGene'];
     }
@@ -98,7 +99,7 @@ function computeClonotypeKeyAndExport(
 
   const isRangeFeature = assemblingFeature !== 'CDR3' && assemblingFeature !== 'VDJRegion';
   const vdjIsImputed = imputedFeaturesMap['VDJRegion'] === true;
-  const needsAssemblingFeatureExport = isRangeFeature && vdjIsImputed && !imputeGermline;
+  const needsAssemblingFeatureExport = isRangeFeature && vdjIsImputed;
 
   let assemblingFeatureColumn: string | undefined;
   if (needsAssemblingFeatureExport) {
@@ -230,17 +231,17 @@ describe('clonotype key columns', () => {
     expect(r.assemblingFeatureColumn).toBe('nSeq{CDR1Begin:CDR3End}');
   });
 
-  // With imputation → always uses VDJRegion
-  test('CDR1:CDR3 WITH imputation: uses nSeqImputedVDJRegion', () => {
+  // With imputation → still uses assembling feature key (imputed VDJRegion is NOT unique per clone)
+  test('CDR1:CDR3 WITH imputation: still uses nSeq{CDR1Begin:CDR3End} (not imputed VDJRegion)', () => {
     const r = computeClonotypeKeyAndExport('CDR1:CDR3', true);
-    expect(r.clonotypeKeyColumns[0]).toBe('nSeqImputedVDJRegion');
-    expect(r.needsAssemblingFeatureExport).toBe(false);
+    expect(r.clonotypeKeyColumns[0]).toBe('nSeq{CDR1Begin:CDR3End}');
+    expect(r.needsAssemblingFeatureExport).toBe(true);
   });
 
-  test('FR2:FR4 WITH imputation: uses nSeqImputedVDJRegion', () => {
+  test('FR2:FR4 WITH imputation: still uses nSeqFR2_TO_FR4 (not imputed VDJRegion)', () => {
     const r = computeClonotypeKeyAndExport('FR2:FR4', true);
-    expect(r.clonotypeKeyColumns[0]).toBe('nSeqImputedVDJRegion');
-    expect(r.needsAssemblingFeatureExport).toBe(false);
+    expect(r.clonotypeKeyColumns[0]).toBe('nSeqFR2_TO_FR4');
+    expect(r.needsAssemblingFeatureExport).toBe(true);
   });
 
   test('FR1:FR4 WITH imputation: VDJRegion non-imputed, uses nSeqVDJRegion', () => {

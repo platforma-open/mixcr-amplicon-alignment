@@ -199,24 +199,24 @@ calculateExportSpecs := func(presetSpecForBack, blockId) {
 			[ "-jGene" ]
 		]
 	} else {
-		isVdjImputed := !is_undefined(imputedFeaturesMap["VDJRegion"]) && imputeGermline
-		// VDJRegion is available if it's not in the imputed list, or if it is imputed and imputeGermline is on
-		vdjAvailable := is_undefined(imputedFeaturesMap["VDJRegion"]) || imputeGermline
+		// VDJRegion is the assembling feature itself only when it's NOT in the imputed list
+		// (e.g. VDJRegion or FR1:FR4 as the assembling feature)
+		vdjIsAssemblingFeature := is_undefined(imputedFeaturesMap["VDJRegion"])
 
-		if vdjAvailable {
-			vdjColName := "nSeq" + (isVdjImputed ? "Imputed" : "") + "VDJRegion"
-			vdjArgLabel := "-nFeature" + (isVdjImputed ? "Imputed" : "")
-
-			clonotypeKeyColumns = [vdjColName, "bestVGene", "bestJGene"]
+		if vdjIsAssemblingFeature {
+			// VDJRegion IS the assembling feature, use it directly as the key
+			clonotypeKeyColumns = ["nSeqVDJRegion", "bestVGene", "bestJGene"]
 			clonotypeKeyArgs = [
-				[ vdjArgLabel, "VDJRegion" ],
+				[ "-nFeature", "VDJRegion" ],
 				[ "-vGene" ],
 				[ "-jGene" ]
 			]
 		} else {
-			// VDJRegion is not available (imputed but imputeGermline is off)
-			// Use the assembling feature itself as the key column
-			// MiXCR names the column using X_TO_Y format (outputProductiveFeature)
+			// Range feature where VDJRegion is NOT the assembling feature (e.g. CDR1:CDR3, FR2:FR4)
+			// Always use the assembling feature itself as the key, even with imputation enabled.
+			// Imputed VDJRegion is NOT guaranteed unique per clone (two clones with different
+			// assembling feature sequences can produce the same imputed VDJRegion).
+			// The assembling feature sequence IS unique by definition (it defines the clone).
 			keyColName := "nSeq" + outputProductiveFeature
 			clonotypeKeyColumns = [keyColName, "bestVGene", "bestJGene"]
 			clonotypeKeyArgs = [
@@ -231,10 +231,10 @@ calculateExportSpecs := func(presetSpecForBack, blockId) {
 	columnsSpecPerClonotypeNoAggregates := []
 	mutationColumns := []
 
-	// If VDJRegion is not available as key, we need to add the combined assembling feature
-	// sequence column explicitly to the export (individual features are exported in the loop below,
-	// but the combined feature like {CDR1Begin:CDR3End} is not)
-	needsAssemblingFeatureExport := assemblingFeature != "CDR3" && assemblingFeature != "VDJRegion" && !is_undefined(imputedFeaturesMap["VDJRegion"]) && !imputeGermline
+	// For range features where VDJRegion is not the assembling feature, we need to export
+	// the combined assembling feature sequence column explicitly (individual features are
+	// exported in the loop below, but the combined feature like {CDR1Begin:CDR3End} is not)
+	needsAssemblingFeatureExport := assemblingFeature != "CDR3" && assemblingFeature != "VDJRegion" && !is_undefined(imputedFeaturesMap["VDJRegion"])
 	if needsAssemblingFeatureExport {
 		featureIdL := text.to_lower(formatId(assemblingFeature))
 		keyColName := "nSeq" + outputProductiveFeature
