@@ -164,8 +164,20 @@ calculateExportSpecs := func(presetSpecForBack, blockId) {
 	}
 
 	productiveFeature := formatAssemblingFeature(assemblingFeature)
-	
+
+	// MiXCR column naming for range features:
+	// - Ranges ending at FR4 have named aliases: CDR1_TO_FR4, FR2_TO_FR4, CDR2_TO_FR4, FR3_TO_FR4
+	//   (defined in repseqio GeneFeature.java)
+	// - All other ranges use {XBegin:YEnd} format (e.g. {CDR1Begin:CDR3End})
+	// - Simple features (CDR3, VDJRegion) use their name directly
 	outputProductiveFeature := productiveFeature
+	if assemblingFeature != "VDJRegion" && assemblingFeature != "CDR3" {
+		parts := text.split(assemblingFeature, ":")
+		if len(parts) == 2 && parts[1] == "FR4" {
+			// MiXCR has a named alias for this range
+			outputProductiveFeature = parts[0] + "_TO_FR4"
+		}
+	}
 	
 	coreGeneFeatures := parsedFeature.coreGeneFeatures
 
@@ -187,21 +199,66 @@ calculateExportSpecs := func(presetSpecForBack, blockId) {
 			[ "-jGene" ]
 		]
 	} else {
-		isVdjImputed := !is_undefined(imputedFeaturesMap["VDJRegion"]) && imputeGermline
-		vdjColName := "nSeq" + (isVdjImputed ? "Imputed" : "") + "VDJRegion"
-		vdjArgLabel := "-nFeature" + (isVdjImputed ? "Imputed" : "")
+		// VDJRegion is the assembling feature itself only when it's NOT in the imputed list
+		// (e.g. VDJRegion or FR1:FR4 as the assembling feature)
+		vdjIsAssemblingFeature := is_undefined(imputedFeaturesMap["VDJRegion"])
 
-		clonotypeKeyColumns = [vdjColName, "bestVGene", "bestJGene"]
-		clonotypeKeyArgs = [
-			[ vdjArgLabel, "VDJRegion" ],
-			[ "-vGene" ],
-			[ "-jGene" ]
-		]
+		if vdjIsAssemblingFeature {
+			// VDJRegion IS the assembling feature, use it directly as the key
+			clonotypeKeyColumns = ["nSeqVDJRegion", "bestVGene", "bestJGene"]
+			clonotypeKeyArgs = [
+				[ "-nFeature", "VDJRegion" ],
+				[ "-vGene" ],
+				[ "-jGene" ]
+			]
+		} else {
+			// Range feature where VDJRegion is NOT the assembling feature (e.g. CDR1:CDR3, FR2:FR4)
+			// Always use the assembling feature itself as the key, even with imputation enabled.
+			// Imputed VDJRegion is NOT guaranteed unique per clone (two clones with different
+			// assembling feature sequences can produce the same imputed VDJRegion).
+			// The assembling feature sequence IS unique by definition (it defines the clone).
+			keyColName := "nSeq" + outputProductiveFeature
+			clonotypeKeyColumns = [keyColName, "bestVGene", "bestJGene"]
+			clonotypeKeyArgs = [
+				[ "-nFeature", productiveFeature ],
+				[ "-vGene" ],
+				[ "-jGene" ]
+			]
+		}
 	}
 
 	columnsSpecPerSample := []
 	columnsSpecPerClonotypeNoAggregates := []
 	mutationColumns := []
+
+	// For range features where VDJRegion is not the assembling feature, we need to export
+	// the combined assembling feature sequence column explicitly (individual features are
+	// exported in the loop below, but the combined feature like {CDR1Begin:CDR3End} is not)
+	needsAssemblingFeatureExport := assemblingFeature != "CDR3" && assemblingFeature != "VDJRegion" && !is_undefined(imputedFeaturesMap["VDJRegion"])
+	if needsAssemblingFeatureExport {
+		featureIdL := text.to_lower(formatId(assemblingFeature))
+		keyColName := "nSeq" + outputProductiveFeature
+		columnsSpecPerClonotypeNoAggregates += [ {
+			column: keyColName,
+			id: "n-seq-" + featureIdL,
+			naRegex: "region_not_covered",
+			spec: {
+				name: "pl7.app/vdj/sequence",
+				valueType: "String",
+				domain: {
+					"pl7.app/vdj/feature": outputProductiveFeature,
+					"pl7.app/alphabet": "nucleotide"
+				},
+				annotations: a(80100, false, {
+					"pl7.app/vdj/isAssemblingFeature": "true",
+					"pl7.app/vdj/isMainSequence": "false",
+					"pl7.app/vdj/imputed": "false",
+					"pl7.app/table/fontFamily": "monospace",
+					"pl7.app/label": outputProductiveFeature + " nt"
+				})
+			}
+		} ]
+	}
 
 	clonotypeLabelColumn := {
 		column: "clonotypeLabel",
@@ -218,6 +275,11 @@ calculateExportSpecs := func(presetSpecForBack, blockId) {
 
 	// array of array of arg groups
 	exportArgs := []
+
+	// Add the assembling feature export arg if needed (column spec was added above)
+	if needsAssemblingFeatureExport {
+		exportArgs += [ [ "-nFeature", productiveFeature ] ]
+	}
 
 	// Abundance - reads by default; switch to UMI columns if umiTags are present
 

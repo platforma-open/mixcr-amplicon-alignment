@@ -270,3 +270,106 @@ blockTest(
     expect(qcEntry).toBeDefined();
   },
 );
+
+blockTest(
+  'CDR1:CDR3 without imputation',
+  { timeout: 300000 },
+  async ({ rawPrj: project, ml, helpers, expect }) => {
+    const sndBlockId = await project.addBlock('Samples & Data', samplesAndDataBlockSpec);
+    const alignBlockId = await project.addBlock('MiXCR Amplicon Alignment', myBlockSpec);
+
+    const sample1Id = uniquePlId();
+    const dataset1Id = uniquePlId();
+
+    const r1Handle = await helpers.getLocalFileHandle('./assets/s1_R1.fastq.gz');
+    const r2Handle = await helpers.getLocalFileHandle('./assets/s1_R2.fastq.gz');
+
+    await project.setBlockArgs(sndBlockId, {
+      metadata: [],
+      sampleIds: [sample1Id],
+      sampleLabelColumnLabel: 'Sample Name',
+      sampleLabels: { [sample1Id]: 'Sample 1' },
+      datasets: [
+        {
+          id: dataset1Id,
+          label: 'Dataset 1',
+          content: {
+            type: 'Fastq',
+            readIndices: ['R1', 'R2'],
+            gzipped: true,
+            data: {
+              [sample1Id]: {
+                R1: r1Handle,
+                R2: r2Handle,
+              },
+            },
+          },
+        },
+      ],
+    } satisfies SamplesAndDataBlockArgs);
+    await project.runBlock(sndBlockId);
+
+    await helpers.awaitBlockDoneAndGetStableBlockState(sndBlockId, 8000);
+
+    // Wait for input options to propagate
+    const alignStableState1 = (await awaitStableState(
+      project.getBlockState(alignBlockId),
+      25000,
+    )) as InferBlockState<typeof platforma>;
+
+    const alignOutputs1 = wrapOutputs(alignStableState1.outputs);
+
+    // Configure the amplicon alignment block with CDR1:CDR3 feature, no imputation
+    const vGenesFasta = `>ref_heavy\n${referenceSequence}`;
+    const jGenesFasta = `>ref_heavy_j\n${referenceSequence.slice(-80)}`;
+
+    const cdr3Fasta = '>ref_heavy_cdr3\nTGTGCGAGATTCCGCGGGGGCCTTTGGGGC';
+
+    await project.setBlockArgs(alignBlockId, {
+      datasetRef: alignOutputs1.inputOptions[0].ref,
+      chains: 'IGHeavy',
+      tagPattern: '',
+      vGenes: vGenesFasta,
+      jGenes: jGenesFasta,
+      cdr3Sequences: cdr3Fasta,
+      assemblingFeature: 'CDR1:CDR3',
+      imputeGermline: false,
+      cloneClusteringMode: 'relaxed',
+    } satisfies BlockArgs);
+
+    await project.runBlock(alignBlockId);
+    const alignStableState3 = await helpers.awaitBlockDoneAndGetStableBlockState(
+      alignBlockId,
+      250000,
+    );
+    const outputs3 = wrapOutputs<BlockOutputs>(
+      alignStableState3.outputs as unknown as BlockOutputs,
+    );
+
+    // Verify reports
+    expect(outputs3.reports.isComplete).toEqual(true);
+
+    const reportEntries = outputs3.reports.data;
+    const alignJsonReportEntry = reportEntries.find(
+      (entry) => entry.key[1] === 'align' && entry.key[2] === 'json',
+    );
+    expect(alignJsonReportEntry).toBeDefined();
+
+    const alignReport = AlignReport.parse(
+      JSON.parse(
+        Buffer.from(
+          await ml.driverKit.blobDriver.getContent(
+            alignJsonReportEntry!.value!.handle as Parameters<
+              typeof ml.driverKit.blobDriver.getContent
+            >[0],
+          ),
+        ).toString('utf8'),
+      ),
+    );
+    expect(alignReport).toBeDefined();
+    expect(alignReport.totalReadsProcessed).greaterThan(0);
+
+    const qcEntry = outputs3.qc!.data[0];
+    expect(qcEntry).toBeDefined();
+  },
+);
