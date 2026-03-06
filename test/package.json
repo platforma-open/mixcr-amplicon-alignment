@@ -14,6 +14,8 @@
   "dependencies": {
     "this-block": "workspace:@platforma-open/milaboratories.mixcr-amplicon-alignment@*",
     "@platforma-open/milaboratories.mixcr-amplicon-alignment.model": "workspace:*",
+    "@platforma-open/milaboratories.samples-and-data.model": "catalog:",
+    "@platforma-open/milaboratories.samples-and-data": "catalog:",
     "@platforma-sdk/model": "catalog:"
   },
   "devDependencies": {
