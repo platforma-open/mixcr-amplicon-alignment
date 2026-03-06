@@ -12,3 +12,12 @@ vite.config.*.timestamp-*
 .DS_Store
 .pnpm-store
 /.idea
+
+dummy.clns
+dummy.fasta
+test/suite_out.log
+test/test_output*.log
+test/trim_test.log
+test_aliases.sh
+test_mixcr_cols.sh
+test_mixcr_prod.sh
