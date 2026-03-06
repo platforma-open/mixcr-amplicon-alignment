@@ -1,5 +1,13 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment.ui
 
+## 1.17.1
+
+### Patch Changes
+
+- cd0f414: Support custom assembling feature and imputation in amplicon alignment
+- Updated dependencies [cd0f414]
+  - @platforma-open/milaboratories.mixcr-amplicon-alignment.model@1.17.1
+
 ## 1.17.0
 
 ### Minor Changes
