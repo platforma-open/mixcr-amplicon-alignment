@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment.test
 
+## 1.7.5
+
+### Patch Changes
+
+- 869db1b: Add integration tests for the amplicon alignment block: empty inputs test and full E2E pipeline test with Samples & Data, custom V/J/CDR3 references, report and QC verification.
+
 ## 1.7.4
 
 ### Patch Changes
