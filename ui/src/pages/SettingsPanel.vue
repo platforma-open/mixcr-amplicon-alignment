@@ -3,6 +3,7 @@ import type { ImportFileHandle, LocalImportFileHandle, PlRef } from '@platforma-
 import { getRawPlatformaInstance } from '@platforma-sdk/model';
 import {
   PlAccordionSection,
+  PlCheckbox,
   PlDropdown,
   PlDropdownMulti,
   PlDropdownRef,
@@ -27,7 +28,7 @@ function parseNumber(v: string): number {
   return parsed;
 }
 
-type AssemblingFeature = 'VDJRegion' | 'CDR3';
+type AssemblingFeature = string;
 type StopCodonType = 'amber' | 'ochre' | 'opal';
 
 // Validation state management
@@ -190,12 +191,30 @@ const clusteringOptions = [
 const assemblingFeatureOptions = [
   { value: 'VDJRegion', label: 'VDJRegion' },
   { value: 'CDR3', label: 'CDR3' },
+  { value: 'FR1:FR4', label: 'FR1:FR4' },
+  { value: 'CDR1:FR4', label: 'CDR1:FR4' },
+  { value: 'FR2:FR4', label: 'FR2:FR4' },
+  { value: 'CDR2:FR4', label: 'CDR2:FR4' },
+  { value: 'FR3:FR4', label: 'FR3:FR4' },
+  { value: 'CDR3:FR4', label: 'CDR3:FR4' },
+  { value: 'FR1:CDR3', label: 'FR1:CDR3' },
+  { value: 'CDR1:CDR3', label: 'CDR1:CDR3' },
+  { value: 'FR2:CDR3', label: 'FR2:CDR3' },
+  { value: 'CDR2:CDR3', label: 'CDR2:CDR3' },
+  { value: 'FR3:CDR3', label: 'FR3:CDR3' },
 ];
 
 const assemblingFeature = computed<AssemblingFeature>({
   get: () => app.model.args.assemblingFeature as AssemblingFeature,
   set: (value: AssemblingFeature) => {
     app.model.args.assemblingFeature = value;
+  },
+});
+
+const imputeGermline = computed({
+  get: () => app.model.args.imputeGermline ?? false,
+  set: (value: boolean) => {
+    app.model.args.imputeGermline = value;
   },
 });
 
@@ -331,6 +350,12 @@ ATCGATCGATCG..."
       Select the region used to assemble clonotypes.
     </template>
   </PlDropdown>
+
+  <PlCheckbox
+    v-model="imputeGermline"
+  >
+    Impute non-covered parts from germline
+  </PlCheckbox>
 
   <PlTextField
     v-model="app.model.args.tagPattern"
