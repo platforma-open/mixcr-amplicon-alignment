@@ -1,0 +1,20 @@
+ WARN  Issue while reading "/Users/poslavskysv/Projects/milab/platforma/platforma-uber-repo/blocks/vdj/mixcr-amplicon-alignment/.npmrc". Failed to replace env in config: ${NPMJS_TOKEN}
+
+[1m[46m RUN [49m[22m [36mv4.0.18 [39m[90m/Users/poslavskysv/Projects/milab/platforma/platforma-uber-repo/blocks/vdj/mixcr-amplicon-alignment/test[39m
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2mFR2:FR4 with imputation
+[22m[39mPFrames HTTP server started on https://[::1]:61822/
+
+parseTemplate in worker took 121.62345800000003ms
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2mFR2:FR4 with imputation
+[22m[39mstarted to upload blob 3056670, parts overall: 1, parts remained: 1, number of concurrent uploads: 10
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2mFR2:FR4 with imputation
+[22m[39muploaded chunk 1/1 of resource: 3056670
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2mFR2:FR4 with imputation
+[22m[39muploading of resource 3056670 finished.
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2mFR2:FR4 with imputation
+[22m[39mstarted to upload blob 3056672, parts overall: 1, parts remained: 1, number of concurrent uploads: 10
+
