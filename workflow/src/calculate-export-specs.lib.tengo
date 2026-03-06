@@ -165,15 +165,9 @@ calculateExportSpecs := func(presetSpecForBack, blockId) {
 
 	productiveFeature := formatAssemblingFeature(assemblingFeature)
 
-	// outputProductiveFeature is the format MiXCR uses in column names
-	// For range features like CDR1:FR4, MiXCR uses CDR1_TO_FR4 (not {CDR1Begin:FR4End})
+	// MiXCR uses {XBegin:YEnd} notation in column names for range features
+	// e.g. isProductive{CDR1Begin:CDR3End}, nSeq{CDR1Begin:CDR3End}
 	outputProductiveFeature := productiveFeature
-	if assemblingFeature != "VDJRegion" && assemblingFeature != "CDR3" {
-		parts := text.split(assemblingFeature, ":")
-		if len(parts) == 2 {
-			outputProductiveFeature = parts[0] + "_TO_" + parts[1]
-		}
-	}
 	
 	coreGeneFeatures := parsedFeature.coreGeneFeatures
 
