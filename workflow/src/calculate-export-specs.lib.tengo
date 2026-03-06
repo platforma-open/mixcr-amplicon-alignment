@@ -125,6 +125,8 @@ parseAssemblingFeature := func(assemblingFeature) {
 		imputed = append(imputed, "VDJRegion")
 	}
 
+	nonImputed = append(nonImputed, "{" + begin + "Begin:" + end + "End}")
+
 	return {
 		imputed: imputed,
 		nonImputed: nonImputed,
@@ -170,7 +172,7 @@ calculateExportSpecs := func(presetSpecForBack, blockId) {
 	coreGeneFeatures := parsedFeature.coreGeneFeatures
 
 	// column with nucleotide sequence of this feature will be marked as anchor
-	anchorFeature := assemblingFeature
+	anchorFeature := productiveFeature
 
 	features := parsedFeature.nonImputed
 	if imputeGermline {
@@ -186,14 +188,20 @@ calculateExportSpecs := func(presetSpecForBack, blockId) {
 			[ "-vGene" ],
 			[ "-jGene" ]
 		]
-	} else {
-		isVdjImputed := !is_undefined(imputedFeaturesMap["VDJRegion"]) && imputeGermline
-		vdjColName := "nSeq" + (isVdjImputed ? "Imputed" : "") + "VDJRegion"
-		vdjArgLabel := "-nFeature" + (isVdjImputed ? "Imputed" : "")
-
-		clonotypeKeyColumns = [vdjColName, "bestVGene", "bestJGene"]
+	} else if assemblingFeature == "VDJRegion" {
+		clonotypeKeyColumns = ["nSeqVDJRegion", "bestVGene", "bestJGene"]
 		clonotypeKeyArgs = [
-			[ vdjArgLabel, "VDJRegion" ],
+			[ "-nFeature", "VDJRegion" ],
+			[ "-vGene" ],
+			[ "-jGene" ]
+		]
+	} else {
+		// Range assembling features (e.g. CDR1:CDR3, FR2:FR4): use the assembled
+		// feature sequence as the clonotype key, not VDJRegion.
+		assembledKeyColName := "nSeq" + productiveFeature
+		clonotypeKeyColumns = [assembledKeyColName, "bestVGene", "bestJGene"]
+		clonotypeKeyArgs = [
+			[ "-nFeature", productiveFeature ],
 			[ "-vGene" ],
 			[ "-jGene" ]
 		]
