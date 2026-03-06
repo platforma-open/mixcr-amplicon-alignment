@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow
 
+## 1.19.8
+
+### Patch Changes
+
+- cd0f414: Support custom assembling feature and imputation in amplicon alignment
+
 ## 1.19.7
 
 ### Patch Changes
