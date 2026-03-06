@@ -1,0 +1,126 @@
+ WARN  Issue while reading "/Users/poslavskysv/Projects/milab/platforma/platforma-uber-repo/blocks/vdj/mixcr-amplicon-alignment/.npmrc". Failed to replace env in config: ${NPMJS_TOKEN}
+
+[1m[46m RUN [49m[22m [36mv4.0.18 [39m[90m/Users/poslavskysv/Projects/milab/platforma/platforma-uber-repo/blocks/vdj/mixcr-amplicon-alignment/test[39m
+
+ [2m[90m↓[39m[22m src/wf.test.ts[2m > [22mempty inputs
+ [2m[90m↓[39m[22m src/wf.test.ts[2m > [22msimple project
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2mFR2:FR4 with imputation
+[22m[39mPFrames HTTP server started on https://[::1]:61881/
+
+parseTemplate in worker took 113.20295799999985ms
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2mFR2:FR4 with imputation
+[22m[39mstarted to upload blob 3070064, parts overall: 1, parts remained: 1, number of concurrent uploads: 10
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2mFR2:FR4 with imputation
+[22m[39muploaded chunk 1/1 of resource: 3070064
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2mFR2:FR4 with imputation
+[22m[39muploading of resource 3070064 finished.
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2mFR2:FR4 with imputation
+[22m[39mstarted to upload blob 3070062, parts overall: 1, parts remained: 1, number of concurrent uploads: 10
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2mFR2:FR4 with imputation
+[22m[39muploaded chunk 1/1 of resource: 3070062
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2mFR2:FR4 with imputation
+[22m[39muploading of resource 3070062 finished.
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2mFR2:FR4 with imputation
+[22m[39mPFrame 02261ce66806b534d030d34fab0487ae9bdb244847767369472ab38f8d4cdab5 created
+PFrame edc28979c82550f0852542bb9665cf83432d589134c389791e5d04d19ac22dd7 created
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2mFR2:FR4 with imputation
+[22m[39mPFrames blob store requesting content for 3075492, range [0..=8362]
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2mFR2:FR4 with imputation
+[22m[39mPFrames blob store requesting content for 3075492, range [0..=8362]
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2mFR2:FR4 with imputation
+[22m[39mblob {"id":"NG:0x2c8c9c","type":{"name":"Blob/primary","version":"1"}} download started, url: http://127.0.0.1:6347/api/storage/primary/download/d7j/lff/foo/d7jlfffooyqz48vnzi0o9f5o44ahm0qg4yb67j99m6w7t8soaijxtvk5e9ajoisj.report.txt?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=%2F20260306%2Fpl%2Ffs%2Faws4_request&X-Amz-Date=20260306T155209Z&X-Amz-Expires=3600&X-Amz-SignedHeaders=host&X-Amz-Signature=69f41acb3902e8cb802eb5f1adb3a1c44071f1a42a36573c22c091b8b1b82d63, range: null
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2mFR2:FR4 with imputation
+[22m[39mblob {"id":"NG:0x2c8c96","type":{"name":"Blob/primary","version":"1"}} download started, url: http://127.0.0.1:6347/api/storage/primary/download/sle/aw5/gjt/sleaw5gjt8dr2ibhvrxl2kirs3oymktil6ywe8f0ve815fn5f3flro8da8rhlerw.txt?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=%2F20260306%2Fpl%2Ffs%2Faws4_request&X-Amz-Date=20260306T155209Z&X-Amz-Expires=3600&X-Amz-SignedHeaders=host&X-Amz-Signature=ad1ad2860532c5ce1e589cbba333c5e63291726f94a27eb059c94436f031d353, range: null
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2mFR2:FR4 with imputation
+[22m[39mblob {"id":"NG:0x2c8c9e","type":{"name":"Blob/primary","version":"1"}} download started, url: http://127.0.0.1:6347/api/storage/primary/download/3lq/0d4/e2y/3lq0d4e2yxh0yb8banzmgjkkoqkhakgoq11ioazdelvokt679v060mtabjx02bj9.qc.json?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=%2F20260306%2Fpl%2Ffs%2Faws4_request&X-Amz-Date=20260306T155209Z&X-Amz-Expires=3600&X-Amz-SignedHeaders=host&X-Amz-Signature=95cefc3248939f91274a150cd880482366450a019900c120afefd82485bb0082, range: null
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2mFR2:FR4 with imputation
+[22m[39mblob {"id":"NG:0x2c8c9b","type":{"name":"Blob/primary","version":"1"}} download started, url: http://127.0.0.1:6347/api/storage/primary/download/kt1/a4f/7qa/kt1a4f7qab4kl8or0o5kqnb3l8eh1a3y32lqkz11rvenreai739mv6mys6g8o27f.report.txt?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=%2F20260306%2Fpl%2Ffs%2Faws4_request&X-Amz-Date=20260306T155209Z&X-Amz-Expires=3600&X-Amz-SignedHeaders=host&X-Amz-Signature=f2a100651e72d06377bc594e091677dbfc68ee77d1320bbee521595f2ce97a11, range: null
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2mFR2:FR4 with imputation
+[22m[39mblob {"id":"NG:0x2b98b1","type":{"name":"Blob/primary","version":"1"}} download started, url: http://127.0.0.1:6347/api/storage/primary/download/fmo/joi/h5l/fmojoih5lxrez7xqo34kdm3zvltanv6glyss4dag1x551eyngdyg70f1n507hgyw.report.json?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=%2F20260306%2Fpl%2Ffs%2Faws4_request&X-Amz-Date=20260306T155209Z&X-Amz-Expires=3600&X-Amz-SignedHeaders=host&X-Amz-Signature=2c389bf9df7efbe4abc0ea0fc698feb88a65d6ab20e49344c60d986d0dfbe3ca, range: null
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2mFR2:FR4 with imputation
+[22m[39mblob {"id":"NG:0x2c8c9d","type":{"name":"Blob/primary","version":"1"}} download started, url: http://127.0.0.1:6347/api/storage/primary/download/hgz/6ea/xv4/hgz6eaxv48e1zvt19s1100gvvxdyzigxr17yrw72hivgso4gmikbyolvj30olr2l.report.json?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=%2F20260306%2Fpl%2Ffs%2Faws4_request&X-Amz-Date=20260306T155209Z&X-Amz-Expires=3600&X-Amz-SignedHeaders=host&X-Amz-Signature=ee500b9706f62fcc06d23311e27d6c9ef63cd27848eeb39321c5812b7e347414, range: null
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2mFR2:FR4 with imputation
+[22m[39mblob {"id":"NG:0x2c8c9c","type":{"name":"Blob/primary","version":"1"}} download finished, took: 11ms
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2mFR2:FR4 with imputation
+[22m[39mblob {"id":"NG:0x2c8c9e","type":{"name":"Blob/primary","version":"1"}} download finished, took: 12ms
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2mFR2:FR4 with imputation
+[22m[39mblob {"id":"NG:0x2c8c9b","type":{"name":"Blob/primary","version":"1"}} download finished, took: 12ms
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2mFR2:FR4 with imputation
+[22m[39mblob {"id":"NG:0x2c8c96","type":{"name":"Blob/primary","version":"1"}} download finished, took: 13ms
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2mFR2:FR4 with imputation
+[22m[39mblob {"id":"NG:0x2eeda4","type":{"name":"Blob/primary","version":"1"}} download started, url: http://127.0.0.1:6347/api/storage/primary/download/1bb/gzj/omw/1bbgzjomwiar4yj6g2msxk75qw4ijo3rfk3szxx6yxnmzq3bzzxwh78krwb95ki2.parquet?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=%2F20260306%2Fpl%2Ffs%2Faws4_request&X-Amz-Date=20260306T155209Z&X-Amz-Expires=3600&X-Amz-SignedHeaders=host&X-Amz-Signature=9a0d419b66103d35fb01c8dd761361dc1108dba35a30a2d7cab18ae375b391f5, range: {"from":0,"to":8363}
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2mFR2:FR4 with imputation
+[22m[39mblob {"id":"NG:0x2eeda4","type":{"name":"Blob/primary","version":"1"}} download started, url: http://127.0.0.1:6347/api/storage/primary/download/1bb/gzj/omw/1bbgzjomwiar4yj6g2msxk75qw4ijo3rfk3szxx6yxnmzq3bzzxwh78krwb95ki2.parquet?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=%2F20260306%2Fpl%2Ffs%2Faws4_request&X-Amz-Date=20260306T155209Z&X-Amz-Expires=3600&X-Amz-SignedHeaders=host&X-Amz-Signature=9a0d419b66103d35fb01c8dd761361dc1108dba35a30a2d7cab18ae375b391f5, range: {"from":0,"to":8363}
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2mFR2:FR4 with imputation
+[22m[39mblob {"id":"NG:0x2eeda4","type":{"name":"Blob/primary","version":"1"}} download finished, took: 5ms
+blob {"id":"NG:0x2eeda4","type":{"name":"Blob/primary","version":"1"}} download finished, took: 5ms
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2mFR2:FR4 with imputation
+[22m[39mblob {"id":"NG:0x2c8c9d","type":{"name":"Blob/primary","version":"1"}} download finished, took: 21ms
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2mFR2:FR4 with imputation
+[22m[39mblob {"id":"NG:0x2b98b1","type":{"name":"Blob/primary","version":"1"}} download finished, took: 22ms
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2mFR2:FR4 with imputation
+[22m[39mTEST FAILED SO ALTERNATIVE ROOT IS PRESERVED IN PL: test_1772812289141_c95046d5-420a-410e-b161-ddc3a18c9bb4 (NG:0x2ec36b)
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2mFR2:FR4 with imputation
+[22m[39mPFrames HTTP server started on https://[::1]:61933/
+
+[90mstderr[2m | src/wf.test.ts[2m > [22m[2mFR2:FR4 with imputation
+[22m[39mError: Channel has been shut down
+    at InternalChannel.createCall (/Users/poslavskysv/Projects/milab/platforma/platforma-uber-repo/blocks/vdj/mixcr-amplicon-alignment/node_modules/[4m.pnpm[24m/@grpc+grpc-js@1.13.4/node_modules/[4m@grpc[24m/grpc-js/build/src/internal-channel.js:596:19)
+    at ChannelImplementation.createCall (/Users/poslavskysv/Projects/milab/platforma/platforma-uber-repo/blocks/vdj/mixcr-amplicon-alignment/node_modules/[4m.pnpm[24m/@grpc+grpc-js@1.13.4/node_modules/[4m@grpc[24m/grpc-js/build/src/channel.js:64:37)
+    at getCall (/Users/poslavskysv/Projects/milab/platforma/platforma-uber-repo/blocks/vdj/mixcr-amplicon-alignment/node_modules/[4m.pnpm[24m/@grpc+grpc-js@1.13.4/node_modules/[4m@grpc[24m/grpc-js/build/src/client-interceptors.js:254:26)
+    at getBottomInterceptingCall (/Users/poslavskysv/Projects/milab/platforma/platforma-uber-repo/blocks/vdj/mixcr-amplicon-alignment/node_modules/[4m.pnpm[24m/@grpc+grpc-js@1.13.4/node_modules/[4m@grpc[24m/grpc-js/build/src/client-interceptors.js:377:18)
+    at /Users/poslavskysv/Projects/milab/platforma/platforma-uber-repo/blocks/vdj/mixcr-amplicon-alignment/node_modules/[4m.pnpm[24m/@grpc+grpc-js@1.13.4/node_modules/[4m@grpc[24m/grpc-js/build/src/client-interceptors.js:425:26
+    at file:///Users/poslavskysv/Projects/milab/platforma/platforma-uber-repo/blocks/vdj/mixcr-amplicon-alignment/node_modules/[4m.pnpm[24m/@milaboratories+pl-client@2.16.29/node_modules/[4m@milaboratories[24m/pl-client/dist/core/ll_client.js:319:41
+    at /Users/poslavskysv/Projects/milab/platforma/platforma-uber-repo/blocks/vdj/mixcr-amplicon-alignment/node_modules/[4m.pnpm[24m/@grpc+grpc-js@1.13.4/node_modules/[4m@grpc[24m/grpc-js/build/src/client-interceptors.js:424:34
+    at file:///Users/poslavskysv/Projects/milab/platforma/platforma-uber-repo/blocks/vdj/mixcr-amplicon-alignment/node_modules/[4m.pnpm[24m/@milaboratories+pl-client@2.16.29/node_modules/[4m@milaboratories[24m/pl-client/dist/core/ll_client.js:354:41
+    at /Users/poslavskysv/Projects/milab/platforma/platforma-uber-repo/blocks/vdj/mixcr-amplicon-alignment/node_modules/[4m.pnpm[24m/@grpc+grpc-js@1.13.4/node_modules/[4m@grpc[24m/grpc-js/build/src/client-interceptors.js:424:34
+    at getInterceptingCall (/Users/poslavskysv/Projects/milab/platforma/platforma-uber-repo/blocks/vdj/mixcr-amplicon-alignment/node_modules/[4m.pnpm[24m/@grpc+grpc-js@1.13.4/node_modules/[4m@grpc[24m/grpc-js/build/src/client-interceptors.js:426:12)
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2mFR2:FR4 with imputation
+[22m[39mPFrame 02261ce66806b534d030d34fab0487ae9bdb244847767369472ab38f8d4cdab5 disposed
+PFrame edc28979c82550f0852542bb9665cf83432d589134c389791e5d04d19ac22dd7 disposed
+
+parseTemplate in worker took 106.25791699999536ms
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2mFR2:FR4 with imputation
+[22m[39mstarted to upload blob 3076087, parts overall: 1, parts remained: 1, number of concurrent uploads: 10
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2mFR2:FR4 with imputation
+[22m[39muploaded chunk 1/1 of resource: 3076087
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2mFR2:FR4 with imputation
+[22m[39muploading of resource 3076087 finished.
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2mFR2:FR4 with imputation
+[22m[39mstarted to upload blob 3076089, parts overall: 1, parts remained: 1, number of concurrent uploads: 10
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2mFR2:FR4 with imputation
+[22m[39muploaded chunk 1/1 of resource: 3076089
+
+[90mstdout[2m | src/wf.test.ts[2m > [22m[2mFR2:FR4 with imputation
+[22m[39muploading of resource 3076089 finished.
+

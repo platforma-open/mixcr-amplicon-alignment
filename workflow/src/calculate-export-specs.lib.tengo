@@ -165,9 +165,19 @@ calculateExportSpecs := func(presetSpecForBack, blockId) {
 
 	productiveFeature := formatAssemblingFeature(assemblingFeature)
 
-	// MiXCR uses {XBegin:YEnd} notation in column names for range features
-	// e.g. isProductive{CDR1Begin:CDR3End}, nSeq{CDR1Begin:CDR3End}
+	// MiXCR column naming for range features:
+	// - Ranges ending at FR4 have named aliases: CDR1_TO_FR4, FR2_TO_FR4, CDR2_TO_FR4, FR3_TO_FR4
+	//   (defined in repseqio GeneFeature.java)
+	// - All other ranges use {XBegin:YEnd} format (e.g. {CDR1Begin:CDR3End})
+	// - Simple features (CDR3, VDJRegion) use their name directly
 	outputProductiveFeature := productiveFeature
+	if assemblingFeature != "VDJRegion" && assemblingFeature != "CDR3" {
+		parts := text.split(assemblingFeature, ":")
+		if len(parts) == 2 && parts[1] == "FR4" {
+			// MiXCR has a named alias for this range
+			outputProductiveFeature = parts[0] + "_TO_FR4"
+		}
+	}
 	
 	coreGeneFeatures := parsedFeature.coreGeneFeatures
 
