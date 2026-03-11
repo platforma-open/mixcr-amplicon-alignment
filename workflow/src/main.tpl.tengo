@@ -41,16 +41,25 @@ wf.body(func(args) {
 		"TCRDelta": { mixcrFilter: "TRG", name: "TCR Delta", shortName: "Delta" }
 }
 
-    // Generate reference library using repseqio if both V and J genes are available
-  
-	repseqioResults := render.create(repseqioLibraryTpl, {
-		vGenes: args.vGenes,
-		jGenes: args.jGenes,
-		chains: chainInfos[chains].mixcrFilter
-	})
-	
-	referenceLibrary := repseqioResults.output("referenceLibrary")
-	debugOutput := repseqioResults.output("debugOutput")
+	// Generate reference library using repseqio, or use directly imported library file
+	isLibraryFileGzipped := false
+	referenceLibrary := false
+	debugOutput := undefined
+	libraryImportHandle := undefined
+
+	if !is_undefined(args.libraryFile) {
+		fImport := file.importFile(args.libraryFile)
+    	libraryImportHandle = fImport.handle
+    	referenceLibrary = fImport.file
+	} else {
+		repseqioResults := render.create(repseqioLibraryTpl, {
+			vGenes: args.vGenes,
+			jGenes: args.jGenes,
+			chains: chainInfos[chains].mixcrFilter
+		})
+		referenceLibrary = repseqioResults.output("referenceLibrary")
+		debugOutput = repseqioResults.output("debugOutput")
+	}
     
 
 	runMixcr := render.createEphemeral(processTpl, {
@@ -71,6 +80,7 @@ wf.body(func(args) {
 			assemblingFeature: args.assemblingFeature,
 			imputeGermline: args.imputeGermline,
 			badQualityThreshold: args.badQualityThreshold,
+			isLibraryFileGzipped: isLibraryFileGzipped,
 			stopCodonTypes: args.stopCodonTypes,
 			stopCodonReplacements: args.stopCodonReplacements
 		}, { removeUndefs: true }))
@@ -92,6 +102,23 @@ wf.body(func(args) {
 		}
 	}
 
+	if !is_undefined(args.libraryFile) {
+		exports.library = {
+			data: referenceLibrary,
+			spec: {
+				kind: "File",
+				name: "pl7.app/vdj/library",
+				domain: {
+					"pl7.app/vdj/libraryId": blockId
+				},
+				annotations: {
+					"pl7.app/vdj/isLibrary": "true",
+					"pl7.app/vdj/libraryFormat": (isLibraryFileGzipped ? "repseqio.json.gz" : "repseqio.json")
+				}
+			}
+		}
+	}
+
 	outputs := {
 		qc: pframes.exportColumnData(runMixcr.output("qc.data")),
 		reports: pframes.exportColumnData(runMixcr.output("reports.data")),
@@ -99,9 +126,14 @@ wf.body(func(args) {
 		clones: pframes.exportFrame(runMixcr.output("clones")),
 		clns: runMixcr.output("clns.data"),
 		progress: runMixcr.output("progress.data"),
-		clonotypeTables: pframes.exportFrame(runMixcr.output("clonotypeTables")),
-		debugOutput: debugOutput
+		clonotypeTables: pframes.exportFrame(runMixcr.output("clonotypeTables"))
 	}
+	if !is_undefined(debugOutput) {
+		outputs.debugOutput = debugOutput
+	}
+	if !is_undefined(libraryImportHandle) {
+    	outputs.libraryImportHandle = libraryImportHandle
+    }
 
 	qcReportTable := runMixcr.output("qcReportTable")
 	outputs.qcReportTable = pframes.exportFrame(qcReportTable)
