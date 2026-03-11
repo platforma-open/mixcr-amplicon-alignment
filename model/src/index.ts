@@ -107,6 +107,12 @@ export const platforma = BlockModel.create('Heavy')
       : undefined;
   })
 
+  .output('referenceLibrary', (ctx) => {
+    return ctx.outputs !== undefined
+      ? ctx.outputs?.resolve('referenceLibrary')?.getRemoteFileHandle()
+      : undefined;
+  })
+
   .output('debugOutput', (ctx) => {
     return ctx.outputs !== undefined
       ? ctx.outputs?.resolve({ field: 'debugOutput', assertFieldType: 'Input', allowPermanentAbsence: true })?.getLogHandle()

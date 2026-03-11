@@ -128,6 +128,7 @@ wf.body(func(args) {
 		progress: runMixcr.output("progress.data"),
 		clonotypeTables: pframes.exportFrame(runMixcr.output("clonotypeTables"))
 	}
+	outputs.referenceLibrary = file.exportFile(referenceLibrary)
 	if !is_undefined(debugOutput) {
 		outputs.debugOutput = debugOutput
 	}
