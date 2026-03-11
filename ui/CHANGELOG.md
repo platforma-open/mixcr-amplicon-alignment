@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment.ui
 
+## 1.18.1
+
+### Patch Changes
+
+- 92da66c: Format reference json file
+
 ## 1.18.0
 
 ### Minor Changes
