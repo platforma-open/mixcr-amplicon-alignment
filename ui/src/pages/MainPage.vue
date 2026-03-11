@@ -211,7 +211,11 @@ const downloadLibrary = async () => {
     const writable = await fileHandle.createWritable();
     const reader = new ChunkedStreamReader(lib.handle, lib.size);
     const stream = reader.createStream();
-    await stream.pipeTo(writable);
+    const response = new Response(stream);
+    const text = await response.text();
+    const formatted = JSON.stringify(JSON.parse(text), null, 2);
+    await writable.write(formatted);
+    await writable.close();
   } finally {
     downloadingLibrary.value = false;
   }
