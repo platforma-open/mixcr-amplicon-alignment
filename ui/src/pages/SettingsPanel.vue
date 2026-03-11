@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import type { ImportFileHandle, LocalImportFileHandle, PlRef } from '@platforma-sdk/model';
-import { getRawPlatformaInstance } from '@platforma-sdk/model';
+import { getFilePathFromHandle, getRawPlatformaInstance } from '@platforma-sdk/model';
+import type { ReferenceInputMode } from '@platforma-open/milaboratories.mixcr-amplicon-alignment.model';
 import {
   PlAccordionSection,
+  PlBtnGroup,
   PlCheckbox,
   PlDropdown,
   PlDropdownMulti,
@@ -17,8 +19,77 @@ import {
 import { computed, ref, watch } from 'vue';
 import { useApp } from '../app';
 import { parseFasta, parseFastaRecords } from '../utils/parseFasta';
+import { extractCdr3FromLibrary } from '../utils/parseLibrary';
 
 const app = useApp();
+
+const refModeOptions: ListOption<ReferenceInputMode>[] = [
+  { label: 'FASTA sequence', value: 'fastaSequence' },
+  { label: 'FASTA file', value: 'fastaFile' },
+  { label: 'Library file', value: 'libraryFile' },
+];
+
+const refMode = computed<ReferenceInputMode>({
+  get: () => app.model.ui.referenceInputMode ?? 'fastaSequence',
+  set: (value: ReferenceInputMode) => {
+    app.model.ui.referenceInputMode = value;
+  },
+});
+
+function extractFileName(filePath: string) {
+  return filePath.replace(/^.*[\\/]/, '');
+}
+
+// Clear irrelevant state when switching modes
+watch(refMode, (newMode, oldMode) => {
+  if (newMode === oldMode) return;
+  if (newMode !== 'fastaFile') {
+    app.model.args.referenceFileHandle = undefined;
+    fileError.value = undefined;
+  }
+  if (newMode !== 'fastaSequence') {
+    app.model.ui.librarySequence = undefined;
+  }
+  if (newMode !== 'libraryFile') {
+    app.model.args.libraryFile = undefined;
+    app.model.args.isLibraryFileGzipped = undefined;
+  }
+  if (newMode === 'libraryFile') {
+    // Clear FASTA-derived genes when switching to library mode
+    app.model.args.vGenes = undefined;
+    app.model.args.jGenes = undefined;
+    app.model.args.cdr3Sequences = undefined;
+    clearRecordSelection();
+  }
+});
+
+// Auto-detect gzip and extract CDR3 from library file
+watch(
+  () => app.model.args.libraryFile,
+  async (newFile) => {
+    if (!newFile) {
+      app.model.args.cdr3Sequences = undefined;
+      app.model.args.isLibraryFileGzipped = undefined;
+      return;
+    }
+    const libraryFileName = extractFileName(getFilePathFromHandle(newFile));
+    const isGzipped = libraryFileName?.toLowerCase().endsWith('.gz') || false;
+    app.model.args.isLibraryFileGzipped = isGzipped;
+
+    // Extract CDR3 sequences from non-gzipped library files
+    if (!isGzipped) {
+      try {
+        const data = await getRawPlatformaInstance().lsDriver.getLocalFileContent(newFile as LocalImportFileHandle);
+        const content = new TextDecoder().decode(data);
+        app.model.args.cdr3Sequences = extractCdr3FromLibrary(content);
+      } catch {
+        app.model.args.cdr3Sequences = undefined;
+      }
+    } else {
+      app.model.args.cdr3Sequences = undefined;
+    }
+  },
+);
 
 function parseNumber(v: string): number {
   const parsed = Number(v);
@@ -296,43 +367,70 @@ watch(stopCodonSelection, (selected) => {
     @update:model-value="setInput"
   />
 
-  <PlFileInput
-    v-model="app.model.args.referenceFileHandle"
-    label="Reference sequence file (FASTA)"
-    :extensions="['fasta', 'fa']"
-    :error="fileError"
-    clearable
-    @update:model-value="setReferenceFile"
-  >
-    <template #tooltip>
-      Import a FASTA file with nucleotide reference sequence(s). Multiple FASTA records are supported. The header will be used as part of V and J gene names (e.g., header_Vgene, header_Jgene). The sequence must cover VDJRegion.
-    </template>
-  </PlFileInput>
+  <PlBtnGroup v-model="refMode" :options="refModeOptions" label="Reference input" />
 
-  <PlTextArea
-    v-model="app.model.ui.librarySequence"
-    label="Or paste reference sequence (FASTA format)"
-    placeholder=">ref_name
+  <template v-if="refMode === 'fastaFile'">
+    <PlFileInput
+      v-model="app.model.args.referenceFileHandle"
+      label="Reference sequence file (FASTA)"
+      :extensions="['fasta', 'fa']"
+      :error="fileError"
+      clearable
+      @update:model-value="setReferenceFile"
+    >
+      <template #tooltip>
+        Import a FASTA file with nucleotide reference sequence(s). Multiple FASTA records are supported. The header will be used as part of V and J gene names (e.g., header_Vgene, header_Jgene). The sequence must cover VDJRegion.
+      </template>
+    </PlFileInput>
+
+    <PlDropdownMulti
+      v-if="allRecordHeaders.length >= 2"
+      v-model="selectedHeaders"
+      :options="recordOptions"
+      label="Select reference sequences"
+      clearable
+    >
+      <template #tooltip>
+        Choose which FASTA records to use. By default all records are selected.
+      </template>
+    </PlDropdownMulti>
+  </template>
+
+  <template v-else-if="refMode === 'fastaSequence'">
+    <PlTextArea
+      v-model="app.model.ui.librarySequence"
+      label="Paste reference sequence (FASTA format)"
+      placeholder=">ref_name
 ATCGATCGATCG..."
-    :rows="8"
-    :error="fastaError"
-  >
-    <template #tooltip>
-      Paste the nucleotide sequence(s) in FASTA format. Multiple FASTA records are supported. The header will be used as part of V and J gene names (e.g., header_Vgene, header_Jgene). The sequence must cover VDJRegion.
-    </template>
-  </PlTextArea>
+      :rows="8"
+      :error="fastaError"
+    >
+      <template #tooltip>
+        Paste the nucleotide sequence(s) in FASTA format. Multiple FASTA records are supported. The header will be used as part of V and J gene names (e.g., header_Vgene, header_Jgene). The sequence must cover VDJRegion.
+      </template>
+    </PlTextArea>
 
-  <PlDropdownMulti
-    v-if="allRecordHeaders.length >= 2"
-    v-model="selectedHeaders"
-    :options="recordOptions"
-    label="Select reference sequences"
-    clearable
-  >
-    <template #tooltip>
-      Choose which FASTA records to use. By default all records are selected.
-    </template>
-  </PlDropdownMulti>
+    <PlDropdownMulti
+      v-if="allRecordHeaders.length >= 2"
+      v-model="selectedHeaders"
+      :options="recordOptions"
+      label="Select reference sequences"
+      clearable
+    >
+      <template #tooltip>
+        Choose which FASTA records to use. By default all records are selected.
+      </template>
+    </PlDropdownMulti>
+  </template>
+
+  <template v-else-if="refMode === 'libraryFile'">
+    <PlFileInput
+      v-model="app.model.args.libraryFile"
+      label="MiXCR library file"
+      :extensions="['json']"
+      clearable
+    />
+  </template>
 
   <PlDropdown
     v-model="chains"
