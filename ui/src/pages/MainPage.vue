@@ -25,7 +25,7 @@ import type {
   GridReadyEvent,
 } from 'ag-grid-enterprise';
 import { ClientSideRowModelModule, ModuleRegistry } from 'ag-grid-enterprise';
-import { computed, reactive, ref, shallowRef, watch, watchEffect } from 'vue';
+import { computed, reactive, shallowRef, watch, watchEffect } from 'vue';
 import { useApp } from '../app';
 import { getAlignmentChartSettings } from '../charts/alignmentChartSettings';
 import { parseProgressString } from '../parseProgress';
@@ -35,7 +35,6 @@ import LogsPanel from './LogsPanel.vue';
 import SampleReportPanel from './SampleReportPanel.vue';
 import SettingsPanel from './SettingsPanel.vue';
 import { ExportRawBtn } from '../ExportRawBtn';
-import { ChunkedStreamReader } from '../ChunkedStreamReader';
 
 const app = useApp();
 
@@ -192,34 +191,6 @@ const showLogs = () => {
   data.logsOpen = true;
 };
 
-const isLibraryReady = computed(() => app.model.outputs.referenceLibrary !== undefined);
-const downloadingLibrary = ref(false);
-
-const downloadLibrary = async () => {
-  const lib = app.model.outputs.referenceLibrary;
-  if (!lib || downloadingLibrary.value) return;
-
-  try {
-    downloadingLibrary.value = true;
-    const fileHandle = await window.showSaveFilePicker({
-      types: [{
-        description: 'JSON files',
-        accept: { 'application/json': ['.json'] },
-      }],
-      suggestedName: 'referenceLibrary.json',
-    });
-    const writable = await fileHandle.createWritable();
-    const reader = new ChunkedStreamReader(lib.handle, lib.size);
-    const stream = reader.createStream();
-    const response = new Response(stream);
-    const text = await response.text();
-    const formatted = JSON.stringify(JSON.parse(text), null, 2);
-    await writable.write(formatted);
-    await writable.close();
-  } finally {
-    downloadingLibrary.value = false;
-  }
-};
 </script>
 
 <template>
@@ -227,10 +198,6 @@ const downloadLibrary = async () => {
     title="MiXCR Amplicon Alignment"
   >
     <template #append>
-      <PlBtnGhost :disabled="!isLibraryReady" :loading="downloadingLibrary" @click.stop="downloadLibrary">
-        Export Library
-        <template #append><PlMaskIcon24 name="download" /></template>
-      </PlBtnGhost>
       <ExportRawBtn />
       <PlBtnGhost @click.stop="showLogs">
         Reference Alignment Logs

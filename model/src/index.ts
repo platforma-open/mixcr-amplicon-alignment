@@ -12,7 +12,7 @@ import { ProgressPrefix } from './progress';
 export type CloneClusteringMode = 'relaxed' | 'default' | 'off';
 export type AssemblingFeature = string;
 export type StopCodonType = 'amber' | 'ochre' | 'opal';
-export type ReferenceInputMode = 'fastaFile' | 'fastaSequence' | 'libraryFile';
+export type ReferenceInputMode = 'fastaSequence' | 'fastaFile' | 'libraryFile';
 
 export interface StopCodonReplacements {
   amber?: string;
@@ -29,7 +29,8 @@ export interface BlockArgs {
   tagPattern: string;
   vGenes?: string; // now a single FASTA string
   jGenes?: string; // now a single FASTA string
-  cdr3Sequences?: string; // FASTA with CDR3 per reference
+  libraryFile?: ImportFileHandle;
+  isLibraryFileGzipped?: boolean;
   limitInput?: number;
   perProcessMemGB?: number; // 1GB or more required
   perProcessCPUs?: number; // 1 or more required
@@ -39,14 +40,12 @@ export interface BlockArgs {
   stopCodonTypes?: StopCodonType[];
   stopCodonReplacements?: StopCodonReplacements;
   referenceFileHandle?: ImportFileHandle;
-  libraryFile?: ImportFileHandle;
-  isLibraryFileGzipped?: boolean;
   imputeGermline?: boolean;
 }
 
 export interface UiState {
-  referenceInputMode?: ReferenceInputMode;
   librarySequence?: string;
+  referenceInputMode?: ReferenceInputMode;
   selectedRecordHeaders?: string[];
   tableState: PlDataTableStateV2;
 }
@@ -69,7 +68,6 @@ export const platforma = BlockModel.create('Heavy')
     imputeGermline: false,
   })
   .withUiState<UiState>({
-    referenceInputMode: 'fastaSequence',
     tableState: createPlDataTableStateV2(),
   })
 
@@ -107,15 +105,9 @@ export const platforma = BlockModel.create('Heavy')
       : undefined;
   })
 
-  .output('referenceLibrary', (ctx) => {
-    return ctx.outputs !== undefined
-      ? ctx.outputs?.resolve('referenceLibrary')?.getRemoteFileHandle()
-      : undefined;
-  })
-
   .output('debugOutput', (ctx) => {
     return ctx.outputs !== undefined
-      ? ctx.outputs?.resolve({ field: 'debugOutput', assertFieldType: 'Input', allowPermanentAbsence: true })?.getLogHandle()
+      ? ctx.outputs?.resolve('debugOutput')?.getLogHandle()
       : undefined;
   })
 
@@ -201,7 +193,7 @@ export const platforma = BlockModel.create('Heavy')
     const mode = ctx.uiState.referenceInputMode ?? 'fastaSequence';
     const hasDataset = ctx.args.datasetRef !== undefined;
     if (mode === 'libraryFile') {
-      return hasDataset && ctx.args.libraryFile !== undefined && ctx.args.cdr3Sequences !== undefined;
+      return hasDataset && ctx.args.libraryFile !== undefined;
     }
     return hasDataset && (ctx.uiState.librarySequence !== undefined || ctx.args.vGenes !== undefined);
   })

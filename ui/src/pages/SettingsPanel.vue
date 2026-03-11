@@ -19,7 +19,6 @@ import {
 import { computed, ref, watch } from 'vue';
 import { useApp } from '../app';
 import { parseFasta, parseFastaRecords } from '../utils/parseFasta';
-import { extractCdr3FromLibrary } from '../utils/parseLibrary';
 
 const app = useApp();
 
@@ -58,7 +57,6 @@ watch(refMode, (newMode, oldMode) => {
     // Clear FASTA-derived genes when switching to library mode
     app.model.args.vGenes = undefined;
     app.model.args.jGenes = undefined;
-    app.model.args.cdr3Sequences = undefined;
     clearRecordSelection();
   }
 });
@@ -68,26 +66,12 @@ watch(
   () => app.model.args.libraryFile,
   async (newFile) => {
     if (!newFile) {
-      app.model.args.cdr3Sequences = undefined;
       app.model.args.isLibraryFileGzipped = undefined;
       return;
     }
     const libraryFileName = extractFileName(getFilePathFromHandle(newFile));
     const isGzipped = libraryFileName?.toLowerCase().endsWith('.gz') || false;
     app.model.args.isLibraryFileGzipped = isGzipped;
-
-    // Extract CDR3 sequences from non-gzipped library files
-    if (!isGzipped) {
-      try {
-        const data = await getRawPlatformaInstance().lsDriver.getLocalFileContent(newFile as LocalImportFileHandle);
-        const content = new TextDecoder().decode(data);
-        app.model.args.cdr3Sequences = extractCdr3FromLibrary(content);
-      } catch {
-        app.model.args.cdr3Sequences = undefined;
-      }
-    } else {
-      app.model.args.cdr3Sequences = undefined;
-    }
   },
 );
 
@@ -129,12 +113,10 @@ function revalidateFromContent(content: string) {
     fileError.value = undefined;
     app.model.args.vGenes = result.vGenes;
     app.model.args.jGenes = result.jGenes;
-    app.model.args.cdr3Sequences = result.cdr3Sequences;
   } else {
     fastaError.value = result.error;
     app.model.args.vGenes = undefined;
     app.model.args.jGenes = undefined;
-    app.model.args.cdr3Sequences = undefined;
   }
 
   return result;
@@ -176,7 +158,6 @@ async function setReferenceFile(file: ImportFileHandle | undefined) {
     fileError.value = undefined;
     app.model.args.vGenes = undefined;
     app.model.args.jGenes = undefined;
-    app.model.args.cdr3Sequences = undefined;
     clearRecordSelection();
     return;
   }
@@ -198,7 +179,6 @@ async function setReferenceFile(file: ImportFileHandle | undefined) {
     fileError.value = `Failed to read file: ${e instanceof Error ? e.message : 'Unknown error'}`;
     app.model.args.vGenes = undefined;
     app.model.args.jGenes = undefined;
-    app.model.args.cdr3Sequences = undefined;
     clearRecordSelection();
   }
 }
@@ -219,7 +199,6 @@ watch(
       fastaError.value = undefined;
       app.model.args.vGenes = undefined;
       app.model.args.jGenes = undefined;
-      app.model.args.cdr3Sequences = undefined;
       clearRecordSelection();
     }
   },
