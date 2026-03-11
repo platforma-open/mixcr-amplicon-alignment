@@ -22,8 +22,6 @@ calculateExportSpecs := import(":calculate-export-specs")
 self.awaitState("InputsLocked")
 self.awaitState("params", "ResourceReady")
 self.awaitState("inputSpec", "ResourceReady")
-self.awaitState("referenceLibrary", "ResourceReady")
-self.awaitState("cdr3Sequences", "ResourceReady")
 
 self.body(func(inputs) {
 
@@ -223,7 +221,8 @@ self.body(func(inputs) {
 					tagPattern: tagPattern,
 					assemblingFeature: params.assemblingFeature,
 					imputeGermline: params.imputeGermline,
-					badQualityThreshold: params.badQualityThreshold
+					badQualityThreshold: params.badQualityThreshold,
+					isLibraryFileGzipped: params.isLibraryFileGzipped
 				}, { removeUndefs: true }),
 				limitInput: limitInput
 			},
@@ -287,7 +286,8 @@ self.body(func(inputs) {
 					cdr3SeqColumns: cdr3SeqColumns,
 					stopCodonTypes: params.stopCodonTypes,
 					stopCodonReplacements: params.stopCodonReplacements,
-					perProcessMemGB: perProcessMemGB
+					perProcessMemGB: perProcessMemGB,
+					isLibraryFileGzipped: params.isLibraryFileGzipped
 				}, { removeUndefs: true })
 			}
 		}
@@ -369,7 +369,7 @@ self.body(func(inputs) {
 		sampleIdAxisSpec: sampleIdAxisSpec,
 		chains: [chains],
 		library: referenceLibrary,
-		isLibraryFileGzipped: false,
+		isLibraryFileGzipped: params.isLibraryFileGzipped,
 		clonotypeTablesData: clonotypeTablesData,
 		hasUmi: hasUMI,
 		umiTags: umiTags,

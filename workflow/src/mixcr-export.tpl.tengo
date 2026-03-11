@@ -216,12 +216,17 @@ self.body(func(inputs) {
 
 		additionalAction(mixcrCmdBuilder)
 
+		libraryFileName := "library.json"
+		if !is_undefined(params.isLibraryFileGzipped) && params.isLibraryFileGzipped {
+			libraryFileName = "library.json.gz"
+		}
+
 		return mixcrCmdBuilder.
 			arg("clones.clns").
 			addFile("clones.clns", clnsFile).
 			arg("clones.tsv").
 			saveFile("clones.tsv").
-			addFile("library.json", params.referenceLibrary).
+			addFile(libraryFileName, params.referenceLibrary).
 			cacheHours(3).
 			run()
 	}

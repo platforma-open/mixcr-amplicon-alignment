@@ -81,11 +81,16 @@ self.body(func(inputs) {
 		return "{" + parts[0] + "Begin:" + parts[1] + "End}"
 	}
 
+	libraryFileName := "library.json"
+	if !is_undefined(params.isLibraryFileGzipped) && params.isLibraryFileGzipped {
+		libraryFileName = "library.json.gz"
+	}
+
     mixcrCmdBuilder.
         arg("--assemble-clonotypes-by").arg(formatAssemblingFeature(params.assemblingFeature)).
         arg("--species").arg("custom").
-		arg("--library").arg("library.json").
-		addFile("library.json", params.referenceLibrary).
+		arg("--library").arg(libraryFileName).
+		addFile(libraryFileName, params.referenceLibrary).
         arg("--rna").
 		arg("--force-overwrite").
 		arg("--rigid-left-alignment-boundary").
