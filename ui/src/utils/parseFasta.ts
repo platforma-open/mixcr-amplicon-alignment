@@ -3,7 +3,6 @@ export interface FastaParseResult {
   error?: string;
   vGenes?: string;
   jGenes?: string;
-  cdr3Sequences?: string;
 }
 
 export interface FastaRecord {
@@ -118,7 +117,6 @@ export function parseFasta(content: string, selectedHeaders?: string[]): FastaPa
 
   const vGeneParts: string[] = [];
   const jGeneParts: string[] = [];
-  const cdr3Parts: string[] = [];
   const headers: string[] = [];
 
   // Validate each record
@@ -163,7 +161,6 @@ export function parseFasta(content: string, selectedHeaders?: string[]): FastaPa
     }
 
     // repseqio fromFasta rejects sequences with wildcards, so replace N→A for V/J genes.
-    // CDR3 sequences keep N's for the distance calculation tool.
     const sequenceWithoutN = cleanSequence.replace(/N/g, 'A');
     const referenceSequence = cleanSequence;
 
@@ -217,29 +214,19 @@ export function parseFasta(content: string, selectedHeaders?: string[]): FastaPa
     const jGeneHeader = headerRoot ? `${headerRoot}_Jgene` : 'ref_Jgene';
     const jGene = `>${jGeneHeader}\n${jGeneSequence}`;
 
-    const cdr3Sequence = referenceSequence.substring(
-      cdr3StartNucleotides,
-      cdr3EndNucleotides,
-    );
-    const cdr3Header = header ? `${header}_CDR3` : 'ref_CDR3';
-    const cdr3 = `>${cdr3Header}\n${cdr3Sequence}`;
-
     vGeneParts.push(vGene);
     jGeneParts.push(jGene);
-    cdr3Parts.push(cdr3);
     if (header) headers.push(header);
   }
 
   // Create single FASTA strings for all V and J genes
   const vGenes = vGeneParts.join('\n');
   const jGenes = jGeneParts.join('\n');
-  const cdr3Sequences = cdr3Parts.join('\n');
 
   return {
     isValid: true,
     vGenes,
     jGenes,
-    cdr3Sequences,
   };
 }
 

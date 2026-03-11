@@ -96,16 +96,12 @@ blockTest(
     const vGenesFasta = `>ref_heavy\n${referenceSequence}`;
     const jGenesFasta = `>ref_heavy_j\n${referenceSequence.slice(-80)}`;
 
-    // CDR3 region from the reference (Cys to Trp bounded region at VDJ junction)
-    const cdr3Fasta = '>ref_heavy_cdr3\nTGTGCGAGATTCCGCGGGGGCCTTTGGGGC';
-
     await project.setBlockArgs(alignBlockId, {
       datasetRef: alignOutputs1.inputOptions[0].ref,
       chains: 'IGHeavy',
       tagPattern: '',
       vGenes: vGenesFasta,
       jGenes: jGenesFasta,
-      cdr3Sequences: cdr3Fasta,
       assemblingFeature: 'VDJRegion',
       cloneClusteringMode: 'relaxed',
     } satisfies BlockArgs);
@@ -220,15 +216,12 @@ blockTest(
     const vGenesFasta = `>ref_heavy\n${referenceSequence}`;
     const jGenesFasta = `>ref_heavy_j\n${referenceSequence.slice(-80)}`;
 
-    const cdr3Fasta = '>ref_heavy_cdr3\nTGTGCGAGATTCCGCGGGGGCCTTTGGGGC';
-
     await project.setBlockArgs(alignBlockId, {
       datasetRef: alignOutputs1.inputOptions[0].ref,
       chains: 'IGHeavy',
       tagPattern: '',
       vGenes: vGenesFasta,
       jGenes: jGenesFasta,
-      cdr3Sequences: cdr3Fasta,
       assemblingFeature: 'FR2:FR4',
       imputeGermline: true,
       cloneClusteringMode: 'relaxed',
@@ -323,15 +316,12 @@ blockTest(
     const vGenesFasta = `>ref_heavy\n${referenceSequence}`;
     const jGenesFasta = `>ref_heavy_j\n${referenceSequence.slice(-80)}`;
 
-    const cdr3Fasta = '>ref_heavy_cdr3\nTGTGCGAGATTCCGCGGGGGCCTTTGGGGC';
-
     await project.setBlockArgs(alignBlockId, {
       datasetRef: alignOutputs1.inputOptions[0].ref,
       chains: 'IGHeavy',
       tagPattern: '',
       vGenes: vGenesFasta,
       jGenes: jGenesFasta,
-      cdr3Sequences: cdr3Fasta,
       assemblingFeature: 'CDR1:CDR3',
       imputeGermline: false,
       cloneClusteringMode: 'relaxed',
