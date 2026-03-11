@@ -1,5 +1,12 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment.test
 
+## 1.7.7
+
+### Patch Changes
+
+- Updated dependencies [e2b65c7]
+  - @platforma-open/milaboratories.mixcr-amplicon-alignment.model@1.18.0
+
 ## 1.7.6
 
 ### Patch Changes

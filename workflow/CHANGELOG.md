@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow
 
+## 1.20.0
+
+### Minor Changes
+
+- e2b65c7: Support custom reference library file
+
 ## 1.19.9
 
 ### Patch Changes
