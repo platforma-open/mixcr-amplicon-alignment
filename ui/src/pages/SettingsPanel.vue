@@ -19,6 +19,7 @@ import {
 import { computed, ref, watch } from 'vue';
 import { useApp } from '../app';
 import { parseFasta, parseFastaRecords } from '../utils/parseFasta';
+import BuildLibraryPanel from './BuildLibraryPanel.vue';
 
 const app = useApp();
 
@@ -26,6 +27,7 @@ const refModeOptions: ListOption<ReferenceInputMode>[] = [
   { label: 'FASTA sequence', value: 'fastaSequence' },
   { label: 'FASTA file', value: 'fastaFile' },
   { label: 'Library file', value: 'libraryFile' },
+  { label: 'Build library', value: 'buildLibrary' },
 ];
 
 const refMode = computed<ReferenceInputMode>({
@@ -39,27 +41,10 @@ function extractFileName(filePath: string) {
   return filePath.replace(/^.*[\\/]/, '');
 }
 
-// Clear irrelevant state when switching modes
-watch(refMode, (newMode, oldMode) => {
-  if (newMode === oldMode) return;
-  if (newMode !== 'fastaFile') {
-    app.model.args.referenceFileHandle = undefined;
-    fileError.value = undefined;
-  }
-  if (newMode !== 'fastaSequence') {
-    app.model.ui.librarySequence = undefined;
-  }
-  if (newMode !== 'libraryFile') {
-    app.model.args.libraryFile = undefined;
-    app.model.args.isLibraryFileGzipped = undefined;
-  }
-  if (newMode === 'libraryFile') {
-    // Clear FASTA-derived genes when switching to library mode
-    app.model.args.vGenes = undefined;
-    app.model.args.jGenes = undefined;
-    clearRecordSelection();
-  }
-});
+// Sync reference input mode to args so the workflow can read it
+watch(refMode, (newMode) => {
+  app.model.args.referenceInputMode = newMode;
+}, { immediate: true });
 
 // Auto-detect gzip from library file
 watch(
@@ -183,10 +168,11 @@ async function setReferenceFile(file: ImportFileHandle | undefined) {
   }
 }
 
-// Watch for sequence changes and validate
+// Watch for sequence changes and validate (only in fastaSequence mode)
 watch(
   () => app.model.ui.librarySequence,
   (newSequence) => {
+    if (refMode.value !== 'fastaSequence') return;
     if ((newSequence || '').trim()) {
       // Clear file input when text is entered
       app.model.args.referenceFileHandle = undefined;
@@ -410,6 +396,8 @@ ATCGATCGATCG..."
       clearable
     />
   </template>
+
+  <BuildLibraryPanel v-else-if="refMode === 'buildLibrary'" />
 
   <PlDropdown
     v-model="chains"
