@@ -1,5 +1,13 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment.ui
 
+## 1.18.2
+
+### Patch Changes
+
+- fb02889: Removed all logic and dependencies related to \`cdr3Sequences\` from the \`mixcr-amplicon-alignment\` block.
+- Updated dependencies [fb02889]
+  - @platforma-open/milaboratories.mixcr-amplicon-alignment.model@1.18.1
+
 ## 1.18.1
 
 ### Patch Changes

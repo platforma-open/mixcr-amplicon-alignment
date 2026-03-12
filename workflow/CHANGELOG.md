@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow
 
+## 1.20.1
+
+### Patch Changes
+
+- fb02889: Removed all logic and dependencies related to \`cdr3Sequences\` from the \`mixcr-amplicon-alignment\` block.
+
 ## 1.20.0
 
 ### Minor Changes
