@@ -29,7 +29,6 @@ export interface BlockArgs {
   tagPattern: string;
   vGenes?: string; // now a single FASTA string
   jGenes?: string; // now a single FASTA string
-  cdr3Sequences?: string; // FASTA with CDR3 per reference
   limitInput?: number;
   perProcessMemGB?: number; // 1GB or more required
   perProcessCPUs?: number; // 1 or more required
@@ -201,7 +200,7 @@ export const platforma = BlockModel.create('Heavy')
     const mode = ctx.uiState.referenceInputMode ?? 'fastaSequence';
     const hasDataset = ctx.args.datasetRef !== undefined;
     if (mode === 'libraryFile') {
-      return hasDataset && ctx.args.libraryFile !== undefined && ctx.args.cdr3Sequences !== undefined;
+      return hasDataset && ctx.args.libraryFile !== undefined;
     }
     return hasDataset && (ctx.uiState.librarySequence !== undefined || ctx.args.vGenes !== undefined);
   })
