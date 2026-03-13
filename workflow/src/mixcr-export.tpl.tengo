@@ -221,12 +221,19 @@ self.body(func(inputs) {
 			libraryFileName = "library.json.gz"
 		}
 
-		return mixcrCmdBuilder.
+		mixcrCmdBuilder.
 			arg("clones.clns").
 			addFile("clones.clns", clnsFile).
 			arg("clones.tsv").
-			saveFile("clones.tsv").
-			addFile(libraryFileName, params.referenceLibrary).
+			saveFile("clones.tsv")
+
+		if is_string(params.referenceLibrary) {
+			mixcrCmdBuilder.writeFile(libraryFileName, params.referenceLibrary).saveFile(libraryFileName)
+		} else {
+			mixcrCmdBuilder.addFile(libraryFileName, params.referenceLibrary)
+		}
+
+		return mixcrCmdBuilder.
 			cacheHours(3).
 			run()
 	}

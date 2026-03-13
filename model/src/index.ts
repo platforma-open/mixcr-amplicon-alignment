@@ -12,7 +12,31 @@ import { ProgressPrefix } from './progress';
 export type CloneClusteringMode = 'relaxed' | 'default' | 'off';
 export type AssemblingFeature = string;
 export type StopCodonType = 'amber' | 'ochre' | 'opal';
-export type ReferenceInputMode = 'fastaFile' | 'fastaSequence' | 'libraryFile';
+export type ReferenceInputMode = 'fastaFile' | 'fastaSequence' | 'libraryFile' | 'buildLibrary';
+
+export interface VAnchorPoints {
+  fr1Begin: number;
+  cdr1Begin: number;
+  fr2Begin: number;
+  cdr2Begin: number;
+  fr3Begin: number;
+  cdr3Begin: number;
+  vEnd: number;
+}
+
+export interface JAnchorPoints {
+  jBegin: number;
+  fr4Begin: number;
+  fr4End: number;
+}
+
+export interface LibraryEntryDefinition {
+  name: string;
+  vSequence: string;
+  jSequence: string;
+  vAnchorPoints: VAnchorPoints;
+  jAnchorPoints: JAnchorPoints;
+}
 
 export interface StopCodonReplacements {
   amber?: string;
@@ -41,12 +65,17 @@ export interface BlockArgs {
   libraryFile?: ImportFileHandle;
   isLibraryFileGzipped?: boolean;
   imputeGermline?: boolean;
+  libraryEntries?: LibraryEntryDefinition[];
+  buildLibraryVGenes?: string;
+  buildLibraryJGenes?: string;
+  referenceInputMode?: ReferenceInputMode;
 }
 
 export interface UiState {
   referenceInputMode?: ReferenceInputMode;
   librarySequence?: string;
   selectedRecordHeaders?: string[];
+  buildLibraryFastaFile?: ImportFileHandle;
   tableState: PlDataTableStateV2;
 }
 
@@ -108,7 +137,7 @@ export const platforma = BlockModel.create('Heavy')
 
   .output('referenceLibrary', (ctx) => {
     return ctx.outputs !== undefined
-      ? ctx.outputs?.resolve('referenceLibrary')?.getRemoteFileHandle()
+      ? ctx.outputs?.resolve({ field: 'referenceLibrary', assertFieldType: 'Input', allowPermanentAbsence: true })?.getRemoteFileHandle()
       : undefined;
   })
 
@@ -129,6 +158,10 @@ export const platforma = BlockModel.create('Heavy')
         ).data.map((e) => e.key[0] as string)
       : undefined;
   })
+
+  .output('prerunLibrary', (ctx) =>
+    ctx.prerun?.resolve({ field: 'referenceLibrary', assertFieldType: 'Input', allowPermanentAbsence: true })?.getFileHandle(),
+  )
 
   .retentiveOutput('inputOptions', (ctx) => {
     return ctx.resultPool.getOptions((v) => {
@@ -201,6 +234,9 @@ export const platforma = BlockModel.create('Heavy')
     const hasDataset = ctx.args.datasetRef !== undefined;
     if (mode === 'libraryFile') {
       return hasDataset && ctx.args.libraryFile !== undefined;
+    }
+    if (mode === 'buildLibrary') {
+      return hasDataset && (ctx.args.libraryEntries?.length ?? 0) > 0;
     }
     return hasDataset && (ctx.uiState.librarySequence !== undefined || ctx.args.vGenes !== undefined);
   })

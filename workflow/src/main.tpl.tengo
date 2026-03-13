@@ -15,6 +15,8 @@ json := import("json")
 processTpl := assets.importTemplate(":process")
 repseqioLibraryTpl := assets.importTemplate(":repseqio-library")
 
+wf.setPreRun(assets.importTemplate(":prerun"))
+
 wf.prepare(func(args){
 	return {}
 })
@@ -47,11 +49,74 @@ wf.body(func(args) {
 	debugOutput := undefined
 	libraryImportHandle := undefined
 
-	if !is_undefined(args.libraryFile) {
+	mode := args.referenceInputMode
+	if is_undefined(mode) {
+		mode = "fastaSequence"
+	}
+
+	if mode == "buildLibrary" {
+		// Build library mode — construct library.json from entry definitions
+		chainInfoForMixcr := chainInfos[chains].mixcrFilter
+		genes := []
+		fragments := []
+		for entry in args.libraryEntries {
+			vName := entry.name + "_Vgene"
+			jName := entry.name + "_Jgene"
+			vUri := "local://" + vName
+			jUri := "local://" + jName
+			genes = append(genes, {
+				baseSequence: vUri,
+				name: vName,
+				geneType: "V",
+				isFunctional: true,
+				chains: [chainInfoForMixcr],
+				anchorPoints: {
+					FR1Begin: entry.vAnchorPoints.fr1Begin,
+					CDR1Begin: entry.vAnchorPoints.cdr1Begin,
+					FR2Begin: entry.vAnchorPoints.fr2Begin,
+					CDR2Begin: entry.vAnchorPoints.cdr2Begin,
+					FR3Begin: entry.vAnchorPoints.fr3Begin,
+					CDR3Begin: entry.vAnchorPoints.cdr3Begin,
+					VEnd: entry.vAnchorPoints.vEnd
+				}
+			})
+			fragments = append(fragments, {
+				uri: vUri,
+				range: { from: 0, to: len(entry.vSequence) },
+				sequence: entry.vSequence
+			})
+			genes = append(genes, {
+				baseSequence: jUri,
+				name: jName,
+				geneType: "J",
+				isFunctional: true,
+				chains: [chainInfoForMixcr],
+				anchorPoints: {
+					JBegin: entry.jAnchorPoints.jBegin,
+					FR4Begin: entry.jAnchorPoints.fr4Begin,
+					FR4End: entry.jAnchorPoints.fr4End
+				}
+			})
+			fragments = append(fragments, {
+				uri: jUri,
+				range: { from: 0, to: len(entry.jSequence) },
+				sequence: entry.jSequence
+			})
+		}
+		library := [{
+			taxonId: 1111,
+			speciesNames: ["custom"],
+			genes: genes,
+			sequenceFragments: fragments,
+			checksumVersion: 1
+		}]
+		referenceLibrary = string(json.encode(library))
+	} else if mode == "libraryFile" {
 		fImport := file.importFile(args.libraryFile)
     	libraryImportHandle = fImport.handle
     	referenceLibrary = fImport.file
 	} else {
+		// fastaSequence or fastaFile — both use vGenes/jGenes via repseqio
 		repseqioResults := render.create(repseqioLibraryTpl, {
 			vGenes: args.vGenes,
 			jGenes: args.jGenes,
@@ -101,7 +166,7 @@ wf.body(func(args) {
 		}
 	}
 
-	if !is_undefined(args.libraryFile) {
+	if mode == "libraryFile" {
 		exports.library = {
 			data: referenceLibrary,
 			spec: {
@@ -127,7 +192,9 @@ wf.body(func(args) {
 		progress: runMixcr.output("progress.data"),
 		clonotypeTables: pframes.exportFrame(runMixcr.output("clonotypeTables"))
 	}
-	outputs.referenceLibrary = file.exportFile(referenceLibrary)
+	if mode != "buildLibrary" {
+		outputs.referenceLibrary = file.exportFile(referenceLibrary)
+	}
 	if !is_undefined(debugOutput) {
 		outputs.debugOutput = debugOutput
 	}

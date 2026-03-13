@@ -16,8 +16,8 @@ catalog:
   '@platforma-sdk/package-builder': 3.11.4
   '@platforma-sdk/block-tools': 2.6.64
   '@platforma-sdk/eslint-config': 1.2.0
-  '@platforma-sdk/test': 1.54.3
-  '@milaboratories/helpers': 1.13.3
+  '@platforma-sdk/test': 1.58.24
+  '@milaboratories/helpers': 1.13.7
 
   # Common dependencies - can use ^ or ~
   'vue': ^3.5.24
