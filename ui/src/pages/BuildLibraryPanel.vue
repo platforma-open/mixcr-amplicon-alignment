@@ -118,6 +118,16 @@ function getRegionError(entry: LibraryEntryDefinition, region: VRegionKey | JReg
   return regionLengthError(seq);
 }
 
+const allRegions: (VRegionKey | JRegionKey)[] = ['fr1', 'cdr1', 'fr2', 'cdr2', 'fr3', 'vPartCdr3', 'jPartCdr3', 'fr4'];
+
+function getEntryError(entry: LibraryEntryDefinition): string | undefined {
+  for (const region of allRegions) {
+    const err = getRegionError(entry, region);
+    if (err) return err;
+  }
+  return undefined;
+}
+
 // FASTA upload → prerun sync
 const buildLibraryFastaError = ref<string | undefined>();
 type PrerunWaitState = 'idle' | 'waitForClear' | 'waitForResult';
@@ -138,7 +148,7 @@ async function onBuildLibraryFastaUpload(file: ImportFileHandle | undefined) {
   try {
     const data = await getRawPlatformaInstance().lsDriver.getLocalFileContent(file as LocalImportFileHandle);
     const content = new TextDecoder().decode(data);
-    const result = parseFasta(content);
+    const result = parseFasta(content, undefined, true);
 
     if (result.isValid) {
       buildLibraryFastaError.value = undefined;
@@ -214,7 +224,8 @@ watch(
   <div v-for="(entry, index) in libraryEntries" :key="index" class="library-entry">
     <div class="entry-header" @click="toggleEntry(index)">
       <span class="entry-chevron">{{ expandedEntries.has(index) ? '\u25BC' : '\u25B6' }}</span>
-      <span class="entry-header-title">{{ entry.name || `Entry ${index + 1}` }}</span>
+      <span :class="getEntryError(entry) ? 'entry-header-title' : 'entry-header-title entry-header-title-fill'">{{ entry.name || `Entry ${index + 1}` }}</span>
+      <span v-if="getEntryError(entry)" class="entry-header-error">{{ getEntryError(entry) }}</span>
       <button class="entry-close-btn" @click.stop="removeLibraryEntry(index)">&times;</button>
     </div>
     <div v-if="expandedEntries.has(index)" class="entry-content">
@@ -304,10 +315,23 @@ watch(
 }
 
 .entry-header-title {
-  flex: 1;
   font-size: 14px;
   font-weight: 500;
   color: #333;
+}
+
+.entry-header-title-fill {
+  flex: 1;
+}
+
+.entry-header-error {
+  flex: 1;
+  font-size: 12px;
+  color: #c00;
+  margin-left: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .entry-close-btn {

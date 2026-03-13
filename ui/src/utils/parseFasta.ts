@@ -71,7 +71,7 @@ export function parseFastaRecords(content: string): FastaRecord[] {
  * @param content - The FASTA content to validate
  * @returns FastaParseResult with validation details
  */
-export function parseFasta(content: string, selectedHeaders?: string[]): FastaParseResult {
+export function parseFasta(content: string, selectedHeaders?: string[], lenient?: boolean): FastaParseResult {
   // Check if content is empty
   if (!content.trim()) {
     return {
@@ -148,16 +148,18 @@ export function parseFasta(content: string, selectedHeaders?: string[]): FastaPa
       return { isValid: false, error };
     }
 
-    // Check minimum length
-    if (cleanSequence.length < 250) {
-      const error = `${recordIdentifier}: Sequence too short (${cleanSequence.length} nucleotides, minimum 250 required)`;
-      return { isValid: false, error };
-    }
+    if (!lenient) {
+      // Check minimum length
+      if (cleanSequence.length < 250) {
+        const error = `${recordIdentifier}: Sequence too short (${cleanSequence.length} nucleotides, minimum 250 required)`;
+        return { isValid: false, error };
+      }
 
-    // Check if sequence length is a multiple of 3
-    if (cleanSequence.length % 3 !== 0) {
-      const error = `${recordIdentifier}: Sequence length is not a multiple of 3 - translation may be incomplete`;
-      return { isValid: false, error };
+      // Check if sequence length is a multiple of 3
+      if (cleanSequence.length % 3 !== 0) {
+        const error = `${recordIdentifier}: Sequence length is not a multiple of 3 - translation may be incomplete`;
+        return { isValid: false, error };
+      }
     }
 
     // repseqio fromFasta rejects sequences with wildcards, so replace N→A for V/J genes.
@@ -167,7 +169,7 @@ export function parseFasta(content: string, selectedHeaders?: string[]): FastaPa
     // Translate DNA to protein for pattern validation using the adjusted reference sequence
     const translatedSequence = translateDNAToProtein(referenceSequence);
 
-    if (translatedSequence.length === 0) {
+    if (!lenient && translatedSequence.length === 0) {
       const error = `${recordIdentifier}: Translation resulted in empty protein sequence (possibly due to early stop codon)`;
       return { isValid: false, error };
     }
@@ -182,8 +184,20 @@ export function parseFasta(content: string, selectedHeaders?: string[]): FastaPa
 
     const match = validationRegex.exec(sequenceToSearch);
     if (!match) {
-      const error = `${recordIdentifier}: Translated sequence does not contain CDR3 after position ${searchStartPosition}`;
-      return { isValid: false, error };
+      if (!lenient) {
+        const error = `${recordIdentifier}: Translated sequence does not contain CDR3 after position ${searchStartPosition}`;
+        return { isValid: false, error };
+      }
+      // In lenient mode, split at 2/3 of the sequence as a rough V/J boundary estimate
+      const splitPoint = Math.floor(cleanSequence.length * 2 / 3);
+      const vGeneSequence = sequenceWithoutN.substring(0, splitPoint);
+      const jGeneSequence = sequenceWithoutN.substring(splitPoint);
+      const vGeneHeader = headerRoot ? `${headerRoot}_Vgene` : 'ref_Vgene';
+      const jGeneHeader = headerRoot ? `${headerRoot}_Jgene` : 'ref_Jgene';
+      vGeneParts.push(`>${vGeneHeader}\n${vGeneSequence}`);
+      jGeneParts.push(`>${jGeneHeader}\n${jGeneSequence}`);
+      if (header) headers.push(header);
+      continue;
     }
 
     // Extract the two sequences with headers
