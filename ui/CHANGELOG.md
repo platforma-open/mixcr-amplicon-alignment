@@ -1,5 +1,16 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment.ui
 
+## 1.19.0
+
+### Minor Changes
+
+- 00ded91: Support custom reference library
+
+### Patch Changes
+
+- Updated dependencies [00ded91]
+  - @platforma-open/milaboratories.mixcr-amplicon-alignment.model@1.19.0
+
 ## 1.18.2
 
 ### Patch Changes
