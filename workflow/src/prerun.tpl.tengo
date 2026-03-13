@@ -1,0 +1,34 @@
+wf := import("@platforma-sdk/workflow-tengo:workflow")
+render := import("@platforma-sdk/workflow-tengo:render")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+file := import("@platforma-sdk/workflow-tengo:file")
+
+repseqioLibraryTpl := assets.importTemplate(":repseqio-library")
+
+wf.body(func(args) {
+	outputs := {}
+
+	if args.referenceInputMode == "buildLibrary" && !is_undefined(args.buildLibraryVGenes) && !is_undefined(args.buildLibraryJGenes) {
+		chainInfos := {
+			"IGHeavy": "IGH",
+			"IGLight": "IGK",
+			"TCRAlpha": "TRA",
+			"TCRBeta": "TRB",
+			"TCRGamma": "TRD",
+			"TCRDelta": "TRG"
+		}
+		chains := chainInfos[args.chains]
+
+		repseqioResults := render.createEphemeral(repseqioLibraryTpl, {
+			vGenes: args.buildLibraryVGenes,
+			jGenes: args.buildLibraryJGenes,
+			chains: chains
+		})
+		outputs.referenceLibrary = file.exportFile(repseqioResults.output("referenceLibrary"))
+	}
+
+	return {
+		outputs: outputs,
+		exports: {}
+	}
+})
