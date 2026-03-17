@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow
 
+## 1.21.1
+
+### Patch Changes
+
+- bbefce5: Upgrade MiXCR to 4.7.0-317-develop — increases JVM non-heap memory headroom to fix OOM on export
+
 ## 1.21.0
 
 ### Minor Changes
