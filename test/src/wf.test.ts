@@ -1,21 +1,22 @@
-import type { BlockArgs, BlockOutputs, platforma } from '@platforma-open/milaboratories.mixcr-amplicon-alignment.model';
-import {
-  AlignReport,
-  Qc,
-} from '@platforma-open/milaboratories.mixcr-amplicon-alignment.model';
-import { awaitStableState, blockTest } from '@platforma-sdk/test';
-import { blockSpec as samplesAndDataBlockSpec } from '@platforma-open/milaboratories.samples-and-data';
-import type { BlockArgs as SamplesAndDataBlockArgs } from '@platforma-open/milaboratories.samples-and-data.model';
-import { uniquePlId } from '@platforma-open/milaboratories.samples-and-data.model';
-import { blockSpec as myBlockSpec } from 'this-block';
-import type { InferBlockState } from '@platforma-sdk/model';
-import { wrapOutputs } from '@platforma-sdk/model';
+import type {
+  BlockArgs,
+  BlockOutputs,
+  platforma,
+} from "@platforma-open/milaboratories.mixcr-amplicon-alignment.model";
+import { AlignReport, Qc } from "@platforma-open/milaboratories.mixcr-amplicon-alignment.model";
+import { awaitStableState, blockTest } from "@platforma-sdk/test";
+import { blockSpec as samplesAndDataBlockSpec } from "@platforma-open/milaboratories.samples-and-data";
+import type { BlockArgs as SamplesAndDataBlockArgs } from "@platforma-open/milaboratories.samples-and-data.model";
+import { uniquePlId } from "@platforma-open/milaboratories.samples-and-data.model";
+import { blockSpec as myBlockSpec } from "this-block";
+import type { InferBlockState } from "@platforma-sdk/model";
+import { wrapOutputs } from "@platforma-sdk/model";
 
 // prettier-ignore
 const referenceSequence = 'GAGGTGCAGCTCGTGGAGTCTGGGGGAGGCTTGGTCCAGCCTGGGGGGTCCCTGACACTTTCCTGTGCAGCCTCTGGATTCACCTTTAACACCTATTGGATGACCTGGGTCCGCCAGGCTCCAGGGAAGGGGCTGGAGTGGGTGGCCAATATAAATGAAGATGGAAGTGAAAACTACTATGCGGACTCTGTGAGGGGCCGATTCACCATTTTCAGAGACAACGCCAAGAACTCACTGTATCTGCAACTGAGCAGCCTGAGAGCCGAGGACACGTCTGTGTATTACTGTGCGAGATTCCGCGGGGGCCTTTGGGGCCAGGGAACCCTGGTCATTGTCTCCTCA';
 
-blockTest('empty inputs', { timeout: 20000 }, async ({ rawPrj: project, expect }) => {
-  const blockId = await project.addBlock('Block', myBlockSpec);
+blockTest("empty inputs", { timeout: 20000 }, async ({ rawPrj: project, expect }) => {
+  const blockId = await project.addBlock("Block", myBlockSpec);
   const stableState = (await awaitStableState(
     project.getBlockState(blockId),
     15000,
@@ -26,30 +27,30 @@ blockTest('empty inputs', { timeout: 20000 }, async ({ rawPrj: project, expect }
 });
 
 blockTest(
-  'simple project',
+  "simple project",
   { timeout: 300000 },
   async ({ rawPrj: project, ml, helpers, expect }) => {
-    const sndBlockId = await project.addBlock('Samples & Data', samplesAndDataBlockSpec);
-    const alignBlockId = await project.addBlock('MiXCR Amplicon Alignment', myBlockSpec);
+    const sndBlockId = await project.addBlock("Samples & Data", samplesAndDataBlockSpec);
+    const alignBlockId = await project.addBlock("MiXCR Amplicon Alignment", myBlockSpec);
 
     const sample1Id = uniquePlId();
     const dataset1Id = uniquePlId();
 
-    const r1Handle = await helpers.getLocalFileHandle('./assets/s1_R1.fastq.gz');
-    const r2Handle = await helpers.getLocalFileHandle('./assets/s1_R2.fastq.gz');
+    const r1Handle = await helpers.getLocalFileHandle("./assets/s1_R1.fastq.gz");
+    const r2Handle = await helpers.getLocalFileHandle("./assets/s1_R2.fastq.gz");
 
     await project.setBlockArgs(sndBlockId, {
       metadata: [],
       sampleIds: [sample1Id],
-      sampleLabelColumnLabel: 'Sample Name',
-      sampleLabels: { [sample1Id]: 'Sample 1' },
+      sampleLabelColumnLabel: "Sample Name",
+      sampleLabels: { [sample1Id]: "Sample 1" },
       datasets: [
         {
           id: dataset1Id,
-          label: 'Dataset 1',
+          label: "Dataset 1",
           content: {
-            type: 'Fastq',
-            readIndices: ['R1', 'R2'],
+            type: "Fastq",
+            readIndices: ["R1", "R2"],
             gzipped: true,
             data: {
               [sample1Id]: {
@@ -74,17 +75,16 @@ blockTest(
 
     // Wait for input options to propagate
     const alignBlockState = project.getBlockState(alignBlockId);
-    const alignStableState1 = (await awaitStableState(
-      alignBlockState,
-      25000,
-    )) as InferBlockState<typeof platforma>;
+    const alignStableState1 = (await awaitStableState(alignBlockState, 25000)) as InferBlockState<
+      typeof platforma
+    >;
 
     expect(alignStableState1.outputs).toMatchObject({
       inputOptions: {
         ok: true,
         value: [
           {
-            label: 'Dataset 1',
+            label: "Dataset 1",
           },
         ],
       },
@@ -98,12 +98,12 @@ blockTest(
 
     await project.setBlockArgs(alignBlockId, {
       datasetRef: alignOutputs1.inputOptions[0].ref,
-      chains: 'IGHeavy',
-      tagPattern: '',
+      chains: "IGHeavy",
+      tagPattern: "",
       vGenes: vGenesFasta,
       jGenes: jGenesFasta,
-      assemblingFeature: 'VDJRegion',
-      cloneClusteringMode: 'relaxed',
+      assemblingFeature: "VDJRegion",
+      cloneClusteringMode: "relaxed",
     } satisfies BlockArgs);
 
     const alignStableState2 = (await awaitStableState(
@@ -129,7 +129,7 @@ blockTest(
 
     const reportEntries = outputs3.reports.data;
     const alignJsonReportEntry = reportEntries.find(
-      (entry) => entry.key[1] === 'align' && entry.key[2] === 'json',
+      (entry) => entry.key[1] === "align" && entry.key[2] === "json",
     );
     expect(alignJsonReportEntry).toBeDefined();
 
@@ -141,7 +141,7 @@ blockTest(
               typeof ml.driverKit.blobDriver.getContent
             >[0],
           ),
-        ).toString('utf8'),
+        ).toString("utf8"),
       ),
     );
     expect(alignReport).toBeDefined();
@@ -157,7 +157,7 @@ blockTest(
           await ml.driverKit.blobDriver.getContent(
             qcEntry.value!.handle as Parameters<typeof ml.driverKit.blobDriver.getContent>[0],
           ),
-        ).toString('utf8'),
+        ).toString("utf8"),
       ),
     );
     expect(qc).toBeDefined();
@@ -165,30 +165,30 @@ blockTest(
 );
 
 blockTest(
-  'FR2:FR4 with imputation',
+  "FR2:FR4 with imputation",
   { timeout: 300000 },
   async ({ rawPrj: project, ml, helpers, expect }) => {
-    const sndBlockId = await project.addBlock('Samples & Data', samplesAndDataBlockSpec);
-    const alignBlockId = await project.addBlock('MiXCR Amplicon Alignment', myBlockSpec);
+    const sndBlockId = await project.addBlock("Samples & Data", samplesAndDataBlockSpec);
+    const alignBlockId = await project.addBlock("MiXCR Amplicon Alignment", myBlockSpec);
 
     const sample1Id = uniquePlId();
     const dataset1Id = uniquePlId();
 
-    const r1Handle = await helpers.getLocalFileHandle('./assets/s1_R1.fastq.gz');
-    const r2Handle = await helpers.getLocalFileHandle('./assets/s1_R2.fastq.gz');
+    const r1Handle = await helpers.getLocalFileHandle("./assets/s1_R1.fastq.gz");
+    const r2Handle = await helpers.getLocalFileHandle("./assets/s1_R2.fastq.gz");
 
     await project.setBlockArgs(sndBlockId, {
       metadata: [],
       sampleIds: [sample1Id],
-      sampleLabelColumnLabel: 'Sample Name',
-      sampleLabels: { [sample1Id]: 'Sample 1' },
+      sampleLabelColumnLabel: "Sample Name",
+      sampleLabels: { [sample1Id]: "Sample 1" },
       datasets: [
         {
           id: dataset1Id,
-          label: 'Dataset 1',
+          label: "Dataset 1",
           content: {
-            type: 'Fastq',
-            readIndices: ['R1', 'R2'],
+            type: "Fastq",
+            readIndices: ["R1", "R2"],
             gzipped: true,
             data: {
               [sample1Id]: {
@@ -218,13 +218,13 @@ blockTest(
 
     await project.setBlockArgs(alignBlockId, {
       datasetRef: alignOutputs1.inputOptions[0].ref,
-      chains: 'IGHeavy',
-      tagPattern: '',
+      chains: "IGHeavy",
+      tagPattern: "",
       vGenes: vGenesFasta,
       jGenes: jGenesFasta,
-      assemblingFeature: 'FR2:FR4',
+      assemblingFeature: "FR2:FR4",
       imputeGermline: true,
-      cloneClusteringMode: 'relaxed',
+      cloneClusteringMode: "relaxed",
     } satisfies BlockArgs);
 
     await project.runBlock(alignBlockId);
@@ -241,7 +241,7 @@ blockTest(
 
     const reportEntries = outputs3.reports.data;
     const alignJsonReportEntry = reportEntries.find(
-      (entry) => entry.key[1] === 'align' && entry.key[2] === 'json',
+      (entry) => entry.key[1] === "align" && entry.key[2] === "json",
     );
     expect(alignJsonReportEntry).toBeDefined();
 
@@ -253,7 +253,7 @@ blockTest(
               typeof ml.driverKit.blobDriver.getContent
             >[0],
           ),
-        ).toString('utf8'),
+        ).toString("utf8"),
       ),
     );
     expect(alignReport).toBeDefined();
@@ -265,30 +265,30 @@ blockTest(
 );
 
 blockTest(
-  'CDR1:CDR3 without imputation',
+  "CDR1:CDR3 without imputation",
   { timeout: 300000 },
   async ({ rawPrj: project, ml, helpers, expect }) => {
-    const sndBlockId = await project.addBlock('Samples & Data', samplesAndDataBlockSpec);
-    const alignBlockId = await project.addBlock('MiXCR Amplicon Alignment', myBlockSpec);
+    const sndBlockId = await project.addBlock("Samples & Data", samplesAndDataBlockSpec);
+    const alignBlockId = await project.addBlock("MiXCR Amplicon Alignment", myBlockSpec);
 
     const sample1Id = uniquePlId();
     const dataset1Id = uniquePlId();
 
-    const r1Handle = await helpers.getLocalFileHandle('./assets/s1_R1.fastq.gz');
-    const r2Handle = await helpers.getLocalFileHandle('./assets/s1_R2.fastq.gz');
+    const r1Handle = await helpers.getLocalFileHandle("./assets/s1_R1.fastq.gz");
+    const r2Handle = await helpers.getLocalFileHandle("./assets/s1_R2.fastq.gz");
 
     await project.setBlockArgs(sndBlockId, {
       metadata: [],
       sampleIds: [sample1Id],
-      sampleLabelColumnLabel: 'Sample Name',
-      sampleLabels: { [sample1Id]: 'Sample 1' },
+      sampleLabelColumnLabel: "Sample Name",
+      sampleLabels: { [sample1Id]: "Sample 1" },
       datasets: [
         {
           id: dataset1Id,
-          label: 'Dataset 1',
+          label: "Dataset 1",
           content: {
-            type: 'Fastq',
-            readIndices: ['R1', 'R2'],
+            type: "Fastq",
+            readIndices: ["R1", "R2"],
             gzipped: true,
             data: {
               [sample1Id]: {
@@ -318,13 +318,13 @@ blockTest(
 
     await project.setBlockArgs(alignBlockId, {
       datasetRef: alignOutputs1.inputOptions[0].ref,
-      chains: 'IGHeavy',
-      tagPattern: '',
+      chains: "IGHeavy",
+      tagPattern: "",
       vGenes: vGenesFasta,
       jGenes: jGenesFasta,
-      assemblingFeature: 'CDR1:CDR3',
+      assemblingFeature: "CDR1:CDR3",
       imputeGermline: false,
-      cloneClusteringMode: 'relaxed',
+      cloneClusteringMode: "relaxed",
     } satisfies BlockArgs);
 
     await project.runBlock(alignBlockId);
@@ -341,7 +341,7 @@ blockTest(
 
     const reportEntries = outputs3.reports.data;
     const alignJsonReportEntry = reportEntries.find(
-      (entry) => entry.key[1] === 'align' && entry.key[2] === 'json',
+      (entry) => entry.key[1] === "align" && entry.key[2] === "json",
     );
     expect(alignJsonReportEntry).toBeDefined();
 
@@ -353,7 +353,7 @@ blockTest(
               typeof ml.driverKit.blobDriver.getContent
             >[0],
           ),
-        ).toString('utf8'),
+        ).toString("utf8"),
       ),
     );
     expect(alignReport).toBeDefined();

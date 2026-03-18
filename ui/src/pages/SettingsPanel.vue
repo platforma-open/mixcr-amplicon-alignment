@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import type { ReferenceInputMode } from '@platforma-open/milaboratories.mixcr-amplicon-alignment.model';
-import type { ImportFileHandle, LocalImportFileHandle, PlRef } from '@platforma-sdk/model';
-import { getFilePathFromHandle, getRawPlatformaInstance } from '@platforma-sdk/model';
+import type { ReferenceInputMode } from "@platforma-open/milaboratories.mixcr-amplicon-alignment.model";
+import type { ImportFileHandle, LocalImportFileHandle, PlRef } from "@platforma-sdk/model";
+import { getFilePathFromHandle, getRawPlatformaInstance } from "@platforma-sdk/model";
 import {
   PlAccordionSection,
   PlBtnGroup,
@@ -15,36 +15,40 @@ import {
   PlTextArea,
   PlTextField,
   type ListOption,
-} from '@platforma-sdk/ui-vue';
-import { computed, ref, watch } from 'vue';
-import { useApp } from '../app';
-import { parseFasta, parseFastaRecords } from '../utils/parseFasta';
-import BuildLibraryPanel from './BuildLibraryPanel.vue';
+} from "@platforma-sdk/ui-vue";
+import { computed, ref, watch } from "vue";
+import { useApp } from "../app";
+import { parseFasta, parseFastaRecords } from "../utils/parseFasta";
+import BuildLibraryPanel from "./BuildLibraryPanel.vue";
 
 const app = useApp();
 
 const refModeOptions: ListOption<ReferenceInputMode>[] = [
-  { label: 'FASTA sequence', value: 'fastaSequence' },
-  { label: 'FASTA file', value: 'fastaFile' },
-  { label: 'Library file', value: 'libraryFile' },
-  { label: 'Build library', value: 'buildLibrary' },
+  { label: "FASTA sequence", value: "fastaSequence" },
+  { label: "FASTA file", value: "fastaFile" },
+  { label: "Library file", value: "libraryFile" },
+  { label: "Build library", value: "buildLibrary" },
 ];
 
 const refMode = computed<ReferenceInputMode>({
-  get: () => app.model.ui.referenceInputMode ?? 'fastaSequence',
+  get: () => app.model.ui.referenceInputMode ?? "fastaSequence",
   set: (value: ReferenceInputMode) => {
     app.model.ui.referenceInputMode = value;
   },
 });
 
 function extractFileName(filePath: string) {
-  return filePath.replace(/^.*[\\/]/, '');
+  return filePath.replace(/^.*[\\/]/, "");
 }
 
 // Sync reference input mode to args so the workflow can read it
-watch(refMode, (newMode) => {
-  app.model.args.referenceInputMode = newMode;
-}, { immediate: true });
+watch(
+  refMode,
+  (newMode) => {
+    app.model.args.referenceInputMode = newMode;
+  },
+  { immediate: true },
+);
 
 // Auto-detect gzip from library file
 watch(
@@ -55,13 +59,13 @@ watch(
       return;
     }
     const libraryFileName = extractFileName(getFilePathFromHandle(newFile));
-    const isGzipped = libraryFileName?.toLowerCase().endsWith('.gz') || false;
+    const isGzipped = libraryFileName?.toLowerCase().endsWith(".gz") || false;
     app.model.args.isLibraryFileGzipped = isGzipped;
   },
 );
 
 type AssemblingFeature = string;
-type StopCodonType = 'amber' | 'ochre' | 'opal';
+type StopCodonType = "amber" | "ochre" | "opal";
 
 // Validation state management
 const fastaError = ref<string | undefined>();
@@ -70,9 +74,7 @@ const fastaError = ref<string | undefined>();
 const allRecordHeaders = ref<string[]>([]);
 const fileContent = ref<string | undefined>();
 
-const recordOptions = computed(() =>
-  allRecordHeaders.value.map((h) => ({ value: h, label: h })),
-);
+const recordOptions = computed(() => allRecordHeaders.value.map((h) => ({ value: h, label: h })));
 
 const selectedHeaders = computed({
   get: () => app.model.ui.selectedRecordHeaders ?? allRecordHeaders.value,
@@ -140,7 +142,9 @@ async function setReferenceFile(file: ImportFileHandle | undefined) {
   }
 
   try {
-    const data = await getRawPlatformaInstance().lsDriver.getLocalFileContent(file as LocalImportFileHandle);
+    const data = await getRawPlatformaInstance().lsDriver.getLocalFileContent(
+      file as LocalImportFileHandle,
+    );
     const content = new TextDecoder().decode(data);
     fileContent.value = content;
     app.model.ui.selectedRecordHeaders = undefined;
@@ -153,7 +157,7 @@ async function setReferenceFile(file: ImportFileHandle | undefined) {
       fileError.value = result.error;
     }
   } catch (e) {
-    fileError.value = `Failed to read file: ${e instanceof Error ? e.message : 'Unknown error'}`;
+    fileError.value = `Failed to read file: ${e instanceof Error ? e.message : "Unknown error"}`;
     app.model.args.vGenes = undefined;
     app.model.args.jGenes = undefined;
     clearRecordSelection();
@@ -164,15 +168,15 @@ async function setReferenceFile(file: ImportFileHandle | undefined) {
 watch(
   () => app.model.ui.librarySequence,
   (newSequence) => {
-    if (refMode.value !== 'fastaSequence') return;
-    if ((newSequence || '').trim()) {
+    if (refMode.value !== "fastaSequence") return;
+    if ((newSequence || "").trim()) {
       // Clear file input when text is entered
       app.model.args.referenceFileHandle = undefined;
       fileError.value = undefined;
       fileContent.value = undefined;
       app.model.ui.selectedRecordHeaders = undefined;
 
-      processContent(newSequence || '');
+      processContent(newSequence || "");
     } else {
       fastaError.value = undefined;
       app.model.args.vGenes = undefined;
@@ -195,41 +199,41 @@ watch(
 );
 
 const chainOptions = [
-  { value: 'IGHeavy', label: 'IG Heavy' },
-  { value: 'IGLight', label: 'IG Light' },
-  { value: 'TCRAlpha', label: 'TCR-α' },
-  { value: 'TCRBeta', label: 'TCR-β' },
-  { value: 'TCRGamma', label: 'TCR-ɣ' },
-  { value: 'TCRDelta', label: 'TCR-δ' },
+  { value: "IGHeavy", label: "IG Heavy" },
+  { value: "IGLight", label: "IG Light" },
+  { value: "TCRAlpha", label: "TCR-α" },
+  { value: "TCRBeta", label: "TCR-β" },
+  { value: "TCRGamma", label: "TCR-ɣ" },
+  { value: "TCRDelta", label: "TCR-δ" },
 ];
 
 const chains = computed({
-  get: () => app.model.args.chains ?? 'IGHeavy',
+  get: () => app.model.args.chains ?? "IGHeavy",
   set: (value: string) => {
     app.model.args.chains = value;
   },
 });
 
 const clusteringOptions = [
-  { value: 'relaxed', label: 'Relaxed error correction, faster assembly' },
-  { value: 'default', label: 'Default MiXCR error correction, slower assembly' },
-  { value: 'off', label: 'No error correction, fastest assembly' },
+  { value: "relaxed", label: "Relaxed error correction, faster assembly" },
+  { value: "default", label: "Default MiXCR error correction, slower assembly" },
+  { value: "off", label: "No error correction, fastest assembly" },
 ] as const;
 
 const assemblingFeatureOptions = [
-  { value: 'VDJRegion', label: 'VDJRegion' },
-  { value: 'CDR3', label: 'CDR3' },
-  { value: 'FR1:FR4', label: 'FR1:FR4' },
-  { value: 'CDR1:FR4', label: 'CDR1:FR4' },
-  { value: 'FR2:FR4', label: 'FR2:FR4' },
-  { value: 'CDR2:FR4', label: 'CDR2:FR4' },
-  { value: 'FR3:FR4', label: 'FR3:FR4' },
-  { value: 'CDR3:FR4', label: 'CDR3:FR4' },
-  { value: 'FR1:CDR3', label: 'FR1:CDR3' },
-  { value: 'CDR1:CDR3', label: 'CDR1:CDR3' },
-  { value: 'FR2:CDR3', label: 'FR2:CDR3' },
-  { value: 'CDR2:CDR3', label: 'CDR2:CDR3' },
-  { value: 'FR3:CDR3', label: 'FR3:CDR3' },
+  { value: "VDJRegion", label: "VDJRegion" },
+  { value: "CDR3", label: "CDR3" },
+  { value: "FR1:FR4", label: "FR1:FR4" },
+  { value: "CDR1:FR4", label: "CDR1:FR4" },
+  { value: "FR2:FR4", label: "FR2:FR4" },
+  { value: "CDR2:FR4", label: "CDR2:FR4" },
+  { value: "FR3:FR4", label: "FR3:FR4" },
+  { value: "CDR3:FR4", label: "CDR3:FR4" },
+  { value: "FR1:CDR3", label: "FR1:CDR3" },
+  { value: "CDR1:CDR3", label: "CDR1:CDR3" },
+  { value: "FR2:CDR3", label: "FR2:CDR3" },
+  { value: "CDR2:CDR3", label: "CDR2:CDR3" },
+  { value: "FR3:CDR3", label: "FR3:CDR3" },
 ];
 
 const assemblingFeature = computed<AssemblingFeature>({
@@ -247,32 +251,32 @@ const imputeGermline = computed({
 });
 
 const stopCodonOptions: ListOption<StopCodonType>[] = [
-  { label: 'Amber (TAG)', value: 'amber' },
-  { label: 'Ochre (TAA)', value: 'ochre' },
-  { label: 'Opal/Umber (TGA)', value: 'opal' },
+  { label: "Amber (TAG)", value: "amber" },
+  { label: "Ochre (TAA)", value: "ochre" },
+  { label: "Opal/Umber (TGA)", value: "opal" },
 ];
 
 const aminoAcidOptions: ListOption[] = [
-  { label: 'A (Ala)', value: 'A' },
-  { label: 'C (Cys)', value: 'C' },
-  { label: 'D (Asp)', value: 'D' },
-  { label: 'E (Glu)', value: 'E' },
-  { label: 'F (Phe)', value: 'F' },
-  { label: 'G (Gly)', value: 'G' },
-  { label: 'H (His)', value: 'H' },
-  { label: 'I (Ile)', value: 'I' },
-  { label: 'K (Lys)', value: 'K' },
-  { label: 'L (Leu)', value: 'L' },
-  { label: 'M (Met)', value: 'M' },
-  { label: 'N (Asn)', value: 'N' },
-  { label: 'P (Pro)', value: 'P' },
-  { label: 'Q (Gln)', value: 'Q' },
-  { label: 'R (Arg)', value: 'R' },
-  { label: 'S (Ser)', value: 'S' },
-  { label: 'T (Thr)', value: 'T' },
-  { label: 'V (Val)', value: 'V' },
-  { label: 'W (Trp)', value: 'W' },
-  { label: 'Y (Tyr)', value: 'Y' },
+  { label: "A (Ala)", value: "A" },
+  { label: "C (Cys)", value: "C" },
+  { label: "D (Asp)", value: "D" },
+  { label: "E (Glu)", value: "E" },
+  { label: "F (Phe)", value: "F" },
+  { label: "G (Gly)", value: "G" },
+  { label: "H (His)", value: "H" },
+  { label: "I (Ile)", value: "I" },
+  { label: "K (Lys)", value: "K" },
+  { label: "L (Leu)", value: "L" },
+  { label: "M (Met)", value: "M" },
+  { label: "N (Asn)", value: "N" },
+  { label: "P (Pro)", value: "P" },
+  { label: "Q (Gln)", value: "Q" },
+  { label: "R (Arg)", value: "R" },
+  { label: "S (Ser)", value: "S" },
+  { label: "T (Thr)", value: "T" },
+  { label: "V (Val)", value: "V" },
+  { label: "W (Trp)", value: "W" },
+  { label: "Y (Tyr)", value: "Y" },
 ];
 
 const stopCodonSelection = computed({
@@ -291,16 +295,17 @@ const stopCodonReplacementModel = (type: StopCodonType) =>
         if (current[type] !== undefined) {
           delete current[type];
         }
-        app.model.args.stopCodonReplacements = Object.keys(current).length > 0 ? current : undefined;
+        app.model.args.stopCodonReplacements =
+          Object.keys(current).length > 0 ? current : undefined;
       } else {
         app.model.args.stopCodonReplacements = { ...current, [type]: value };
       }
     },
   });
 
-const amberReplacement = stopCodonReplacementModel('amber');
-const ochreReplacement = stopCodonReplacementModel('ochre');
-const opalReplacement = stopCodonReplacementModel('opal');
+const amberReplacement = stopCodonReplacementModel("amber");
+const ochreReplacement = stopCodonReplacementModel("ochre");
+const opalReplacement = stopCodonReplacementModel("opal");
 
 watch(stopCodonSelection, (selected) => {
   const current = app.model.args.stopCodonReplacements;
@@ -311,7 +316,6 @@ watch(stopCodonSelection, (selected) => {
   }
   app.model.args.stopCodonReplacements = Object.keys(next).length > 0 ? next : undefined;
 });
-
 </script>
 
 <template>
@@ -336,7 +340,9 @@ watch(stopCodonSelection, (selected) => {
       @update:model-value="setReferenceFile"
     >
       <template #tooltip>
-        Import a FASTA file with nucleotide reference sequence(s). Multiple FASTA records are supported. The header will be used as part of V and J gene names (e.g., header_Vgene, header_Jgene). The sequence must cover VDJRegion.
+        Import a FASTA file with nucleotide reference sequence(s). Multiple FASTA records are
+        supported. The header will be used as part of V and J gene names (e.g., header_Vgene,
+        header_Jgene). The sequence must cover VDJRegion.
       </template>
     </PlFileInput>
 
@@ -363,7 +369,9 @@ ATCGATCGATCG..."
       :error="fastaError"
     >
       <template #tooltip>
-        Paste the nucleotide sequence(s) in FASTA format. Multiple FASTA records are supported. The header will be used as part of V and J gene names (e.g., header_Vgene, header_Jgene). The sequence must cover VDJRegion.
+        Paste the nucleotide sequence(s) in FASTA format. Multiple FASTA records are supported. The
+        header will be used as part of V and J gene names (e.g., header_Vgene, header_Jgene). The
+        sequence must cover VDJRegion.
       </template>
     </PlTextArea>
 
@@ -391,28 +399,17 @@ ATCGATCGATCG..."
 
   <BuildLibraryPanel v-else-if="refMode === 'buildLibrary'" />
 
-  <PlDropdown
-    v-model="chains"
-    :options="chainOptions"
-    label="Chain selection"
-    :required="true"
-  />
+  <PlDropdown v-model="chains" :options="chainOptions" label="Chain selection" :required="true" />
 
   <PlDropdown
     v-model="assemblingFeature"
     :options="assemblingFeatureOptions"
     label="Assembling feature"
   >
-    <template #tooltip>
-      Select the region used to assemble clonotypes.
-    </template>
+    <template #tooltip> Select the region used to assemble clonotypes. </template>
   </PlDropdown>
 
-  <PlCheckbox
-    v-model="imputeGermline"
-  >
-    Impute non-covered parts from germline
-  </PlCheckbox>
+  <PlCheckbox v-model="imputeGermline"> Impute non-covered parts from germline </PlCheckbox>
 
   <PlTextField
     v-model="app.model.args.tagPattern"
@@ -421,7 +418,8 @@ ATCGATCGATCG..."
     clearable
   >
     <template #tooltip>
-      Tag pattern for primer trimming, UMI extraction etc. Support MiXCR pattern syntax. Can be left empty.
+      Tag pattern for primer trimming, UMI extraction etc. Support MiXCR pattern syntax. Can be left
+      empty.
     </template>
   </PlTextField>
 
@@ -433,10 +431,9 @@ ATCGATCGATCG..."
       label="Error correction"
     >
       <template #tooltip>
-        'Default assembly' is the standard MiXCR clustering
-        mode. 'Faster assembly' relaxes fuzzy matching
-        criteria, speeding up assembly. 'Fastest assembly' further accelerates the process but disables error
-        correction.
+        'Default assembly' is the standard MiXCR clustering mode. 'Faster assembly' relaxes fuzzy
+        matching criteria, speeding up assembly. 'Fastest assembly' further accelerates the process
+        but disables error correction.
       </template>
     </PlDropdown>
     <PlNumberField
@@ -449,10 +446,11 @@ ATCGATCGATCG..."
       :validate="(v) => (Number.isInteger(v) ? undefined : 'Value must be an integer')"
     >
       <template #tooltip>
-        Per-position base quality threshold for clonotype assembly. Reads where all positions meet this threshold
-        directly seed new clonotypes; reads with any position below it are deferred and mapped to existing clonotypes
-        instead. Increase this value (e.g. 20–25) for long-read data (ONT, PacBio) to reduce memory usage and
-        prevent erroneous reads from creating spurious clonotypes. Leave empty to use the MiXCR default (15).
+        Per-position base quality threshold for clonotype assembly. Reads where all positions meet
+        this threshold directly seed new clonotypes; reads with any position below it are deferred
+        and mapped to existing clonotypes instead. Increase this value (e.g. 20–25) for long-read
+        data (ONT, PacBio) to reduce memory usage and prevent erroneous reads from creating spurious
+        clonotypes. Leave empty to use the MiXCR default (15).
       </template>
     </PlNumberField>
     <PlNumberField
@@ -468,9 +466,7 @@ ATCGATCGATCG..."
       :options="stopCodonOptions"
       clearable
     >
-      <template #tooltip>
-        Select stop codons to replace in amino acid sequences.
-      </template>
+      <template #tooltip> Select stop codons to replace in amino acid sequences. </template>
     </PlDropdownMulti>
     <PlDropdown
       v-if="stopCodonSelection.includes('amber')"
