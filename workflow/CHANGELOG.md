@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow
 
+## 1.21.2
+
+### Patch Changes
+
+- 86a06b3: Update clone label to id
+
 ## 1.21.1
 
 ### Patch Changes
