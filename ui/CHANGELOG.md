@@ -1,5 +1,13 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment.ui
 
+## 1.19.1
+
+### Patch Changes
+
+- 86a06b3: Update clone label to id
+- Updated dependencies [86a06b3]
+  - @platforma-open/milaboratories.mixcr-amplicon-alignment.model@1.19.1
+
 ## 1.19.0
 
 ### Minor Changes
