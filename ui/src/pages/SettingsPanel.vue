@@ -1,7 +1,7 @@
 <script setup lang="ts">
+import type { ReferenceInputMode } from '@platforma-open/milaboratories.mixcr-amplicon-alignment.model';
 import type { ImportFileHandle, LocalImportFileHandle, PlRef } from '@platforma-sdk/model';
 import { getFilePathFromHandle, getRawPlatformaInstance } from '@platforma-sdk/model';
-import type { ReferenceInputMode } from '@platforma-open/milaboratories.mixcr-amplicon-alignment.model';
 import {
   PlAccordionSection,
   PlBtnGroup,
@@ -59,14 +59,6 @@ watch(
     app.model.args.isLibraryFileGzipped = isGzipped;
   },
 );
-
-function parseNumber(v: string): number {
-  const parsed = Number(v);
-  if (!Number.isFinite(parsed) || !Number.isInteger(parsed)) {
-    throw Error('Must be an integer');
-  }
-  return parsed;
-}
 
 type AssemblingFeature = string;
 type StopCodonType = 'amber' | 'ochre' | 'opal';
@@ -447,12 +439,12 @@ ATCGATCGATCG..."
         correction.
       </template>
     </PlDropdown>
-    <PlTextField
+    <PlNumberField
       v-model="app.model.args.badQualityThreshold"
-      :parse="parseNumber"
-      :clearable="() => undefined"
+      :clearable="() => 15"
       label="Assembly quality threshold"
       placeholder="15 (default)"
+      :min-value="0"
     >
       <template #tooltip>
         Per-position base quality threshold for clonotype assembly. Reads where all positions meet this threshold
@@ -460,7 +452,7 @@ ATCGATCGATCG..."
         instead. Increase this value (e.g. 20–25) for long-read data (ONT, PacBio) to reduce memory usage and
         prevent erroneous reads from creating spurious clonotypes. Leave empty to use the MiXCR default (15).
       </template>
-    </PlTextField>
+    </PlNumberField>
     <PlNumberField
       v-model="app.model.args.limitInput"
       label="Take only this number of reads into analysis"
