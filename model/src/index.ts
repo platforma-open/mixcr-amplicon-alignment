@@ -1,8 +1,8 @@
 import type { ImportFileHandle, InferHrefType, PlDataTableStateV2, PlRef } from '@platforma-sdk/model';
 import {
   BlockModel,
-  createPlDataTableV2,
   createPlDataTableStateV2,
+  createPlDataTableV2,
   isPColumnSpec,
   parseResourceMap,
   type InferOutputsType,
