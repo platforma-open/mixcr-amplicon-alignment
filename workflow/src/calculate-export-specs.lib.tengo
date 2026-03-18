@@ -267,7 +267,7 @@ calculateExportSpecs := func(presetSpecForBack, blockId) {
 			name: "pl7.app/label",
 			valueType: "String",
 			annotations: a(100000, false, {
-				"pl7.app/label": "Clone label"
+				"pl7.app/label": "Clone Id"
 			})
 		}
 	}
