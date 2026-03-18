@@ -1,6 +1,6 @@
-import type { RemoteBlobHandle } from '@platforma-sdk/model';
-import { getRawPlatformaInstance } from '@platforma-sdk/model';
-import { simpleRetry } from './simpleRetry.ts';
+import type { RemoteBlobHandle } from "@platforma-sdk/model";
+import { getRawPlatformaInstance } from "@platforma-sdk/model";
+import { simpleRetry } from "./simpleRetry.ts";
 
 export class ChunkedStreamReader {
   private readonly handle: RemoteBlobHandle;
@@ -10,10 +10,10 @@ export class ChunkedStreamReader {
 
   constructor(handle: RemoteBlobHandle, totalSize: number, chunkSize: number = 16 * 1024 * 1024) {
     if (totalSize < 0) {
-      throw new Error('Total size must be non-negative');
+      throw new Error("Total size must be non-negative");
     }
     if (chunkSize <= 0) {
-      throw new Error('Chunk size must be positive');
+      throw new Error("Chunk size must be positive");
     }
 
     this.handle = handle;
@@ -24,7 +24,10 @@ export class ChunkedStreamReader {
   createStream(): ReadableStream<Uint8Array> {
     return new ReadableStream({
       start: () => {
-        console.debug('[ChunkedStreamReader] start', { totalSize: this.totalSize, chunkSize: this.chunkSize });
+        console.debug("[ChunkedStreamReader] start", {
+          totalSize: this.totalSize,
+          chunkSize: this.chunkSize,
+        });
       },
 
       pull: async (controller) => {
@@ -36,29 +39,39 @@ export class ChunkedStreamReader {
 
           const endPosition = Math.min(this.currentPosition + this.chunkSize, this.totalSize);
 
-          const data = await simpleRetry(async () => getRawPlatformaInstance().blobDriver.getContent(
-            this.handle,
-            { from: this.currentPosition, to: endPosition },
-          ), {
-            maxAttempts: 3,
-            delay: 500,
-          });
+          const data = await simpleRetry(
+            async () =>
+              getRawPlatformaInstance().blobDriver.getContent(this.handle, {
+                from: this.currentPosition,
+                to: endPosition,
+              }),
+            {
+              maxAttempts: 3,
+              delay: 500,
+            },
+          );
 
           controller.enqueue(data);
 
           this.currentPosition = endPosition;
-          if (this.currentPosition % (64 * 1024 * 1024) === 0 || this.currentPosition >= this.totalSize) {
-            console.debug('[ChunkedStreamReader] progress', { current: this.currentPosition, total: this.totalSize });
+          if (
+            this.currentPosition % (64 * 1024 * 1024) === 0 ||
+            this.currentPosition >= this.totalSize
+          ) {
+            console.debug("[ChunkedStreamReader] progress", {
+              current: this.currentPosition,
+              total: this.totalSize,
+            });
           }
         } catch (error) {
-          console.error('[ChunkedStreamReader] error', error);
+          console.error("[ChunkedStreamReader] error", error);
           controller.error(error);
         }
       },
 
       cancel: (reason) => {
         this.currentPosition = 0;
-        console.debug('[ChunkedStreamReader] cancelled', reason);
+        console.debug("[ChunkedStreamReader] cancelled", reason);
       },
     });
   }

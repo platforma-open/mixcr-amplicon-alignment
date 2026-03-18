@@ -1,41 +1,50 @@
 <script setup lang="ts">
-import type { ImportFileHandle, LocalImportFileHandle } from '@platforma-sdk/model';
-import { getRawPlatformaInstance } from '@platforma-sdk/model';
-import type { LibraryEntryDefinition } from '@platforma-open/milaboratories.mixcr-amplicon-alignment.model';
-import {
-  PlFileInput,
-  PlTextField,
-  ReactiveFileContent,
-} from '@platforma-sdk/ui-vue';
-import { computed, reactive, ref, watch } from 'vue';
-import { useApp } from '../app';
-import { parseFasta } from '../utils/parseFasta';
+import type { ImportFileHandle, LocalImportFileHandle } from "@platforma-sdk/model";
+import { getRawPlatformaInstance } from "@platforma-sdk/model";
+import type { LibraryEntryDefinition } from "@platforma-open/milaboratories.mixcr-amplicon-alignment.model";
+import { PlFileInput, PlTextField, ReactiveFileContent } from "@platforma-sdk/ui-vue";
+import { computed, reactive, ref, watch } from "vue";
+import { useApp } from "../app";
+import { parseFasta } from "../utils/parseFasta";
 import {
   getVRegions,
   getJRegions,
   recomposeVGene,
   recomposeJGene,
   translateDNA,
-} from '../utils/buildLibrary';
-import { parseRepseqioLibrary } from '../utils/parseRepseqioLibrary';
+} from "../utils/buildLibrary";
+import { parseRepseqioLibrary } from "../utils/parseRepseqioLibrary";
 
 const app = useApp();
 
 // Entry definitions bound to model args
 const libraryEntries = computed({
   get: () => app.model.args.libraryEntries ?? [],
-  set: (v: LibraryEntryDefinition[]) => { app.model.args.libraryEntries = v.length > 0 ? v : undefined; },
+  set: (v: LibraryEntryDefinition[]) => {
+    app.model.args.libraryEntries = v.length > 0 ? v : undefined;
+  },
 });
 
 function addLibraryEntry() {
   const newIndex = libraryEntries.value.length;
-  libraryEntries.value = [...libraryEntries.value, {
-    name: '',
-    vSequence: '',
-    jSequence: '',
-    vAnchorPoints: { fr1Begin: 0, cdr1Begin: 0, fr2Begin: 0, cdr2Begin: 0, fr3Begin: 0, cdr3Begin: 0, vEnd: 0 },
-    jAnchorPoints: { jBegin: 0, fr4Begin: 0, fr4End: 0 },
-  }];
+  libraryEntries.value = [
+    ...libraryEntries.value,
+    {
+      name: "",
+      vSequence: "",
+      jSequence: "",
+      vAnchorPoints: {
+        fr1Begin: 0,
+        cdr1Begin: 0,
+        fr2Begin: 0,
+        cdr2Begin: 0,
+        fr3Begin: 0,
+        cdr3Begin: 0,
+        vEnd: 0,
+      },
+      jAnchorPoints: { jBegin: 0, fr4Begin: 0, fr4End: 0 },
+    },
+  ];
   expandedEntries.add(newIndex);
 }
 
@@ -60,8 +69,8 @@ function toggleEntry(index: number) {
 }
 
 // Region editing
-type VRegionKey = 'fr1' | 'cdr1' | 'fr2' | 'cdr2' | 'fr3' | 'vPartCdr3';
-type JRegionKey = 'jPartCdr3' | 'fr4';
+type VRegionKey = "fr1" | "cdr1" | "fr2" | "cdr2" | "fr3" | "vPartCdr3";
+type JRegionKey = "jPartCdr3" | "fr4";
 
 function updateVRegion(entry: LibraryEntryDefinition, region: VRegionKey, value: string) {
   const regions = getVRegions(entry);
@@ -84,7 +93,8 @@ const validNtPattern = /^[ACGTNRYSWKMBDHV]*$/i;
 
 function regionCharError(seq: string): string | undefined {
   if (!seq) return undefined;
-  if (!validNtPattern.test(seq)) return 'Only nucleotide (ACGT) and wildcard (N, IUPAC) symbols allowed';
+  if (!validNtPattern.test(seq))
+    return "Only nucleotide (ACGT) and wildcard (N, IUPAC) symbols allowed";
   return undefined;
 }
 
@@ -97,28 +107,39 @@ function regionLengthError(seq: string): string | undefined {
 function cdr3LengthError(vPartCdr3: string, jPartCdr3: string): string | undefined {
   const combined = (vPartCdr3?.length ?? 0) + (jPartCdr3?.length ?? 0);
   if (combined === 0) return undefined;
-  if (combined % 3 !== 0) return `Combined CDR3 length must be a multiple of 3 (current: ${combined})`;
+  if (combined % 3 !== 0)
+    return `Combined CDR3 length must be a multiple of 3 (current: ${combined})`;
   return undefined;
 }
 
-function getRegionError(entry: LibraryEntryDefinition, region: VRegionKey | JRegionKey): string | undefined {
+function getRegionError(
+  entry: LibraryEntryDefinition,
+  region: VRegionKey | JRegionKey,
+): string | undefined {
   const vRegions = getVRegions(entry);
   const jRegions = getJRegions(entry);
 
-  const seq = region in vRegions
-    ? vRegions[region as VRegionKey]
-    : jRegions[region as JRegionKey];
+  const seq = region in vRegions ? vRegions[region as VRegionKey] : jRegions[region as JRegionKey];
 
   const charErr = regionCharError(seq);
   if (charErr) return charErr;
 
-  if (region === 'vPartCdr3' || region === 'jPartCdr3') {
+  if (region === "vPartCdr3" || region === "jPartCdr3") {
     return cdr3LengthError(vRegions.vPartCdr3, jRegions.jPartCdr3);
   }
   return regionLengthError(seq);
 }
 
-const allRegions: (VRegionKey | JRegionKey)[] = ['fr1', 'cdr1', 'fr2', 'cdr2', 'fr3', 'vPartCdr3', 'jPartCdr3', 'fr4'];
+const allRegions: (VRegionKey | JRegionKey)[] = [
+  "fr1",
+  "cdr1",
+  "fr2",
+  "cdr2",
+  "fr3",
+  "vPartCdr3",
+  "jPartCdr3",
+  "fr4",
+];
 
 function getEntryError(entry: LibraryEntryDefinition): string | undefined {
   for (const region of allRegions) {
@@ -130,8 +151,8 @@ function getEntryError(entry: LibraryEntryDefinition): string | undefined {
 
 // FASTA upload → prerun sync
 const buildLibraryFastaError = ref<string | undefined>();
-type PrerunWaitState = 'idle' | 'waitForClear' | 'waitForResult';
-const prerunWait = ref<PrerunWaitState>('idle');
+type PrerunWaitState = "idle" | "waitForClear" | "waitForResult";
+const prerunWait = ref<PrerunWaitState>("idle");
 
 async function onBuildLibraryFastaUpload(file: ImportFileHandle | undefined) {
   app.model.ui.buildLibraryFastaFile = file;
@@ -140,47 +161,49 @@ async function onBuildLibraryFastaUpload(file: ImportFileHandle | undefined) {
     buildLibraryFastaError.value = undefined;
     app.model.args.buildLibraryVGenes = undefined;
     app.model.args.buildLibraryJGenes = undefined;
-    prerunWait.value = 'idle';
+    prerunWait.value = "idle";
     libraryEntries.value = [];
     return;
   }
 
   try {
-    const data = await getRawPlatformaInstance().lsDriver.getLocalFileContent(file as LocalImportFileHandle);
+    const data = await getRawPlatformaInstance().lsDriver.getLocalFileContent(
+      file as LocalImportFileHandle,
+    );
     const content = new TextDecoder().decode(data);
     const result = parseFasta(content, undefined, true);
 
     if (result.isValid) {
       buildLibraryFastaError.value = undefined;
       libraryEntries.value = [];
-      prerunWait.value = app.model.outputs.prerunLibrary ? 'waitForClear' : 'waitForResult';
+      prerunWait.value = app.model.outputs.prerunLibrary ? "waitForClear" : "waitForResult";
       app.model.args.buildLibraryVGenes = result.vGenes;
       app.model.args.buildLibraryJGenes = result.jGenes;
     } else {
       buildLibraryFastaError.value = result.error;
       app.model.args.buildLibraryVGenes = undefined;
       app.model.args.buildLibraryJGenes = undefined;
-      prerunWait.value = 'idle';
+      prerunWait.value = "idle";
       libraryEntries.value = [];
     }
   } catch (e) {
-    buildLibraryFastaError.value = `Failed to read file: ${e instanceof Error ? e.message : 'Unknown error'}`;
+    buildLibraryFastaError.value = `Failed to read file: ${e instanceof Error ? e.message : "Unknown error"}`;
     app.model.args.buildLibraryVGenes = undefined;
     app.model.args.buildLibraryJGenes = undefined;
-    prerunWait.value = 'idle';
+    prerunWait.value = "idle";
     libraryEntries.value = [];
   }
 }
 
 const reactiveFileContent = ReactiveFileContent.useGlobal();
-const prerunLibraryLoading = computed(() => prerunWait.value !== 'idle');
+const prerunLibraryLoading = computed(() => prerunWait.value !== "idle");
 
 // Phase 1: waitForClear → waitForResult when output goes undefined
 watch(
   () => app.model.outputs.prerunLibrary,
   (val) => {
-    if (prerunWait.value === 'waitForClear' && !val) {
-      prerunWait.value = 'waitForResult';
+    if (prerunWait.value === "waitForClear" && !val) {
+      prerunWait.value = "waitForResult";
     }
   },
 );
@@ -188,19 +211,19 @@ watch(
 // Phase 2: waitForResult → idle when content arrives
 watch(
   () => {
-    if (prerunWait.value !== 'waitForResult') return undefined;
+    if (prerunWait.value !== "waitForResult") return undefined;
     const blobHandleAndSize = app.model.outputs.prerunLibrary;
     if (!blobHandleAndSize) return undefined;
     return reactiveFileContent.getContentString(blobHandleAndSize.handle)?.value;
   },
   (content) => {
-    if (!content || prerunWait.value !== 'waitForResult') return;
+    if (!content || prerunWait.value !== "waitForResult") return;
     const entries = parseRepseqioLibrary(content);
     if (entries.length > 0) {
       libraryEntries.value = entries;
       expandedEntries.clear();
     }
-    prerunWait.value = 'idle';
+    prerunWait.value = "idle";
   },
 );
 </script>
@@ -215,16 +238,20 @@ watch(
     @update:model-value="onBuildLibraryFastaUpload"
   >
     <template #tooltip>
-      Upload a FASTA file containing full VDJ nucleotide sequences. Anchor points will be inferred automatically using repseqio and entries will be populated below.
+      Upload a FASTA file containing full VDJ nucleotide sequences. Anchor points will be inferred
+      automatically using repseqio and entries will be populated below.
     </template>
   </PlFileInput>
-  <div v-if="prerunLibraryLoading" class="prerun-loading">
-    Inferring anchor points...
-  </div>
+  <div v-if="prerunLibraryLoading" class="prerun-loading">Inferring anchor points...</div>
   <div v-for="(entry, index) in libraryEntries" :key="index" class="library-entry">
     <div class="entry-header" @click="toggleEntry(index)">
-      <span class="entry-chevron">{{ expandedEntries.has(index) ? '\u25BC' : '\u25B6' }}</span>
-      <span :class="getEntryError(entry) ? 'entry-header-title' : 'entry-header-title entry-header-title-fill'">{{ entry.name || `Entry ${index + 1}` }}</span>
+      <span class="entry-chevron">{{ expandedEntries.has(index) ? "\u25BC" : "\u25B6" }}</span>
+      <span
+        :class="
+          getEntryError(entry) ? 'entry-header-title' : 'entry-header-title entry-header-title-fill'
+        "
+        >{{ entry.name || `Entry ${index + 1}` }}</span
+      >
       <span v-if="getEntryError(entry)" class="entry-header-error">{{ getEntryError(entry) }}</span>
       <button class="entry-close-btn" @click.stop="removeLibraryEntry(index)">&times;</button>
     </div>
@@ -233,48 +260,100 @@ watch(
         <PlTextField v-model="entry.name" label="Entry name" />
       </div>
 
-      <div class="gene-section-title">V gene ({{ entry.name ? entry.name + '_Vgene' : '...' }})</div>
+      <div class="gene-section-title">
+        V gene ({{ entry.name ? entry.name + "_Vgene" : "..." }})
+      </div>
       <div class="region-row">
         <div class="region-label">FR1</div>
-        <PlTextField class="region-nt" :model-value="getVRegions(entry).fr1" :error="getRegionError(entry, 'fr1')" @update:model-value="(v: string) => updateVRegion(entry, 'fr1', v)" label="NT" />
-        <div class="region-aa">{{ translateDNA(getVRegions(entry).fr1) || '-' }}</div>
+        <PlTextField
+          class="region-nt"
+          :model-value="getVRegions(entry).fr1"
+          :error="getRegionError(entry, 'fr1')"
+          @update:model-value="(v: string) => updateVRegion(entry, 'fr1', v)"
+          label="NT"
+        />
+        <div class="region-aa">{{ translateDNA(getVRegions(entry).fr1) || "-" }}</div>
       </div>
       <div class="region-row">
         <div class="region-label">CDR1</div>
-        <PlTextField class="region-nt" :model-value="getVRegions(entry).cdr1" :error="getRegionError(entry, 'cdr1')" @update:model-value="(v: string) => updateVRegion(entry, 'cdr1', v)" label="NT" />
-        <div class="region-aa">{{ translateDNA(getVRegions(entry).cdr1) || '-' }}</div>
+        <PlTextField
+          class="region-nt"
+          :model-value="getVRegions(entry).cdr1"
+          :error="getRegionError(entry, 'cdr1')"
+          @update:model-value="(v: string) => updateVRegion(entry, 'cdr1', v)"
+          label="NT"
+        />
+        <div class="region-aa">{{ translateDNA(getVRegions(entry).cdr1) || "-" }}</div>
       </div>
       <div class="region-row">
         <div class="region-label">FR2</div>
-        <PlTextField class="region-nt" :model-value="getVRegions(entry).fr2" :error="getRegionError(entry, 'fr2')" @update:model-value="(v: string) => updateVRegion(entry, 'fr2', v)" label="NT" />
-        <div class="region-aa">{{ translateDNA(getVRegions(entry).fr2) || '-' }}</div>
+        <PlTextField
+          class="region-nt"
+          :model-value="getVRegions(entry).fr2"
+          :error="getRegionError(entry, 'fr2')"
+          @update:model-value="(v: string) => updateVRegion(entry, 'fr2', v)"
+          label="NT"
+        />
+        <div class="region-aa">{{ translateDNA(getVRegions(entry).fr2) || "-" }}</div>
       </div>
       <div class="region-row">
         <div class="region-label">CDR2</div>
-        <PlTextField class="region-nt" :model-value="getVRegions(entry).cdr2" :error="getRegionError(entry, 'cdr2')" @update:model-value="(v: string) => updateVRegion(entry, 'cdr2', v)" label="NT" />
-        <div class="region-aa">{{ translateDNA(getVRegions(entry).cdr2) || '-' }}</div>
+        <PlTextField
+          class="region-nt"
+          :model-value="getVRegions(entry).cdr2"
+          :error="getRegionError(entry, 'cdr2')"
+          @update:model-value="(v: string) => updateVRegion(entry, 'cdr2', v)"
+          label="NT"
+        />
+        <div class="region-aa">{{ translateDNA(getVRegions(entry).cdr2) || "-" }}</div>
       </div>
       <div class="region-row">
         <div class="region-label">FR3</div>
-        <PlTextField class="region-nt" :model-value="getVRegions(entry).fr3" :error="getRegionError(entry, 'fr3')" @update:model-value="(v: string) => updateVRegion(entry, 'fr3', v)" label="NT" />
-        <div class="region-aa">{{ translateDNA(getVRegions(entry).fr3) || '-' }}</div>
+        <PlTextField
+          class="region-nt"
+          :model-value="getVRegions(entry).fr3"
+          :error="getRegionError(entry, 'fr3')"
+          @update:model-value="(v: string) => updateVRegion(entry, 'fr3', v)"
+          label="NT"
+        />
+        <div class="region-aa">{{ translateDNA(getVRegions(entry).fr3) || "-" }}</div>
       </div>
       <div class="region-row">
         <div class="region-label">V part CDR3</div>
-        <PlTextField class="region-nt" :model-value="getVRegions(entry).vPartCdr3" :error="getRegionError(entry, 'vPartCdr3')" @update:model-value="(v: string) => updateVRegion(entry, 'vPartCdr3', v)" label="NT" />
-        <div class="region-aa">{{ translateDNA(getVRegions(entry).vPartCdr3) || '-' }}</div>
+        <PlTextField
+          class="region-nt"
+          :model-value="getVRegions(entry).vPartCdr3"
+          :error="getRegionError(entry, 'vPartCdr3')"
+          @update:model-value="(v: string) => updateVRegion(entry, 'vPartCdr3', v)"
+          label="NT"
+        />
+        <div class="region-aa">{{ translateDNA(getVRegions(entry).vPartCdr3) || "-" }}</div>
       </div>
 
-      <div class="gene-section-title">J gene ({{ entry.name ? entry.name + '_Jgene' : '...' }})</div>
+      <div class="gene-section-title">
+        J gene ({{ entry.name ? entry.name + "_Jgene" : "..." }})
+      </div>
       <div class="region-row">
         <div class="region-label">J part CDR3</div>
-        <PlTextField class="region-nt" :model-value="getJRegions(entry).jPartCdr3" :error="getRegionError(entry, 'jPartCdr3')" @update:model-value="(v: string) => updateJRegion(entry, 'jPartCdr3', v)" label="NT" />
-        <div class="region-aa">{{ translateDNA(getJRegions(entry).jPartCdr3) || '-' }}</div>
+        <PlTextField
+          class="region-nt"
+          :model-value="getJRegions(entry).jPartCdr3"
+          :error="getRegionError(entry, 'jPartCdr3')"
+          @update:model-value="(v: string) => updateJRegion(entry, 'jPartCdr3', v)"
+          label="NT"
+        />
+        <div class="region-aa">{{ translateDNA(getJRegions(entry).jPartCdr3) || "-" }}</div>
       </div>
       <div class="region-row">
         <div class="region-label">FR4</div>
-        <PlTextField class="region-nt" :model-value="getJRegions(entry).fr4" :error="getRegionError(entry, 'fr4')" @update:model-value="(v: string) => updateJRegion(entry, 'fr4', v)" label="NT" />
-        <div class="region-aa">{{ translateDNA(getJRegions(entry).fr4) || '-' }}</div>
+        <PlTextField
+          class="region-nt"
+          :model-value="getJRegions(entry).fr4"
+          :error="getRegionError(entry, 'fr4')"
+          @update:model-value="(v: string) => updateJRegion(entry, 'fr4', v)"
+          label="NT"
+        />
+        <div class="region-aa">{{ translateDNA(getJRegions(entry).fr4) || "-" }}</div>
       </div>
     </div>
   </div>

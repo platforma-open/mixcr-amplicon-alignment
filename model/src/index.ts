@@ -1,4 +1,9 @@
-import type { ImportFileHandle, InferHrefType, PlDataTableStateV2, PlRef } from '@platforma-sdk/model';
+import type {
+  ImportFileHandle,
+  InferHrefType,
+  PlDataTableStateV2,
+  PlRef,
+} from "@platforma-sdk/model";
 import {
   BlockModel,
   createPlDataTableStateV2,
@@ -6,13 +11,13 @@ import {
   isPColumnSpec,
   parseResourceMap,
   type InferOutputsType,
-} from '@platforma-sdk/model';
-import { ProgressPrefix } from './progress';
+} from "@platforma-sdk/model";
+import { ProgressPrefix } from "./progress";
 
-export type CloneClusteringMode = 'relaxed' | 'default' | 'off';
+export type CloneClusteringMode = "relaxed" | "default" | "off";
 export type AssemblingFeature = string;
-export type StopCodonType = 'amber' | 'ochre' | 'opal';
-export type ReferenceInputMode = 'fastaFile' | 'fastaSequence' | 'libraryFile' | 'buildLibrary';
+export type StopCodonType = "amber" | "ochre" | "opal";
+export type ReferenceInputMode = "fastaFile" | "fastaSequence" | "libraryFile" | "buildLibrary";
 
 export interface VAnchorPoints {
   fr1Begin: number;
@@ -85,101 +90,105 @@ export interface BlockArgsValid extends BlockArgs {
   librarySequence: string;
 }
 
-export const platforma = BlockModel.create('Heavy')
+export const platforma = BlockModel.create("Heavy")
 
   .withArgs<BlockArgs>({
-    defaultBlockLabel: '',
-    customBlockLabel: '',
-    chains: 'IGHeavy',
-    cloneClusteringMode: 'relaxed',
-    tagPattern: '',
-    assemblingFeature: 'VDJRegion',
+    defaultBlockLabel: "",
+    customBlockLabel: "",
+    chains: "IGHeavy",
+    cloneClusteringMode: "relaxed",
+    tagPattern: "",
+    assemblingFeature: "VDJRegion",
     imputeGermline: false,
   })
   .withUiState<UiState>({
-    referenceInputMode: 'fastaSequence',
+    referenceInputMode: "fastaSequence",
     tableState: createPlDataTableStateV2(),
   })
 
-  .output('qc', (ctx) => {
-    const acc = ctx.outputs?.resolve('qc');
+  .output("qc", (ctx) => {
+    const acc = ctx.outputs?.resolve("qc");
     if (!acc || !acc.getInputsLocked()) return undefined;
     return parseResourceMap(acc, (acc) => acc.getFileHandle(), true);
   })
 
-  .output('reports', (ctx) =>
-    parseResourceMap(
-      ctx.outputs?.resolve('reports'),
-      (acc) => acc.getFileHandle(),
-      false,
-    ),
+  .output("reports", (ctx) =>
+    parseResourceMap(ctx.outputs?.resolve("reports"), (acc) => acc.getFileHandle(), false),
   )
 
-  .output('logs', (ctx) => {
+  .output("logs", (ctx) => {
     return ctx.outputs !== undefined
-      ? parseResourceMap(
-          ctx.outputs?.resolve('logs'),
-          (acc) => acc.getLogHandle(),
-          false,
-        )
+      ? parseResourceMap(ctx.outputs?.resolve("logs"), (acc) => acc.getLogHandle(), false)
       : undefined;
   })
 
-  .output('progress', (ctx) => {
+  .output("progress", (ctx) => {
     return ctx.outputs !== undefined
       ? parseResourceMap(
-          ctx.outputs?.resolve('logs'),
+          ctx.outputs?.resolve("logs"),
           (acc) => acc.getProgressLog(ProgressPrefix),
           false,
         )
       : undefined;
   })
 
-  .output('referenceLibrary', (ctx) => {
+  .output("referenceLibrary", (ctx) => {
     return ctx.outputs !== undefined
-      ? ctx.outputs?.resolve({ field: 'referenceLibrary', assertFieldType: 'Input', allowPermanentAbsence: true })?.getRemoteFileHandle()
+      ? ctx.outputs
+          ?.resolve({
+            field: "referenceLibrary",
+            assertFieldType: "Input",
+            allowPermanentAbsence: true,
+          })
+          ?.getRemoteFileHandle()
       : undefined;
   })
 
-  .output('debugOutput', (ctx) => {
+  .output("debugOutput", (ctx) => {
     return ctx.outputs !== undefined
-      ? ctx.outputs?.resolve({ field: 'debugOutput', assertFieldType: 'Input', allowPermanentAbsence: true })?.getLogHandle()
+      ? ctx.outputs
+          ?.resolve({ field: "debugOutput", assertFieldType: "Input", allowPermanentAbsence: true })
+          ?.getLogHandle()
       : undefined;
   })
 
-  .output('started', (ctx) => ctx.outputs !== undefined)
+  .output("started", (ctx) => ctx.outputs !== undefined)
 
-  .output('done', (ctx) => {
+  .output("done", (ctx) => {
     return ctx.outputs !== undefined
-      ? parseResourceMap(
-          ctx.outputs?.resolve('clns'),
-          (_acc) => true,
-          false,
-        ).data.map((e) => e.key[0] as string)
+      ? parseResourceMap(ctx.outputs?.resolve("clns"), (_acc) => true, false).data.map(
+          (e) => e.key[0] as string,
+        )
       : undefined;
   })
 
-  .output('prerunLibrary', (ctx) =>
-    ctx.prerun?.resolve({ field: 'referenceLibrary', assertFieldType: 'Input', allowPermanentAbsence: true })?.getFileHandle(),
+  .output("prerunLibrary", (ctx) =>
+    ctx.prerun
+      ?.resolve({
+        field: "referenceLibrary",
+        assertFieldType: "Input",
+        allowPermanentAbsence: true,
+      })
+      ?.getFileHandle(),
   )
 
-  .retentiveOutput('inputOptions', (ctx) => {
+  .retentiveOutput("inputOptions", (ctx) => {
     return ctx.resultPool.getOptions((v) => {
       if (!isPColumnSpec(v)) return false;
       const domain = v.domain;
       return (
-        v.name === 'pl7.app/sequencing/data'
-        && (v.valueType as string) === 'File'
-        && domain !== undefined
-        && (domain['pl7.app/fileExtension'] === 'fasta'
-          || domain['pl7.app/fileExtension'] === 'fasta.gz'
-          || domain['pl7.app/fileExtension'] === 'fastq'
-          || domain['pl7.app/fileExtension'] === 'fastq.gz')
+        v.name === "pl7.app/sequencing/data" &&
+        (v.valueType as string) === "File" &&
+        domain !== undefined &&
+        (domain["pl7.app/fileExtension"] === "fasta" ||
+          domain["pl7.app/fileExtension"] === "fasta.gz" ||
+          domain["pl7.app/fileExtension"] === "fastq" ||
+          domain["pl7.app/fileExtension"] === "fastq.gz")
       );
     });
   })
 
-  .output('sampleLabels', (ctx): Record<string, string> | undefined => {
+  .output("sampleLabels", (ctx): Record<string, string> | undefined => {
     const inputRef = ctx.args.datasetRef;
     if (inputRef === undefined) return undefined;
 
@@ -189,71 +198,79 @@ export const platforma = BlockModel.create('Heavy')
     return ctx.resultPool.findLabelsForColumnAxis(spec, 0);
   })
 
-  .output('rawTsvs', (ctx) => {
-    if (ctx.outputs === undefined)
-      return undefined;
-    const pCols = ctx.outputs?.resolve('clonotypeTables')?.getPColumns();
+  .output("rawTsvs", (ctx) => {
+    if (ctx.outputs === undefined) return undefined;
+    const pCols = ctx.outputs?.resolve("clonotypeTables")?.getPColumns();
     if (pCols === undefined) {
       return undefined;
     }
-    return pCols.map((pCol) => {
-      return {
-        ...pCol,
-        id: (JSON.parse(pCol.id) as { name: string }).name,
-        data: parseResourceMap(pCol.data, (acc) => acc.getRemoteFileHandle(), false),
-      };
-    }).filter((pCol) => pCol.data.isComplete).map((pCol) => {
-      return {
-        ...pCol,
-        data: pCol.data.data,
-      };
-    });
+    return pCols
+      .map((pCol) => {
+        return {
+          ...pCol,
+          id: (JSON.parse(pCol.id) as { name: string }).name,
+          data: parseResourceMap(pCol.data, (acc) => acc.getRemoteFileHandle(), false),
+        };
+      })
+      .filter((pCol) => pCol.data.isComplete)
+      .map((pCol) => {
+        return {
+          ...pCol,
+          data: pCol.data.data,
+        };
+      });
   })
 
-  .outputWithStatus('pt', (ctx) => {
-    const pCols = ctx.outputs?.resolve({ field: 'qcReportTable', assertFieldType: 'Input', allowPermanentAbsence: true })?.getPColumns();
+  .outputWithStatus("pt", (ctx) => {
+    const pCols = ctx.outputs
+      ?.resolve({ field: "qcReportTable", assertFieldType: "Input", allowPermanentAbsence: true })
+      ?.getPColumns();
     if (pCols === undefined) {
       return undefined;
     }
-    return createPlDataTableV2(
-      ctx,
-      pCols,
-      ctx.uiState.tableState,
-    );
+    return createPlDataTableV2(ctx, pCols, ctx.uiState.tableState);
   })
 
   .sections((_ctx) => {
     return [
-      { type: 'link', href: '/', label: 'Main' },
-      { type: 'link', href: '/qc-report-table', label: 'QC Report Table' },
+      { type: "link", href: "/", label: "Main" },
+      { type: "link", href: "/qc-report-table", label: "QC Report Table" },
     ];
   })
 
   .argsValid((ctx) => {
-    const mode = ctx.uiState.referenceInputMode ?? 'fastaSequence';
+    const mode = ctx.uiState.referenceInputMode ?? "fastaSequence";
     const hasDataset = ctx.args.datasetRef !== undefined;
-    if (mode === 'libraryFile') {
+    if (mode === "libraryFile") {
       return hasDataset && ctx.args.libraryFile !== undefined;
     }
-    if (mode === 'buildLibrary') {
+    if (mode === "buildLibrary") {
       return hasDataset && (ctx.args.libraryEntries?.length ?? 0) > 0;
     }
-    return hasDataset && (ctx.uiState.librarySequence !== undefined || ctx.args.vGenes !== undefined);
+    return (
+      hasDataset && (ctx.uiState.librarySequence !== undefined || ctx.args.vGenes !== undefined)
+    );
   })
 
-  .output('isRunning', (ctx) => ctx.outputs?.getIsReadyOrError() === false)
+  .output("isRunning", (ctx) => ctx.outputs?.getIsReadyOrError() === false)
 
-  .output('libraryUploadProgress', (ctx) =>
-    ctx.outputs?.resolve({ field: 'libraryImportHandle', allowPermanentAbsence: true })?.getImportProgress(), { isActive: true })
+  .output(
+    "libraryUploadProgress",
+    (ctx) =>
+      ctx.outputs
+        ?.resolve({ field: "libraryImportHandle", allowPermanentAbsence: true })
+        ?.getImportProgress(),
+    { isActive: true },
+  )
 
-  .title(() => 'MiXCR Amplicon Alignment')
+  .title(() => "MiXCR Amplicon Alignment")
 
-  .subtitle((ctx) => ctx.args.customBlockLabel || ctx.args.defaultBlockLabel || '')
+  .subtitle((ctx) => ctx.args.customBlockLabel || ctx.args.defaultBlockLabel || "")
 
   .done(2);
 
 export type BlockOutputs = InferOutputsType<typeof platforma>;
 export type Href = InferHrefType<typeof platforma>;
-export * from './progress';
-export * from './qc';
-export * from './reports';
+export * from "./progress";
+export * from "./qc";
+export * from "./reports";
