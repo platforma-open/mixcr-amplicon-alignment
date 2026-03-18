@@ -445,6 +445,8 @@ ATCGATCGATCG..."
       label="Assembly quality threshold"
       placeholder="15 (default)"
       :min-value="0"
+      :step="1"
+      :validate="(v) => (Number.isInteger(v) ? undefined : 'Value must be an integer')"
     >
       <template #tooltip>
         Per-position base quality threshold for clonotype assembly. Reads where all positions meet this threshold
@@ -456,6 +458,7 @@ ATCGATCGATCG..."
     <PlNumberField
       v-model="app.model.args.limitInput"
       label="Take only this number of reads into analysis"
+      :validate="(v) => (Number.isInteger(v) ? undefined : 'Value must be an integer')"
     />
 
     <PlSectionSeparator>Stop codon replacement</PlSectionSeparator>
@@ -503,6 +506,7 @@ ATCGATCGATCG..."
       label="Set CPUs number per every sample process"
       :minValue="1"
       :maxValue="999999"
+      :validate="(v) => (Number.isInteger(v) ? undefined : 'Value must be an integer')"
     />
   </PlAccordionSection>
 </template>
