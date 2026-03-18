@@ -1,7 +1,7 @@
 // This utility is adapted from other blocks in the repository
 // It can be moved to a shared SDK package in the future
 
-import { ProgressPattern } from '@platforma-open/milaboratories.mixcr-amplicon-alignment.model';
+import { ProgressPattern } from "@platforma-open/milaboratories.mixcr-amplicon-alignment.model";
 
 type ParsedProgress = {
   raw?: string;
@@ -20,10 +20,8 @@ type ParsedProgress = {
 // 'Exporting clones: 11.1%'
 // 'Queued'
 // 'Done'
-export function parseProgressString(
-  progressString: string | undefined | null,
-): ParsedProgress {
-  const raw = progressString ?? 'Unknown';
+export function parseProgressString(progressString: string | undefined | null): ParsedProgress {
+  const raw = progressString ?? "Unknown";
 
   const res: ParsedProgress = {
     raw,
