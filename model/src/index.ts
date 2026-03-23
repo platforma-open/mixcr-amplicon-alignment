@@ -56,7 +56,7 @@ export interface BlockArgs {
   limitInput?: number;
   perProcessMemGB?: number; // 1GB or more required
   perProcessCPUs?: number; // 1 or more required
-  cloneClusteringMode?: CloneClusteringMode; // default: 'relaxed'
+  cloneClusteringMode?: CloneClusteringMode; // default: 'off'
   assemblingFeature?: AssemblingFeature; // default: 'VDJRegion'
   badQualityThreshold?: number; // default: 15 (MiXCR default)
   stopCodonTypes?: StopCodonType[];
@@ -91,7 +91,7 @@ export const platforma = BlockModel.create('Heavy')
     defaultBlockLabel: '',
     customBlockLabel: '',
     chains: 'IGHeavy',
-    cloneClusteringMode: 'relaxed',
+    cloneClusteringMode: 'off',
     tagPattern: '',
     assemblingFeature: 'VDJRegion',
     imputeGermline: false,
