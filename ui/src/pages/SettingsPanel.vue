@@ -329,16 +329,24 @@ const runModeOptions: ListOption<'dry' | 'full'>[] = [
   { label: 'Full run', value: 'full' },
 ];
 
-const runMode = computed({
-  get: () => ((app.model.args.limitInput ?? 0) > 0 ? 'dry' : 'full'),
-  set: (value: 'dry' | 'full') => {
-    if (value === 'dry') {
-      app.model.args.limitInput = lastLimitInput.value ?? DRY_RUN_READS;
-    } else {
-      app.model.args.limitInput = undefined;
-    }
-  },
+const runMode = ref<'dry' | 'full'>((app.model.args.limitInput ?? 0) > 0 ? 'dry' : 'full');
+
+watch(runMode, (value) => {
+  if (value === 'dry') {
+    app.model.args.limitInput = lastLimitInput.value ?? DRY_RUN_READS;
+  } else {
+    app.model.args.limitInput = undefined;
+  }
 });
+
+watch(
+  () => app.model.args.datasetRef,
+  () => {
+    lastLimitInput.value = undefined;
+    runMode.value = 'dry';
+    app.model.args.limitInput = DRY_RUN_READS;
+  },
+);
 
 </script>
 
@@ -466,6 +474,7 @@ ATCGATCGATCG..."
     :clearable="true"
     :minValue="1"
     :validate="(v) => (Number.isInteger(v) ? undefined : 'Value must be an integer')"
+    :error-message="app.model.args.limitInput == null ? 'Enter a number of reads to use per sample' : undefined"
   >
     <template #tooltip>
       Number of reads to use per sample in the preview run. Recommended: 100,000 for bulk data.
