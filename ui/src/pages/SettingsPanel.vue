@@ -463,6 +463,7 @@ ATCGATCGATCG..."
     v-if="runMode === 'dry'"
     v-model="app.model.args.limitInput"
     label="Reads per sample limit"
+    :clearable="true"
     :minValue="1"
     :validate="(v) => (Number.isInteger(v) ? undefined : 'Value must be an integer')"
   >
