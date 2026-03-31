@@ -357,6 +357,7 @@ self.body(func(inputs) {
 		clonotypeTablesData: clonotypeTablesData,
 		hasUmi: hasUMI,
 		umiTags: umiTags,
+		perProcessMemGB: perProcessMemGB,
 		productiveFeature: productiveFeature,
 		stopCodonTypes: params.stopCodonTypes,
 		stopCodonReplacements: params.stopCodonReplacements
