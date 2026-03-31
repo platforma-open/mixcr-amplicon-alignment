@@ -13,6 +13,7 @@ pConstants := import("@platforma-sdk/workflow-tengo:pframes.constants")
 pt := import("@platforma-sdk/workflow-tengo:pt")
 qcReportColumns := import(":qc-report-columns")
 
+math := import("math")
 json := import("json")
 
 self.defineOutputs("qcReportTable")
@@ -23,6 +24,7 @@ ptablerSw := assets.importSoftware("@platforma-open/milaboratories.software-ptab
 
 self.body(func(inputs) {
     clnsData := inputs.clnsData
+	params := inputs.params
     presetSpecForBack := inputs.presetSpecForBack
     sampleIdAxisSpec := inputs.sampleIdAxisSpec
     chains := inputs.chains
@@ -196,6 +198,15 @@ self.body(func(inputs) {
     // Join counts and overwrite totalClonotypes to reflect exported (productive) clones
     joinedDf := processedDf.join(aggregatedCounts, { how: "left", on: ["sampleId"] })
 
+    // Memory for downstream operations, linked to user override with hardcoded floors
+	baseMemGB := 64
+	if !is_undefined(params.perProcessMemGB) {
+		baseMemGB = params.perProcessMemGB
+	}
+	memGB := func(floorGB, divisor) {
+		return string(int(math.max(floorGB, baseMemGB / divisor))) + "GB"
+	}
+
 	// Count clonotypes filtered by stop codons and out-of-frame per sample
 	filterCountDfs := []
 	mixcrChainsArg := text.join(chainsForMixcr, ",")
@@ -203,7 +214,7 @@ self.body(func(inputs) {
 		sampleId := json.decode(key)[0]
 		exportFiltersCmd := exec.builder().
 			inMediumQueue().
-			mem("16GiB").
+			mem(memGB(16, 3)).
 			cpu(2).
 			software(mixcrSw).
 			env("MI_USE_SYSTEM_CA", "true").
