@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow
 
+## 1.21.3
+
+### Patch Changes
+
+- 637e770: fix memory for export
+
 ## 1.21.2
 
 ### Patch Changes
