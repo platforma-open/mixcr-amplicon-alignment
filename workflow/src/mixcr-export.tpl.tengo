@@ -196,7 +196,7 @@ self.body(func(inputs) {
 	createExport := func(additionalAction) {
 		mixcrCmdBuilder := exec.builder().
 			inMediumQueue().
-			mem(memGB(12, 2)).
+			mem(string(baseMemGB) + "GB").
 		    cpu(2).
 			printErrStreamToStdout().
 			software(mixcrSw).
