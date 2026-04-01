@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow
 
+## 1.21.5
+
+### Patch Changes
+
+- 4a61ea6: update limits
+
 ## 1.21.4
 
 ### Patch Changes
