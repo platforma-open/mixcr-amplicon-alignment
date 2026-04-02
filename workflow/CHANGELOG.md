@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow
 
+## 1.21.6
+
+### Patch Changes
+
+- a463f4f: Fix memory allocation for aggregation step and correct GB/GiB unit mismatch across all workflow templates
+
 ## 1.21.5
 
 ### Patch Changes
