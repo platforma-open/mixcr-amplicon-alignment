@@ -179,11 +179,11 @@ self.body(func(inputs) {
 
 	// Memory for downstream operations, linked to user override with hardcoded floors
 	baseMemGB := 64
-	if !is_undefined(params.perProcessMemGB) {
-		baseMemGB = params.perProcessMemGB
+	if !is_undefined(inputs.perProcessMemGB) {
+		baseMemGB = inputs.perProcessMemGB
 	}
 	memGB := func(floorGB, divisor) {
-		return string(int(math.max(floorGB, baseMemGB / divisor))) + "GB"
+		return string(int(math.max(floorGB, baseMemGB / divisor))) + "GiB"
 	}
 
 	hashKeyDerivationExpressionPt := func(sourceColumns) {

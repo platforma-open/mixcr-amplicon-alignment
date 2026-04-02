@@ -143,9 +143,9 @@ self.body(func(inputs) {
 	// Memory limit per process
     if !is_undefined(perProcessMemGB) {
         // memory per process was set in "Advanced Settings" block directly
-		mixcrCmdBuilder.mem(string(perProcessMemGB) + "GB")
+		mixcrCmdBuilder.mem(string(perProcessMemGB) + "GiB")
 	} else {
-		mixcrCmdBuilder.mem("64GB")
+		mixcrCmdBuilder.mem("64GiB")
 	}
 
 	if !is_undefined(limitInput) {
