@@ -31,10 +31,14 @@ self.body(func(inputs) {
 	inputMap := inputData.inputs()
 	numberOfSamples := len(inputMap)
 
-	memGB := int(math.max(numberOfSamples, 64))
-	if !is_undefined(inputs.perProcessMemGB) && inputs.perProcessMemGB > memGB {
-		memGB = inputs.perProcessMemGB
+	baseMemGB := 32
+	if !is_undefined(inputs.perProcessMemGB) {
+		baseMemGB = inputs.perProcessMemGB / 2
 	}
+
+	perSampleMem := int(math.max(2, baseMemGB / 10))
+	effectiveSamples := int(math.max(numberOfSamples, 3))
+	memGB := int(math.min(312, math.max(baseMemGB * 3 / 2, effectiveSamples * perSampleMem)))
 
 	wf := pt.workflow().
 		inMediumQueue().
