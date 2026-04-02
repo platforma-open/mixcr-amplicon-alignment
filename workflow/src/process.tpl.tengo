@@ -77,9 +77,9 @@ self.body(func(inputs) {
 	if !is_undefined(perProcessMemGB) {
 		baseMemGB = perProcessMemGB
 	}
-	// Returns max(floor, baseMemGB / divisor) as a string like "32GB"
+	// Returns max(floor, baseMemGB / divisor) as a string like "32GiB"
 	memGB := func(floorGB, divisor) {
-		return string(int(math.max(floorGB, baseMemGB / divisor))) + "GB"
+		return string(int(math.max(floorGB, baseMemGB / divisor))) + "GiB"
 	}
 
 	fileExtension := inputSpec.domain["pl7.app/fileExtension"]
@@ -285,9 +285,11 @@ self.body(func(inputs) {
 					cdr3SeqColumns: cdr3SeqColumns,
 					stopCodonTypes: params.stopCodonTypes,
 					stopCodonReplacements: params.stopCodonReplacements,
-					perProcessMemGB: perProcessMemGB,
 					isLibraryFileGzipped: params.isLibraryFileGzipped
 				}, { removeUndefs: true })
+			},
+			metaExtra: {
+				perProcessMemGB: perProcessMemGB
 			}
 		}
 	)
@@ -339,6 +341,9 @@ self.body(func(inputs) {
 					schemaPerClonotypeAggregates: columnsToSchema(columnsSpecPerClonotypeAggregates),
 					schemaPerSample: columnsToSchema(columnsSpecPerSample)
 				}
+			},
+			metaExtra: {
+				perProcessMemGB: perProcessMemGB
 			}
 		}
 	)
