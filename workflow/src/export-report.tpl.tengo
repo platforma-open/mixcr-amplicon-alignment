@@ -204,7 +204,7 @@ self.body(func(inputs) {
 		baseMemGB = perProcessMemGB
 	}
 	memGB := func(floorGB, divisor) {
-		return string(int(math.max(floorGB, baseMemGB / divisor))) + "GB"
+		return string(int(math.max(floorGB, baseMemGB / divisor))) + "GiB"
 	}
 
 	// Count clonotypes filtered by stop codons and out-of-frame per sample
