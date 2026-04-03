@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow
 
+## 1.21.7
+
+### Patch Changes
+
+- b67eb61: Upgrade MiXCR to 4.7.0-343-develop — packed NucleotideSequence storage for 4x memory reduction
+
 ## 1.21.6
 
 ### Patch Changes
