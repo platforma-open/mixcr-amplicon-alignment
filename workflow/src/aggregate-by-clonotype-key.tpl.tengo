@@ -78,6 +78,12 @@ self.body(func(inputs) {
 		currentDf = pt.concat(dataFrames)
 	}
 
+	// Pre-sort by abundance descending so that first() in the aggregation picks values
+	// from the max-abundance row. This replaces N separate maxBy (top_k_by) aggregations
+	// with N first() aggregations, which are streaming-compatible in Polars and use O(1)
+	// state per group instead of buffering all rows — dramatically reducing memory usage.
+	currentDf = currentDf.sort([mainAbundanceColumnNormalized], {descending: true})
+
 	aggExpressions := []
 	hasFractionCDRMutations := false
 
@@ -90,7 +96,7 @@ self.body(func(inputs) {
 			continue
 		}
 		aggExpressions = append(aggExpressions,
-			pt.col(colDef.column).maxBy(pt.col(mainAbundanceColumnNormalized)).alias(colDef.column)
+			pt.col(colDef.column).first().alias(colDef.column)
 		)
 	}
 
