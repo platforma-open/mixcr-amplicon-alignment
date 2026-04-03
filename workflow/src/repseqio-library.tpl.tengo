@@ -1,3 +1,5 @@
+//tengo:hash_override F6498F99-758C-4F28-B59D-31F11EB6C8A5
+
 // repseqio-library template for generating reference library from V and J FASTA files
 
 self := import("@platforma-sdk/workflow-tengo:tpl")
