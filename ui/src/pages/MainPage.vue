@@ -43,23 +43,23 @@ const app = useApp();
 watchEffect(() => {
   const parts: string[] = [];
   // Add dataset name if available
-  if (app.model.args.datasetRef) {
+  if (app.model.data.datasetRef) {
     const inputOption = app.model.outputs.inputOptions?.find(
-      (p) => app.model.args.datasetRef && plRefsEqual(p.ref, app.model.args.datasetRef),
+      (p) => app.model.data.datasetRef && plRefsEqual(p.ref, app.model.data.datasetRef),
     );
     if (inputOption?.label) {
       parts.push(inputOption.label);
     }
   }
   // Add chains if available
-  if (app.model.args.chains) {
-    parts.push(app.model.args.chains);
+  if (app.model.data.chains) {
+    parts.push(app.model.data.chains);
   }
   // Add assembling feature if available
-  if (app.model.args.assemblingFeature) {
-    parts.push(app.model.args.assemblingFeature);
+  if (app.model.data.assemblingFeature) {
+    parts.push(app.model.data.assemblingFeature);
   }
-  app.model.args.defaultBlockLabel = parts.filter(Boolean).join(' - ');
+  app.model.data.defaultBlockLabel = parts.filter(Boolean).join(' - ');
 });
 
 const result = computed(() =>

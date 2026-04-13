@@ -1,6 +1,7 @@
 import type { ImportFileHandle, InferHrefType, PlDataTableStateV2, PlRef } from '@platforma-sdk/model';
 import {
-  BlockModel,
+  BlockModelV3,
+  DataModelBuilder,
   createPlDataTableStateV2,
   createPlDataTableV2,
   isPColumnSpec,
@@ -44,7 +45,7 @@ export interface StopCodonReplacements {
   opal?: string;
 }
 
-export interface BlockArgs {
+export type BlockArgs = {
   defaultBlockLabel?: string;
   customBlockLabel?: string;
   datasetRef?: PlRef;
@@ -69,25 +70,36 @@ export interface BlockArgs {
   buildLibraryVGenes?: string;
   buildLibraryJGenes?: string;
   referenceInputMode?: ReferenceInputMode;
-}
+};
 
-export interface UiState {
+export type UiState = {
   referenceInputMode?: ReferenceInputMode;
   librarySequence?: string;
   selectedRecordHeaders?: string[];
   buildLibraryFastaFile?: ImportFileHandle;
   tableState: PlDataTableStateV2;
-}
+};
 
-export interface BlockArgsValid extends BlockArgs {
-  dataset: PlRef;
-  chains: string;
-  librarySequence: string;
-}
+export type BlockData = BlockArgs & {
+  librarySequence?: string;
+  selectedRecordHeaders?: string[];
+  buildLibraryFastaFile?: ImportFileHandle;
+  tableState: PlDataTableStateV2;
+  runMode: 'dry' | 'full';
+};
 
-export const platforma = BlockModel.create('Heavy')
-
-  .withArgs<BlockArgs>({
+const dataModel = new DataModelBuilder()
+  .from<BlockData>('v1')
+  .upgradeLegacy<BlockArgs, UiState>(({ args, uiState }) => ({
+    ...args,
+    referenceInputMode: args.referenceInputMode ?? uiState.referenceInputMode ?? 'fastaSequence',
+    librarySequence: uiState.librarySequence,
+    selectedRecordHeaders: uiState.selectedRecordHeaders,
+    buildLibraryFastaFile: uiState.buildLibraryFastaFile,
+    tableState: uiState.tableState,
+    runMode: (args.limitInput ?? 0) > 0 ? 'dry' : 'full',
+  }))
+  .init(() => ({
     defaultBlockLabel: '',
     customBlockLabel: '',
     chains: 'IGHeavy',
@@ -95,11 +107,63 @@ export const platforma = BlockModel.create('Heavy')
     tagPattern: '',
     assemblingFeature: 'VDJRegion',
     imputeGermline: false,
-  })
-  .withUiState<UiState>({
     referenceInputMode: 'fastaSequence',
     tableState: createPlDataTableStateV2(),
+    runMode: 'full',
+  }));
+
+export const platforma = BlockModelV3.create(dataModel)
+
+  .args((data) => {
+    if (data.datasetRef === undefined) {
+      throw new Error('Dataset is required');
+    }
+    const mode = data.referenceInputMode ?? 'fastaSequence';
+    if (mode === 'libraryFile' && data.libraryFile === undefined) {
+      throw new Error('Library file is required');
+    }
+    if (mode === 'buildLibrary' && (data.libraryEntries?.length ?? 0) === 0) {
+      throw new Error('At least one library entry is required');
+    }
+    if (mode !== 'libraryFile' && mode !== 'buildLibrary'
+      && data.librarySequence === undefined && data.vGenes === undefined) {
+      throw new Error('V/J reference sequences are required');
+    }
+    if (data.runMode === 'dry' && data.limitInput == null) {
+      throw new Error('Read limit is required for Preview mode');
+    }
+    return {
+      defaultBlockLabel: data.defaultBlockLabel ?? '',
+      customBlockLabel: data.customBlockLabel ?? '',
+      datasetRef: data.datasetRef,
+      chains: data.chains,
+      title: data.title,
+      tagPattern: data.tagPattern,
+      vGenes: data.vGenes,
+      jGenes: data.jGenes,
+      limitInput: data.runMode === 'dry' ? data.limitInput : undefined,
+      perProcessMemGB: data.perProcessMemGB,
+      perProcessCPUs: data.perProcessCPUs,
+      cloneClusteringMode: data.cloneClusteringMode,
+      assemblingFeature: data.assemblingFeature,
+      badQualityThreshold: data.badQualityThreshold,
+      stopCodonTypes: data.stopCodonTypes,
+      stopCodonReplacements: data.stopCodonReplacements,
+      referenceFileHandle: data.referenceFileHandle,
+      libraryFile: data.libraryFile,
+      isLibraryFileGzipped: data.isLibraryFileGzipped,
+      imputeGermline: data.imputeGermline,
+      libraryEntries: data.libraryEntries,
+      referenceInputMode: data.referenceInputMode,
+    };
   })
+
+  .prerunArgs((data) => ({
+    referenceInputMode: data.referenceInputMode,
+    buildLibraryVGenes: data.buildLibraryVGenes,
+    buildLibraryJGenes: data.buildLibraryJGenes,
+    chains: data.chains,
+  }))
 
   .output('qc', (ctx) => {
     const acc = ctx.outputs?.resolve('qc');
@@ -180,7 +244,7 @@ export const platforma = BlockModel.create('Heavy')
   })
 
   .output('sampleLabels', (ctx): Record<string, string> | undefined => {
-    const inputRef = ctx.args.datasetRef;
+    const inputRef = ctx.data.datasetRef;
     if (inputRef === undefined) return undefined;
 
     const spec = ctx.resultPool.getPColumnSpecByRef(inputRef);
@@ -218,9 +282,17 @@ export const platforma = BlockModel.create('Heavy')
     return createPlDataTableV2(
       ctx,
       pCols,
-      ctx.uiState.tableState,
+      ctx.data.tableState,
     );
   })
+
+  .output('isRunning', (ctx) => ctx.outputs?.getIsReadyOrError() === false)
+
+  .output(
+    'libraryUploadProgress',
+    (ctx) => ctx.outputs?.resolve({ field: 'libraryImportHandle', allowPermanentAbsence: true })?.getImportProgress(),
+    { isActive: true },
+  )
 
   .sections((_ctx) => {
     return [
@@ -229,28 +301,11 @@ export const platforma = BlockModel.create('Heavy')
     ];
   })
 
-  .argsValid((ctx) => {
-    const mode = ctx.uiState.referenceInputMode ?? 'fastaSequence';
-    const hasDataset = ctx.args.datasetRef !== undefined;
-    if (mode === 'libraryFile') {
-      return hasDataset && ctx.args.libraryFile !== undefined;
-    }
-    if (mode === 'buildLibrary') {
-      return hasDataset && (ctx.args.libraryEntries?.length ?? 0) > 0;
-    }
-    return hasDataset && (ctx.uiState.librarySequence !== undefined || ctx.args.vGenes !== undefined);
-  })
-
-  .output('isRunning', (ctx) => ctx.outputs?.getIsReadyOrError() === false)
-
-  .output('libraryUploadProgress', (ctx) =>
-    ctx.outputs?.resolve({ field: 'libraryImportHandle', allowPermanentAbsence: true })?.getImportProgress(), { isActive: true })
-
   .title(() => 'MiXCR Amplicon Alignment')
 
-  .subtitle((ctx) => ctx.args.customBlockLabel || ctx.args.defaultBlockLabel || '')
+  .subtitle((ctx) => ctx.data.customBlockLabel || ctx.data.defaultBlockLabel || '')
 
-  .done(2);
+  .done();
 
 export type BlockOutputs = InferOutputsType<typeof platforma>;
 export type Href = InferHrefType<typeof platforma>;
