@@ -125,8 +125,7 @@ export const platforma = BlockModelV3.create(dataModel)
     if (mode === 'buildLibrary' && (data.libraryEntries?.length ?? 0) === 0) {
       throw new Error('At least one library entry is required');
     }
-    if (mode !== 'libraryFile' && mode !== 'buildLibrary'
-      && data.librarySequence === undefined && data.vGenes === undefined) {
+    if (mode !== 'libraryFile' && mode !== 'buildLibrary' && data.vGenes === undefined) {
       throw new Error('V/J reference sequences are required');
     }
     if (data.runMode === 'dry' && data.limitInput == null) {

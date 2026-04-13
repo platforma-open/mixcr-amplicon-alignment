@@ -65,7 +65,7 @@ const runModeOptions: ListOption<'dry' | 'full'>[] = [
 watch(
   () => app.model.data.runMode,
   (value) => {
-    if (value === 'dry' && app.model.data.limitInput === undefined) {
+    if (value === 'dry' && app.model.data.limitInput == null) {
       app.model.data.limitInput = DRY_RUN_READS;
     }
   },
