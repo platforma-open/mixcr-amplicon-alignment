@@ -131,10 +131,10 @@ wf.body(func(args) {
 		inputSpec: input.getFutureInputField("spec"),
 		inputData: input.getFutureInputField("data"),
 		referenceLibrary: referenceLibrary,
-		limitInput: limitInput,
 
 		params: smart.createJsonResource(maps.clone({
 			blockId: blockId,
+			limitInput: limitInput,
 			perProcessMemGB: perProcessMemGB,
 			perProcessCPUs: perProcessCPUs,
 			chains: chains,
