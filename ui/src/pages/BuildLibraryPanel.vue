@@ -21,10 +21,10 @@ import { parseRepseqioLibrary } from '../utils/parseRepseqioLibrary';
 
 const app = useApp();
 
-// Entry definitions bound to model args
+// Entry definitions bound to model data
 const libraryEntries = computed({
-  get: () => app.model.args.libraryEntries ?? [],
-  set: (v: LibraryEntryDefinition[]) => { app.model.args.libraryEntries = v.length > 0 ? v : undefined; },
+  get: () => app.model.data.libraryEntries ?? [],
+  set: (v: LibraryEntryDefinition[]) => { app.model.data.libraryEntries = v.length > 0 ? v : undefined; },
 });
 
 function addLibraryEntry() {
@@ -134,12 +134,12 @@ type PrerunWaitState = 'idle' | 'waitForClear' | 'waitForResult';
 const prerunWait = ref<PrerunWaitState>('idle');
 
 async function onBuildLibraryFastaUpload(file: ImportFileHandle | undefined) {
-  app.model.ui.buildLibraryFastaFile = file;
+  app.model.data.buildLibraryFastaFile = file;
 
   if (!file) {
     buildLibraryFastaError.value = undefined;
-    app.model.args.buildLibraryVGenes = undefined;
-    app.model.args.buildLibraryJGenes = undefined;
+    app.model.data.buildLibraryVGenes = undefined;
+    app.model.data.buildLibraryJGenes = undefined;
     prerunWait.value = 'idle';
     libraryEntries.value = [];
     return;
@@ -154,19 +154,19 @@ async function onBuildLibraryFastaUpload(file: ImportFileHandle | undefined) {
       buildLibraryFastaError.value = undefined;
       libraryEntries.value = [];
       prerunWait.value = app.model.outputs.prerunLibrary ? 'waitForClear' : 'waitForResult';
-      app.model.args.buildLibraryVGenes = result.vGenes;
-      app.model.args.buildLibraryJGenes = result.jGenes;
+      app.model.data.buildLibraryVGenes = result.vGenes;
+      app.model.data.buildLibraryJGenes = result.jGenes;
     } else {
       buildLibraryFastaError.value = result.error;
-      app.model.args.buildLibraryVGenes = undefined;
-      app.model.args.buildLibraryJGenes = undefined;
+      app.model.data.buildLibraryVGenes = undefined;
+      app.model.data.buildLibraryJGenes = undefined;
       prerunWait.value = 'idle';
       libraryEntries.value = [];
     }
   } catch (e) {
     buildLibraryFastaError.value = `Failed to read file: ${e instanceof Error ? e.message : 'Unknown error'}`;
-    app.model.args.buildLibraryVGenes = undefined;
-    app.model.args.buildLibraryJGenes = undefined;
+    app.model.data.buildLibraryVGenes = undefined;
+    app.model.data.buildLibraryJGenes = undefined;
     prerunWait.value = 'idle';
     libraryEntries.value = [];
   }
@@ -207,7 +207,7 @@ watch(
 
 <template>
   <PlFileInput
-    v-model="app.model.ui.buildLibraryFastaFile"
+    v-model="app.model.data.buildLibraryFastaFile"
     label="Upload VDJ FASTA to auto-fill entries (optional)"
     :extensions="['fasta', 'fa']"
     :error="buildLibraryFastaError"
