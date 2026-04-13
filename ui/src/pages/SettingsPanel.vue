@@ -438,7 +438,7 @@ ATCGATCGATCG..."
 
   <PlBtnGroup v-model="app.model.data.runMode" :options="runModeOptions" label="Run mode">
     <template #tooltip>
-      Preview runs MiXCR on 100,000 reads per sample for quick settings validation. Full run processes the entire dataset.
+      Preview — runs the analysis on a small fraction of reads per sample. Use it to check that settings are correct before processing the whole dataset.
     </template>
   </PlBtnGroup>
 
