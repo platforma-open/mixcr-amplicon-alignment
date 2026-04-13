@@ -27,7 +27,7 @@ self.body(func(inputs) {
 
 	params := inputs.params
 	fileExtension := params.fileExtension
-	limitInput := inputs.limitInput
+	limitInput := params.limitInput
 	perProcessMemGB := inputs.perProcessMemGB
 	perProcessCPUs := inputs.perProcessCPUs
 	cloneClusteringMode := params.cloneClusteringMode
