@@ -18,7 +18,6 @@ mixcrExportTpl := assets.importTemplate(":mixcr-export")
 aggregateByClonotypeKeyTpl := assets.importTemplate(":aggregate-by-clonotype-key")
 exportReportTpl := assets.importTemplate(":export-report")
 calculateExportSpecs := import(":calculate-export-specs")
-canonicalJson := import(":canonical-json")
 
 self.awaitState("InputsLocked")
 self.awaitState("params", "ResourceReady")
@@ -213,8 +212,7 @@ self.body(func(inputs) {
 			traceSteps: [{type: "milaboratories.mixcr-amplicon-alignment", id: blockId, importance: 20, label: "MiXCR generic amplicon"}],
 
 			extra: {
-				// Canonical encoding ensures a stable CID across body re-evaluations.
-				params: canonicalJson.canonicalJsonResource(maps.clone({
+				params: maps.clone({
 					fileExtension: fileExtension,
 					cloneClusteringMode: cloneClusteringMode,
 					hasUMI: hasUMI,
@@ -224,7 +222,7 @@ self.body(func(inputs) {
 					badQualityThreshold: params.badQualityThreshold,
 					isLibraryFileGzipped: params.isLibraryFileGzipped,
 					limitInput: limitInput
-				}, { removeUndefs: true })),
+				}, { removeUndefs: true }),
 				referenceLibrary: referenceLibrary
 			},
 
@@ -276,7 +274,7 @@ self.body(func(inputs) {
 		exportOutputs,
 		{
 			extra: {
-				params: canonicalJson.canonicalJsonResource(maps.clone({
+				params: maps.clone({
 					clonotypeKeyColumns: clonotypeKeyColumns,
 					exportArgs: exportArgs,
 					mixcrChains: mixcrChains,
@@ -287,7 +285,7 @@ self.body(func(inputs) {
 					stopCodonTypes: params.stopCodonTypes,
 					stopCodonReplacements: params.stopCodonReplacements,
 					isLibraryFileGzipped: params.isLibraryFileGzipped
-				}, { removeUndefs: true })),
+				}, { removeUndefs: true }),
 				referenceLibrary: referenceLibrary
 			},
 			metaExtra: {
@@ -336,13 +334,13 @@ self.body(func(inputs) {
 			traceSteps: [{type: "milaboratories.mixcr-amplicon-alignment.aggregate", id: blockId + "." + chains, importance: 150, label: "Aggregate " + chains}],
 
 			extra: {
-				params: canonicalJson.canonicalJsonResource({
+				params: {
 					mainAbundanceColumnNormalized: mainAbundanceColumnNormalized,
 					mainAbundanceColumnUnnormalized: mainAbundanceColumnUnnormalized,
 					schemaPerClonotypeNoAggregates: columnsToSchema(columnsSpecPerClonotypeNoAggregates),
 					schemaPerClonotypeAggregates: columnsToSchema(columnsSpecPerClonotypeAggregates),
 					schemaPerSample: columnsToSchema(columnsSpecPerSample)
-				})
+				}
 			},
 			metaExtra: {
 				perProcessMemGB: perProcessMemGB

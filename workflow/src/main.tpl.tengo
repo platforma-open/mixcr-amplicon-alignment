@@ -5,12 +5,12 @@ render := import("@platforma-sdk/workflow-tengo:render")
 
 maps := import("@platforma-sdk/workflow-tengo:maps")
 ll := import("@platforma-sdk/workflow-tengo:ll")
+smart := import("@platforma-sdk/workflow-tengo:smart")
 assets := import("@platforma-sdk/workflow-tengo:assets")
 file := import("@platforma-sdk/workflow-tengo:file")
 pframes := import("@platforma-sdk/workflow-tengo:pframes")
 exec := import("@platforma-sdk/workflow-tengo:exec")
 
-canonicalJson := import(":canonical-json")
 
 processTpl := assets.importTemplate(":process")
 repseqioLibraryTpl := assets.importTemplate(":repseqio-library")
@@ -110,8 +110,7 @@ wf.body(func(args) {
 			sequenceFragments: fragments,
 			checksumVersion: 1
 		}]
-		// Canonical encoding ensures a stable CID across body re-evaluations.
-		referenceLibrary = canonicalJson.canonicalJsonResource(library)
+		referenceLibrary = smart.createJsonResource(library)
 	} else if mode == "libraryFile" {
 		fImport := file.importFile(args.libraryFile)
     	libraryImportHandle = fImport.handle
@@ -133,7 +132,7 @@ wf.body(func(args) {
 		inputData: input.getFutureInputField("data"),
 		referenceLibrary: referenceLibrary,
 
-		params: canonicalJson.canonicalJsonResource(maps.clone({
+		params: smart.createJsonResource(maps.clone({
 			blockId: blockId,
 			limitInput: limitInput,
 			perProcessMemGB: perProcessMemGB,
