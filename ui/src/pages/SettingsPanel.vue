@@ -31,9 +31,9 @@ const refModeOptions: ListOption<ReferenceInputMode>[] = [
 ];
 
 const refMode = computed<ReferenceInputMode>({
-  get: () => app.model.ui.referenceInputMode ?? 'fastaSequence',
+  get: () => app.model.data.referenceInputMode ?? 'fastaSequence',
   set: (value: ReferenceInputMode) => {
-    app.model.ui.referenceInputMode = value;
+    app.model.data.referenceInputMode = value;
   },
 });
 
@@ -41,22 +41,33 @@ function extractFileName(filePath: string) {
   return filePath.replace(/^.*[\\/]/, '');
 }
 
-// Sync reference input mode to args so the workflow can read it
-watch(refMode, (newMode) => {
-  app.model.args.referenceInputMode = newMode;
-}, { immediate: true });
-
 // Auto-detect gzip from library file
 watch(
-  () => app.model.args.libraryFile,
+  () => app.model.data.libraryFile,
   async (newFile) => {
     if (!newFile) {
-      app.model.args.isLibraryFileGzipped = undefined;
+      app.model.data.isLibraryFileGzipped = undefined;
       return;
     }
     const libraryFileName = extractFileName(getFilePathFromHandle(newFile));
     const isGzipped = libraryFileName?.toLowerCase().endsWith('.gz') || false;
-    app.model.args.isLibraryFileGzipped = isGzipped;
+    app.model.data.isLibraryFileGzipped = isGzipped;
+  },
+);
+
+const DRY_RUN_READS = 100_000;
+
+const runModeOptions: ListOption<'dry' | 'full'>[] = [
+  { label: 'Preview', value: 'dry' },
+  { label: 'Full run', value: 'full' },
+];
+
+watch(
+  () => app.model.data.runMode,
+  (value) => {
+    if (value === 'dry' && app.model.data.limitInput == null) {
+      app.model.data.limitInput = DRY_RUN_READS;
+    }
   },
 );
 
@@ -75,25 +86,25 @@ const recordOptions = computed(() =>
 );
 
 const selectedHeaders = computed({
-  get: () => app.model.ui.selectedRecordHeaders ?? allRecordHeaders.value,
+  get: () => app.model.data.selectedRecordHeaders ?? allRecordHeaders.value,
   set: (value: string[]) => {
-    app.model.ui.selectedRecordHeaders = value;
+    app.model.data.selectedRecordHeaders = value;
   },
 });
 
 function revalidateFromContent(content: string) {
-  const effectiveSelection = app.model.ui.selectedRecordHeaders;
+  const effectiveSelection = app.model.data.selectedRecordHeaders;
   const result = parseFasta(content, effectiveSelection);
 
   if (result.isValid) {
     fastaError.value = undefined;
     fileError.value = undefined;
-    app.model.args.vGenes = result.vGenes;
-    app.model.args.jGenes = result.jGenes;
+    app.model.data.vGenes = result.vGenes;
+    app.model.data.jGenes = result.jGenes;
   } else {
     fastaError.value = result.error;
-    app.model.args.vGenes = undefined;
-    app.model.args.jGenes = undefined;
+    app.model.data.vGenes = undefined;
+    app.model.data.jGenes = undefined;
   }
 
   return result;
@@ -105,9 +116,9 @@ function processContent(content: string) {
   allRecordHeaders.value = headers;
 
   // Prune stale selections
-  if (app.model.ui.selectedRecordHeaders) {
-    const valid = app.model.ui.selectedRecordHeaders.filter((h) => headers.includes(h));
-    app.model.ui.selectedRecordHeaders = valid.length > 0 ? valid : undefined;
+  if (app.model.data.selectedRecordHeaders) {
+    const valid = app.model.data.selectedRecordHeaders.filter((h) => headers.includes(h));
+    app.model.data.selectedRecordHeaders = valid.length > 0 ? valid : undefined;
   }
 
   return revalidateFromContent(content);
@@ -115,17 +126,17 @@ function processContent(content: string) {
 
 function clearRecordSelection() {
   allRecordHeaders.value = [];
-  app.model.ui.selectedRecordHeaders = undefined;
+  app.model.data.selectedRecordHeaders = undefined;
   fileContent.value = undefined;
 }
 
 function setInput(inputRef: PlRef | undefined) {
-  app.model.args.datasetRef = inputRef;
+  app.model.data.datasetRef = inputRef;
   if (inputRef)
-    app.model.args.title = app.model.outputs.inputOptions?.find(
+    app.model.data.title = app.model.outputs.inputOptions?.find(
       (o) => o.ref.blockId === inputRef.blockId && o.ref.name === inputRef.name,
     )?.label;
-  else app.model.args.title = undefined;
+  else app.model.data.title = undefined;
 }
 
 const fileError = ref<string | undefined>();
@@ -133,8 +144,8 @@ const fileError = ref<string | undefined>();
 async function setReferenceFile(file: ImportFileHandle | undefined) {
   if (!file) {
     fileError.value = undefined;
-    app.model.args.vGenes = undefined;
-    app.model.args.jGenes = undefined;
+    app.model.data.vGenes = undefined;
+    app.model.data.jGenes = undefined;
     clearRecordSelection();
     return;
   }
@@ -143,40 +154,40 @@ async function setReferenceFile(file: ImportFileHandle | undefined) {
     const data = await getRawPlatformaInstance().lsDriver.getLocalFileContent(file as LocalImportFileHandle);
     const content = new TextDecoder().decode(data);
     fileContent.value = content;
-    app.model.ui.selectedRecordHeaders = undefined;
+    app.model.data.selectedRecordHeaders = undefined;
     const result = processContent(content);
 
     if (result.isValid) {
       // Clear paste input when file is set
-      app.model.ui.librarySequence = undefined;
+      app.model.data.librarySequence = undefined;
     } else {
       fileError.value = result.error;
     }
   } catch (e) {
     fileError.value = `Failed to read file: ${e instanceof Error ? e.message : 'Unknown error'}`;
-    app.model.args.vGenes = undefined;
-    app.model.args.jGenes = undefined;
+    app.model.data.vGenes = undefined;
+    app.model.data.jGenes = undefined;
     clearRecordSelection();
   }
 }
 
 // Watch for sequence changes and validate (only in fastaSequence mode)
 watch(
-  () => app.model.ui.librarySequence,
+  () => app.model.data.librarySequence,
   (newSequence) => {
     if (refMode.value !== 'fastaSequence') return;
     if ((newSequence || '').trim()) {
       // Clear file input when text is entered
-      app.model.args.referenceFileHandle = undefined;
+      app.model.data.referenceFileHandle = undefined;
       fileError.value = undefined;
       fileContent.value = undefined;
-      app.model.ui.selectedRecordHeaders = undefined;
+      app.model.data.selectedRecordHeaders = undefined;
 
       processContent(newSequence || '');
     } else {
       fastaError.value = undefined;
-      app.model.args.vGenes = undefined;
-      app.model.args.jGenes = undefined;
+      app.model.data.vGenes = undefined;
+      app.model.data.jGenes = undefined;
       clearRecordSelection();
     }
   },
@@ -185,9 +196,9 @@ watch(
 
 // Watch for selection changes and re-validate (does NOT write back to selectedRecordHeaders)
 watch(
-  () => app.model.ui.selectedRecordHeaders,
+  () => app.model.data.selectedRecordHeaders,
   () => {
-    const content = fileContent.value ?? app.model.ui.librarySequence;
+    const content = fileContent.value ?? app.model.data.librarySequence;
     if (content && content.trim()) {
       revalidateFromContent(content);
     }
@@ -204,9 +215,9 @@ const chainOptions = [
 ];
 
 const chains = computed({
-  get: () => app.model.args.chains ?? 'IGHeavy',
+  get: () => app.model.data.chains ?? 'IGHeavy',
   set: (value: string) => {
-    app.model.args.chains = value;
+    app.model.data.chains = value;
   },
 });
 
@@ -233,16 +244,16 @@ const assemblingFeatureOptions = [
 ];
 
 const assemblingFeature = computed<AssemblingFeature>({
-  get: () => app.model.args.assemblingFeature as AssemblingFeature,
+  get: () => app.model.data.assemblingFeature as AssemblingFeature,
   set: (value: AssemblingFeature) => {
-    app.model.args.assemblingFeature = value;
+    app.model.data.assemblingFeature = value;
   },
 });
 
 const imputeGermline = computed({
-  get: () => app.model.args.imputeGermline ?? false,
+  get: () => app.model.data.imputeGermline ?? false,
   set: (value: boolean) => {
-    app.model.args.imputeGermline = value;
+    app.model.data.imputeGermline = value;
   },
 });
 
@@ -276,24 +287,24 @@ const aminoAcidOptions: ListOption[] = [
 ];
 
 const stopCodonSelection = computed({
-  get: () => app.model.args.stopCodonTypes ?? [],
+  get: () => app.model.data.stopCodonTypes ?? [],
   set: (value: StopCodonType[]) => {
-    app.model.args.stopCodonTypes = value.length > 0 ? value : undefined;
+    app.model.data.stopCodonTypes = value.length > 0 ? value : undefined;
   },
 });
 
 const stopCodonReplacementModel = (type: StopCodonType) =>
   computed({
-    get: () => app.model.args.stopCodonReplacements?.[type],
+    get: () => app.model.data.stopCodonReplacements?.[type],
     set: (value: string | undefined) => {
-      const current = app.model.args.stopCodonReplacements ?? {};
+      const current = app.model.data.stopCodonReplacements ?? {};
       if (value === undefined) {
         if (current[type] !== undefined) {
           delete current[type];
         }
-        app.model.args.stopCodonReplacements = Object.keys(current).length > 0 ? current : undefined;
+        app.model.data.stopCodonReplacements = Object.keys(current).length > 0 ? current : undefined;
       } else {
-        app.model.args.stopCodonReplacements = { ...current, [type]: value };
+        app.model.data.stopCodonReplacements = { ...current, [type]: value };
       }
     },
   });
@@ -303,13 +314,13 @@ const ochreReplacement = stopCodonReplacementModel('ochre');
 const opalReplacement = stopCodonReplacementModel('opal');
 
 watch(stopCodonSelection, (selected) => {
-  const current = app.model.args.stopCodonReplacements;
+  const current = app.model.data.stopCodonReplacements;
   if (!current) return;
   const next = { ...current };
   for (const key of Object.keys(next) as StopCodonType[]) {
     if (!selected.includes(key)) delete next[key];
   }
-  app.model.args.stopCodonReplacements = Object.keys(next).length > 0 ? next : undefined;
+  app.model.data.stopCodonReplacements = Object.keys(next).length > 0 ? next : undefined;
 });
 
 </script>
@@ -317,7 +328,7 @@ watch(stopCodonSelection, (selected) => {
 <template>
   <PlDropdownRef
     :options="app.model.outputs.inputOptions"
-    :model-value="app.model.args.datasetRef"
+    :model-value="app.model.data.datasetRef"
     label="Select dataset"
     clearable
     :required="true"
@@ -328,7 +339,7 @@ watch(stopCodonSelection, (selected) => {
 
   <template v-if="refMode === 'fastaFile'">
     <PlFileInput
-      v-model="app.model.args.referenceFileHandle"
+      v-model="app.model.data.referenceFileHandle"
       label="Reference sequence file (FASTA)"
       :extensions="['fasta', 'fa']"
       :error="fileError"
@@ -355,7 +366,7 @@ watch(stopCodonSelection, (selected) => {
 
   <template v-else-if="refMode === 'fastaSequence'">
     <PlTextArea
-      v-model="app.model.ui.librarySequence"
+      v-model="app.model.data.librarySequence"
       label="Paste reference sequence (FASTA format)"
       placeholder=">ref_name
 ATCGATCGATCG..."
@@ -382,7 +393,7 @@ ATCGATCGATCG..."
 
   <template v-else-if="refMode === 'libraryFile'">
     <PlFileInput
-      v-model="app.model.args.libraryFile"
+      v-model="app.model.data.libraryFile"
       label="MiXCR library file"
       :extensions="['json']"
       clearable
@@ -415,7 +426,7 @@ ATCGATCGATCG..."
   </PlCheckbox>
 
   <PlTextField
-    v-model="app.model.args.tagPattern"
+    v-model="app.model.data.tagPattern"
     label="Tag pattern"
     placeholder="e.g. ^N{16}CAGT(UMI:N{18})(R1:*)\^(R2:*)"
     clearable
@@ -425,10 +436,31 @@ ATCGATCGATCG..."
     </template>
   </PlTextField>
 
+  <PlBtnGroup v-model="app.model.data.runMode" :options="runModeOptions" label="Run mode">
+    <template #tooltip>
+      Preview — runs the analysis on a small fraction of reads per sample. Use it to check that settings are correct before processing the whole dataset.
+    </template>
+  </PlBtnGroup>
+
+  <template v-if="app.model.data.runMode === 'dry'">
+    <PlNumberField
+      v-model="app.model.data.limitInput"
+      label="Reads per sample limit"
+      :clearable="true"
+      :minValue="1"
+      :validate="(v) => (Number.isInteger(v) ? undefined : 'Value must be an integer')"
+      :error-message="app.model.data.limitInput == null ? 'Read limit is required for Preview mode' : undefined"
+    >
+      <template #tooltip>
+        Number of reads to use per sample in the dry run. Recommended: 100,000 for a quick sanity check.
+      </template>
+    </PlNumberField>
+  </template>
+
   <PlAccordionSection label="Advanced Settings">
     <PlSectionSeparator>MiXCR Settings</PlSectionSeparator>
     <PlDropdown
-      v-model="app.model.args.cloneClusteringMode"
+      v-model="app.model.data.cloneClusteringMode"
       :options="clusteringOptions"
       label="Error correction"
     >
@@ -440,7 +472,7 @@ ATCGATCGATCG..."
       </template>
     </PlDropdown>
     <PlNumberField
-      v-model="app.model.args.badQualityThreshold"
+      v-model="app.model.data.badQualityThreshold"
       :clearable="() => 15"
       label="Assembly quality threshold"
       placeholder="15 (default)"
@@ -455,11 +487,6 @@ ATCGATCGATCG..."
         prevent erroneous reads from creating spurious clonotypes. Leave empty to use the MiXCR default (15).
       </template>
     </PlNumberField>
-    <PlNumberField
-      v-model="app.model.args.limitInput"
-      label="Take only this number of reads into analysis"
-      :validate="(v) => (Number.isInteger(v) ? undefined : 'Value must be an integer')"
-    />
 
     <PlSectionSeparator>Stop codon replacement</PlSectionSeparator>
     <PlDropdownMulti
@@ -496,13 +523,13 @@ ATCGATCGATCG..."
 
     <PlSectionSeparator>Resource Allocation</PlSectionSeparator>
     <PlNumberField
-      v-model="app.model.args.perProcessMemGB"
+      v-model="app.model.data.perProcessMemGB"
       label="Set memory per every sample process (GB)"
       :minValue="1"
     />
 
     <PlNumberField
-      v-model="app.model.args.perProcessCPUs"
+      v-model="app.model.data.perProcessCPUs"
       label="Set CPUs number per every sample process"
       :minValue="1"
       :maxValue="999999"

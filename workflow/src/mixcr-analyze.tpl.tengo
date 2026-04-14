@@ -26,8 +26,9 @@ self.body(func(inputs) {
 	aggregationAxesNames := inputs[pConstants.AGGREGATION_AXES_NAMES_FIELD_NAME]
 
 	params := inputs.params
+	referenceLibrary := inputs.referenceLibrary
 	fileExtension := params.fileExtension
-	limitInput := inputs.limitInput
+	limitInput := params.limitInput
 	perProcessMemGB := inputs.perProcessMemGB
 	perProcessCPUs := inputs.perProcessCPUs
 	cloneClusteringMode := params.cloneClusteringMode
@@ -91,11 +92,7 @@ self.body(func(inputs) {
         arg("--species").arg("custom").
 		arg("--library").arg(libraryFileName)
 
-	if is_string(params.referenceLibrary) {
-		mixcrCmdBuilder.writeFile(libraryFileName, params.referenceLibrary).saveFile(libraryFileName)
-	} else {
-		mixcrCmdBuilder.addFile(libraryFileName, params.referenceLibrary)
-	}
+	mixcrCmdBuilder.addFile(libraryFileName, referenceLibrary)
 
     mixcrCmdBuilder.
         arg("--rna").

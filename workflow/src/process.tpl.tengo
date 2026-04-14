@@ -67,7 +67,7 @@ self.body(func(inputs) {
 
 	umiTags := extractUmiTags(tagPattern)
 	hasUMI := len(umiTags) > 0
-	limitInput := inputs.limitInput
+	limitInput := params.limitInput
 	perProcessMemGB := params.perProcessMemGB
 	perProcessCPUs := params.perProcessCPUs
 
@@ -214,16 +214,16 @@ self.body(func(inputs) {
 			extra: {
 				params: maps.clone({
 					fileExtension: fileExtension,
-					referenceLibrary: referenceLibrary,
 					cloneClusteringMode: cloneClusteringMode,
 					hasUMI: hasUMI,
 					tagPattern: tagPattern,
 					assemblingFeature: params.assemblingFeature,
 					imputeGermline: params.imputeGermline,
 					badQualityThreshold: params.badQualityThreshold,
-					isLibraryFileGzipped: params.isLibraryFileGzipped
+					isLibraryFileGzipped: params.isLibraryFileGzipped,
+					limitInput: limitInput
 				}, { removeUndefs: true }),
-				limitInput: limitInput
+				referenceLibrary: referenceLibrary
 			},
 
 			// by passing those parameters as meta fields we allow for recovery and deduplication mechanisms
@@ -277,7 +277,6 @@ self.body(func(inputs) {
 				params: maps.clone({
 					clonotypeKeyColumns: clonotypeKeyColumns,
 					exportArgs: exportArgs,
-					referenceLibrary: referenceLibrary,
 					mixcrChains: mixcrChains,
 					mainIsProductiveColumn: mainIsProductiveColumn,
 					aminoAcidSeqColumns: aminoAcidSeqColumns,
@@ -286,7 +285,8 @@ self.body(func(inputs) {
 					stopCodonTypes: params.stopCodonTypes,
 					stopCodonReplacements: params.stopCodonReplacements,
 					isLibraryFileGzipped: params.isLibraryFileGzipped
-				}, { removeUndefs: true })
+				}, { removeUndefs: true }),
+				referenceLibrary: referenceLibrary
 			},
 			metaExtra: {
 				perProcessMemGB: perProcessMemGB
