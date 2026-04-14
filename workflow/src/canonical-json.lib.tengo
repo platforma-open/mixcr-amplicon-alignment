@@ -1,0 +1,61 @@
+// Deterministic JSON encoding for stable resource CIDs.
+//
+// Tengo's json.encode iterates map keys in Go's random hash order, so
+// smart.createJsonResource produces different bytes (and CIDs) across
+// BlockModelV3 body re-evaluations. This causes CIDConflictError in
+// pframes.processColumn when extra.params encodes differently on successive
+// passes.
+//
+// This module sorts map keys before encoding to guarantee identical bytes
+// for identical data. Use canonicalJsonResource in place of
+// smart.createJsonResource for any value containing multi-key maps.
+//
+// Exports:
+//   canonicalEncode(value)        -> string    (canonical JSON)
+//   canonicalJsonResource(value)  -> Resource  (RTYPE_JSON, stable CID)
+
+smart := import("@platforma-sdk/workflow-tengo:smart")
+constants := import("@platforma-sdk/workflow-tengo:constants")
+maps := import("@platforma-sdk/workflow-tengo:maps")
+
+text := import("text")
+json := import("json")
+
+// json.encode returns []byte; wrap as string for concatenation.
+encodeStr := func(v) {
+	return string(json.encode(v))
+}
+
+canonicalEncode := undefined
+canonicalEncode = func(value) {
+	if is_undefined(value) {
+		return "null"
+	}
+	if is_map(value) || is_immutable_map(value) {
+		keys := maps.getKeys(value) // sorted alphabetically
+		parts := []
+		for k in keys {
+			parts = append(parts, encodeStr(k) + ":" + canonicalEncode(value[k]))
+		}
+		return "{" + text.join(parts, ",") + "}"
+	}
+	if is_array(value) || is_immutable_array(value) {
+		parts := []
+		for elem in value {
+			parts = append(parts, canonicalEncode(elem))
+		}
+		return "[" + text.join(parts, ",") + "]"
+	}
+	// Scalars encode deterministically.
+	return encodeStr(value)
+}
+
+canonicalJsonResource := func(value) {
+	// createValueResource accepts bytes; convert the canonical string back to bytes.
+	return smart.createValueResource(constants.RTYPE_JSON, bytes(canonicalEncode(value)))
+}
+
+export {
+	canonicalEncode: canonicalEncode,
+	canonicalJsonResource: canonicalJsonResource
+}

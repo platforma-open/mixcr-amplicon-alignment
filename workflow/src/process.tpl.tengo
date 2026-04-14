@@ -18,6 +18,7 @@ mixcrExportTpl := assets.importTemplate(":mixcr-export")
 aggregateByClonotypeKeyTpl := assets.importTemplate(":aggregate-by-clonotype-key")
 exportReportTpl := assets.importTemplate(":export-report")
 calculateExportSpecs := import(":calculate-export-specs")
+canonicalJson := import(":canonical-json")
 
 self.awaitState("InputsLocked")
 self.awaitState("params", "ResourceReady")
@@ -212,9 +213,9 @@ self.body(func(inputs) {
 			traceSteps: [{type: "milaboratories.mixcr-amplicon-alignment", id: blockId, importance: 20, label: "MiXCR generic amplicon"}],
 
 			extra: {
-				params: maps.clone({
+				// Canonical encoding ensures a stable CID across body re-evaluations.
+				params: canonicalJson.canonicalJsonResource(maps.clone({
 					fileExtension: fileExtension,
-					referenceLibrary: referenceLibrary,
 					cloneClusteringMode: cloneClusteringMode,
 					hasUMI: hasUMI,
 					tagPattern: tagPattern,
@@ -223,7 +224,8 @@ self.body(func(inputs) {
 					badQualityThreshold: params.badQualityThreshold,
 					isLibraryFileGzipped: params.isLibraryFileGzipped,
 					limitInput: limitInput
-				}, { removeUndefs: true })
+				}, { removeUndefs: true })),
+				referenceLibrary: referenceLibrary
 			},
 
 			// by passing those parameters as meta fields we allow for recovery and deduplication mechanisms
@@ -274,10 +276,9 @@ self.body(func(inputs) {
 		exportOutputs,
 		{
 			extra: {
-				params: maps.clone({
+				params: canonicalJson.canonicalJsonResource(maps.clone({
 					clonotypeKeyColumns: clonotypeKeyColumns,
 					exportArgs: exportArgs,
-					referenceLibrary: referenceLibrary,
 					mixcrChains: mixcrChains,
 					mainIsProductiveColumn: mainIsProductiveColumn,
 					aminoAcidSeqColumns: aminoAcidSeqColumns,
@@ -286,7 +287,8 @@ self.body(func(inputs) {
 					stopCodonTypes: params.stopCodonTypes,
 					stopCodonReplacements: params.stopCodonReplacements,
 					isLibraryFileGzipped: params.isLibraryFileGzipped
-				}, { removeUndefs: true })
+				}, { removeUndefs: true })),
+				referenceLibrary: referenceLibrary
 			},
 			metaExtra: {
 				perProcessMemGB: perProcessMemGB
@@ -334,13 +336,13 @@ self.body(func(inputs) {
 			traceSteps: [{type: "milaboratories.mixcr-amplicon-alignment.aggregate", id: blockId + "." + chains, importance: 150, label: "Aggregate " + chains}],
 
 			extra: {
-				params: {
+				params: canonicalJson.canonicalJsonResource({
 					mainAbundanceColumnNormalized: mainAbundanceColumnNormalized,
 					mainAbundanceColumnUnnormalized: mainAbundanceColumnUnnormalized,
 					schemaPerClonotypeNoAggregates: columnsToSchema(columnsSpecPerClonotypeNoAggregates),
 					schemaPerClonotypeAggregates: columnsToSchema(columnsSpecPerClonotypeAggregates),
 					schemaPerSample: columnsToSchema(columnsSpecPerSample)
-				}
+				})
 			},
 			metaExtra: {
 				perProcessMemGB: perProcessMemGB
