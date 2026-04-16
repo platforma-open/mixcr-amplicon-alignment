@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow
 
+## 1.21.8
+
+### Patch Changes
+
+- 2ac36c0: Bump mixr version to 4.7.0-347-develop (switch back to default GC)
+
 ## 1.21.7
 
 ### Patch Changes
