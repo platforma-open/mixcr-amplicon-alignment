@@ -1,0 +1,62 @@
+// flatten-demux-map
+// Flattens nested [groupId] -> ResourceMap[sampleId, readIndex] 
+// into a single ResourceMap[sampleId, readIndex]
+
+self := import("@platforma-sdk/workflow-tengo:tpl.light")
+ll := import("@platforma-sdk/workflow-tengo:ll")
+smart := import("@platforma-sdk/workflow-tengo:smart")
+pConstants := import("@platforma-sdk/workflow-tengo:pframes.constants")
+maps := import("@platforma-sdk/workflow-tengo:maps")
+json := import("json")
+
+self.defineOutputs("flattenedFastq")
+
+self.body(func(inputs) {
+	nestedMap := inputs.nestedMap
+	
+	if is_undefined(nestedMap) || !smart.isResource(nestedMap) {
+		return {
+			flattenedFastq: smart.createNullResource()
+		}
+	}
+	
+	if !nestedMap.checkResourceType(pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP) {
+		return {
+			flattenedFastq: smart.createNullResource()
+		}
+	}
+	
+	// Build flat ResourceMap with keyLength=2: [sampleId, readIndex]
+	flatBuilder := smart.structBuilder(
+		pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP,
+		json.encode({ keyLength: 2 })
+	)
+	
+	groupInputs := nestedMap.inputs()
+	
+	for groupKey in maps.getKeys(groupInputs) {
+		groupRef := groupInputs[groupKey]
+		groupValue := groupRef.getValue()
+		
+		if !smart.isResource(groupValue) {
+			continue
+		}
+		
+		if !groupValue.checkResourceType(pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP) {
+			continue
+		}
+		
+		nestedInputs := groupValue.inputs()
+		
+		for nestedKey in maps.getKeys(nestedInputs) {
+			flatBuilder.createInputField(nestedKey).set(nestedInputs[nestedKey])
+		}
+	}
+	
+	flattenedFastq := flatBuilder.lockAndBuild()
+	
+	return {
+		flattenedFastq: flattenedFastq
+	}
+})
+

@@ -69,6 +69,7 @@ export interface BlockArgs {
   buildLibraryVGenes?: string;
   buildLibraryJGenes?: string;
   referenceInputMode?: ReferenceInputMode;
+  demuxPattern?: string;
 }
 
 export interface UiState {
@@ -124,6 +125,28 @@ export const platforma = BlockModel.create('Heavy')
         )
       : undefined;
   })
+
+  .output('mitoolLogs', (ctx) => {
+    return ctx.outputs !== undefined
+      ? parseResourceMap(
+          ctx.outputs?.resolve({ field: 'mitoolLogs', assertFieldType: 'Input', allowPermanentAbsence: true }),
+          (acc) => acc.getLogHandle(),
+          false,
+        )
+      : undefined;
+  })
+
+  .output('barcodeIdValid', (ctx): boolean | undefined =>
+    ctx.prerun?.resolve({ field: 'barcodeIdValid', assertFieldType: 'Input', allowPermanentAbsence: true })?.getDataAsJson(),
+  )
+
+  .output('barcodeIdValidationMessage', (ctx): string | undefined =>
+    ctx.prerun?.resolve({ field: 'barcodeIdValidationMessage', assertFieldType: 'Input', allowPermanentAbsence: true })?.getDataAsJson(),
+  )
+
+  .output('sampleGroups', (ctx): Record<string, Record<string, string>> | undefined =>
+    ctx.prerun?.resolve({ field: 'sampleGroups', assertFieldType: 'Input', allowPermanentAbsence: true })?.getDataAsJson(),
+  )
 
   .output('progress', (ctx) => {
     return ctx.outputs !== undefined
@@ -185,6 +208,21 @@ export const platforma = BlockModel.create('Heavy')
 
     const spec = ctx.resultPool.getPColumnSpecByRef(inputRef);
     if (spec === undefined) return undefined;
+
+    // For multiplexed input (groupId axis), build flat sampleId -> label map from prerun sampleGroups
+    if (spec.axesSpec?.[0]?.name === 'pl7.app/sampleGroupId') {
+      const sampleGroups: Record<string, Record<string, string>> | undefined = ctx.prerun
+        ?.resolve({ field: 'sampleGroups', assertFieldType: 'Input', allowPermanentAbsence: true })
+        ?.getDataAsJson();
+      if (sampleGroups === undefined) return undefined;
+      const labels: Record<string, string> = {};
+      for (const groupSamples of Object.values(sampleGroups)) {
+        for (const [sampleId, sampleLabel] of Object.entries(groupSamples)) {
+          labels[sampleId] = sampleLabel;
+        }
+      }
+      return labels;
+    }
 
     return ctx.resultPool.findLabelsForColumnAxis(spec, 0);
   })

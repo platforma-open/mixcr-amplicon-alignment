@@ -104,5 +104,33 @@ export const resultMap = computed<
     }
   }
 
+  // Show "Demultiplexing" for samples in active mitool groups (before MiXCR starts)
+  const sampleGroups = app.model.outputs.sampleGroups;
+  const mitoolLogs = app.model.outputs.mitoolLogs;
+  if (sampleGroups && mitoolLogs) {
+    const sampleToGroup = new Map<string, string>();
+    for (const [groupId, samples] of Object.entries(sampleGroups)) {
+      for (const sampleId of Object.keys(samples)) {
+        sampleToGroup.set(sampleId, groupId);
+      }
+    }
+
+    const activeGroups = new Set<string>();
+    for (const entry of mitoolLogs.data) {
+      if (entry.value !== undefined) {
+        activeGroups.add(String(entry.key[0]));
+      }
+    }
+
+    for (const [sampleId, result] of resultMap.entries()) {
+      if (result.progress === 'Queued') {
+        const groupId = sampleToGroup.get(sampleId);
+        if (groupId && activeGroups.has(groupId)) {
+          result.progress = 'Demultiplexing';
+        }
+      }
+    }
+  }
+
   return resultMap;
 });

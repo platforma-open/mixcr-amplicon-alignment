@@ -28,6 +28,31 @@ wf.body(func(args) {
 
 	input := wf.resolve(inputRef)
 
+	// Build linkage bundle to fetch sample groups and barcodeId metadata (for multiplexed FASTQ)
+	bundleBuilder := wf.createPBundleBuilder()
+	bundleBuilder.addAnchor("main", inputRef)
+	bundleBuilder.addMulti({
+		axes: [
+			{ anchor: "main", idx: 0 },
+			{ name: "pl7.app/sampleId", type: "String" }
+		],
+		name: "pl7.app/sequencing/data/sampleGroups",
+		domain: {
+			"pl7.app/block": { anchor: "main" },
+			"pl7.app/dataset": { anchor: "main" }
+		}
+	}, "linker")
+	bundleBuilder.addSingle({
+		axes: [
+			{ name: "pl7.app/sampleId", type: "String" }
+		],
+		name: "pl7.app/metadata",
+		domain: {
+			"pl7.app/columnId": "Barcode ID"
+		}
+	}, "barcodeId")
+	bundle := bundleBuilder.build()
+
 	chains := args.chains
 	limitInput := args.limitInput
 	perProcessMemGB := args.perProcessMemGB
@@ -130,8 +155,10 @@ wf.body(func(args) {
 	runMixcr := render.createEphemeral(processTpl, {
 		inputSpec: input.getFutureInputField("spec"),
 		inputData: input.getFutureInputField("data"),
+		bundle: bundle,
 		referenceLibrary: referenceLibrary,
 		limitInput: limitInput,
+		demuxPattern: args.demuxPattern,
 
 		params: smart.createJsonResource(maps.clone({
 			blockId: blockId,
@@ -187,6 +214,7 @@ wf.body(func(args) {
 		qc: pframes.exportColumnData(runMixcr.output("qc.data")),
 		reports: pframes.exportColumnData(runMixcr.output("reports.data")),
 		logs: runMixcr.output("logs.data"),
+		mitoolLogs: runMixcr.output("mitoolLogs.data"),
 		clones: pframes.exportFrame(runMixcr.output("clones")),
 		clns: runMixcr.output("clns.data"),
 		progress: runMixcr.output("progress.data"),
