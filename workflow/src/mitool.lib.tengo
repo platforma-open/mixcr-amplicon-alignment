@@ -1,0 +1,169 @@
+self := import("@platforma-sdk/workflow-tengo:tpl")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+ll := import("@platforma-sdk/workflow-tengo:ll")
+maps := import("@platforma-sdk/workflow-tengo:maps")
+json := import("json")
+text := import("text")
+
+/**
+ * Runs mitool UMI pipeline over FASTQ inputs and returns exported FASTQs per sample.
+ * Input structure mirrors mixcr-analyze expectations, using inputData and its meta/axes.
+ * Returns map { sampleId: { R1: File | undefined, R2: File | undefined } }.
+ * seqToSampleId: map of barcode sequence (SMPL) -> sample ID
+ */
+run := func(inputData, inputDataMeta, aggregationAxesNames, pattern, progressPrefix, seqToSampleId) {
+    
+    ll.assert(!is_undefined(pattern) && pattern != "", "UMI pattern is required")
+    ll.assert(!is_undefined(seqToSampleId), "seqToSampleId mapping is required")
+    
+    // Collect files and decide input arg pattern for mitool
+    R1Files := []
+    R2Files := []
+    addInput := func(name, r, f) {
+        if r == "R1" {
+            R1Files = append(R1Files, { name: name, file: f })
+        } else if r == "R2" {
+            R2Files = append(R2Files, { name: name, file: f })
+        }
+    }
+
+    fileExtension := "fastq.gz"
+    inputArg := ""
+    if inputDataMeta.keyLength == 0 {
+        ll.assert(aggregationAxesNames == [], "unexpected aggregation axes names")
+        inFile := inputData.inputs()["[]"]
+        ll.assert(!is_undefined(inFile), "unexpected input structure")
+        addInput("input." + fileExtension, "R1", inFile)
+        inputArg = "input." + fileExtension
+    } else if inputDataMeta.keyLength == 1 {
+        ll.assert(aggregationAxesNames == ["pl7.app/sequencing/readIndex"], "unexpected aggregation axes names")
+        for sKey, inFile in inputData.inputs() {
+            key := json.decode(sKey)
+            r := key[0]
+            if (r[0] != 'R') || (r[1] != '1' && r[1] != '2') || len(r) != 2 { continue }
+            addInput("input_" + r + "." + fileExtension, r, inFile)
+        }
+        inputArg = "input_{{R}}." + fileExtension
+    } else if inputDataMeta.keyLength == 2 {
+        ll.assert(aggregationAxesNames == ["pl7.app/sequencing/lane", "pl7.app/sequencing/readIndex"], "unexpected aggregation axes names")
+        for sKey, inFile in inputData.inputs() {
+            key := json.decode(sKey)
+            lane := key[0]
+            r := key[1]
+            if (r[0] != 'R') || (r[1] != '1' && r[1] != '2') || len(r) != 2 { continue }
+            ll.assert(!is_undefined(int(lane)), "malformed lane: %v", lane)
+            addInput("input_L" + lane + "_" + r + "." + fileExtension, r, inFile)
+        }
+        inputArg = "input_L{{n}}_{{R}}." + fileExtension
+    } else {
+        ll.panic("unsupported input key layout: %v", inputDataMeta.keyLength)
+    }
+
+    ll.assert(len(R1Files) > 0 || len(R2Files) > 0, "no R1/R2 inputs detected")
+    
+
+    mitoolSw := assets.importSoftware("@platforma-open/milaboratories.software-mitool:main")
+    
+    // Scan the whole pattern for every distinct (SMPL:<seq>) occurrence, regardless of
+    // which separator (' | ' for within-read alternatives or ' || ' for full read-pair
+    // variants) the caller used, and whether the same SMPL appears in both R1 and R2.
+    smplSequences := []
+    seenSmpl := {}
+    rest := pattern
+    for {
+        idx := text.index(rest, "(SMPL:")
+        if idx < 0 { break }
+        remaining := text.substr(rest, idx + 6, len(rest))
+        endIdx := text.index(remaining, ")")
+        if endIdx < 0 { break }
+        smplSeq := text.substr(remaining, 0, endIdx)
+        if is_undefined(seenSmpl[smplSeq]) {
+            smplSequences = append(smplSequences, smplSeq)
+            seenSmpl[smplSeq] = true
+        }
+        rest = text.substr(remaining, endIdx + 1, len(remaining))
+    }
+    
+    // parse with --split-by-tag to create separate .mic files per sample
+    parse := exec.builder().
+        printErrStreamToStdout().
+        env("MI_PROGRESS_PREFIX", progressPrefix).
+        software(mitoolSw).
+        cpu(8).
+        mem("32GiB").
+        arg("parse").
+        arg("--pattern").arg(pattern).
+        arg("--threads").argWithVar("{system.cpu}").
+        arg(inputArg)
+    for it in R1Files { parse = parse.addFile(it.name, it.file) }
+    for it in R2Files { parse = parse.addFile(it.name, it.file) }
+    
+    // Save all expected .mic files separately
+    // mitool will create files like parsed_SMPL_<sequence>.mic based on --split-by-tag
+    for smplSeq in smplSequences {
+        micFileName := smplSeq + ".result.mic"
+        parse = parse.saveFile(micFileName)
+    }
+    
+    parse = parse.arg("result.mic").saveStdoutStream().saveStderrStream().run()
+    
+
+    // Get list of generated .mic files from parse output
+    // mitool outputs files like parsed_SMPL_<sequence>.mic
+    parseLog := parse.getStdoutStream()
+
+    // For each barcode sequence, export FASTQ and map to sample ID
+    result := {}
+    for smplSeq in smplSequences {
+        sampleId := seqToSampleId[smplSeq]
+        if is_undefined(sampleId) {
+            continue
+        }
+        
+        micFileName := smplSeq + ".result.mic"
+        
+        // Check if .mic file exists
+        micFile := parse.getFile(micFileName)
+        if is_undefined(micFile) {
+            continue
+        }
+        
+        // export-fastq for this sample
+        exportFastq := exec.builder().
+            printErrStreamToStdout().
+            env("MI_PROGRESS_PREFIX", progressPrefix).
+            software(mitoolSw).
+            cpu(4).
+            mem("8GiB").
+            arg("export-fastq")
+        
+        if len(R1Files) > 0 {
+            r1FileName := sampleId + "_R1.fastq"
+            exportFastq = exportFastq.arg("--output-file").arg(r1FileName).arg("R1").saveFile(r1FileName)
+        }
+        if len(R2Files) > 0 {
+            r2FileName := sampleId + "_R2.fastq"
+            exportFastq = exportFastq.arg("--output-file").arg(r2FileName).arg("R2").saveFile(r2FileName)
+        }
+        exportFastq = exportFastq.addFile(micFileName, micFile).
+            arg(micFileName).saveStdoutStream().run()
+        
+        sampleResult := {}
+        if len(R1Files) > 0 {
+            sampleResult.R1 = exportFastq.getFile(sampleId + "_R1.fastq")
+        }
+        if len(R2Files) > 0 {
+            sampleResult.R2 = exportFastq.getFile(sampleId + "_R2.fastq")
+        }
+        result[sampleId] = sampleResult
+    }
+    
+    result.parseLog = parseLog
+    return result
+}
+
+export {
+    run: run
+}
+

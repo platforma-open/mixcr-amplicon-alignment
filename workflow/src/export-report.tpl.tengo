@@ -188,15 +188,21 @@ self.body(func(inputs) {
         }
     }
 
-    countsDf := undefined
-    if len(countDfs) > 1 { countsDf = pt.concat(countDfs) } else { countsDf = countDfs[0] }
-    aggregatedCounts := countsDf.groupBy("sampleId").agg(
-        pt.col("exportedClonotypes").sum().alias("exportedClonotypes"),
-        pt.col("readsUsedInClonotypes").sum().alias("readsUsedInClonotypesNew")
-    )
-
-    // Join counts and overwrite totalClonotypes to reflect exported (productive) clones
-    joinedDf := processedDf.join(aggregatedCounts, { how: "left", on: ["sampleId"] })
+    joinedDf := processedDf
+    if len(countDfs) > 0 {
+        countsDf := len(countDfs) > 1 ? pt.concat(countDfs) : countDfs[0]
+        aggregatedCounts := countsDf.groupBy("sampleId").agg(
+            pt.col("exportedClonotypes").sum().alias("exportedClonotypes"),
+            pt.col("readsUsedInClonotypes").sum().alias("readsUsedInClonotypesNew")
+        )
+        // Join counts and overwrite totalClonotypes to reflect exported (productive) clones
+        joinedDf = processedDf.join(aggregatedCounts, { how: "left", on: ["sampleId"] })
+    } else {
+        joinedDf = processedDf.withColumns(
+            pt.lit(0).alias("exportedClonotypes"),
+            pt.lit(0).alias("readsUsedInClonotypesNew")
+        )
+    }
 
     // Memory for downstream operations, linked to user override with hardcoded floors
 	baseMemGB := 64

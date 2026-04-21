@@ -2,8 +2,46 @@ wf := import("@platforma-sdk/workflow-tengo:workflow")
 render := import("@platforma-sdk/workflow-tengo:render")
 assets := import("@platforma-sdk/workflow-tengo:assets")
 file := import("@platforma-sdk/workflow-tengo:file")
+smart := import("@platforma-sdk/workflow-tengo:smart")
+json := import("json")
+text := import("text")
 
 repseqioLibraryTpl := assets.importTemplate(":repseqio-library")
+
+wf.prepare(func(args) {
+	inputRef := args.datasetRef
+	if is_undefined(inputRef) {
+		return {}
+	}
+
+	bundleBuilder := wf.createPBundleBuilder()
+	bundleBuilder.addAnchor("main", inputRef)
+	bundleBuilder.addMulti({
+		axes: [
+			{ anchor: "main", idx: 0 },
+			{ name: "pl7.app/sampleId", type: "String" }
+		],
+		name: "pl7.app/sequencing/data/sampleGroups",
+		domain: {
+			"pl7.app/block": { anchor: "main" },
+			"pl7.app/dataset": { anchor: "main" }
+		}
+	}, "linker")
+	bundleBuilder.addSingle({
+		axes: [
+			{ name: "pl7.app/sampleId", type: "String" }
+		],
+		name: "pl7.app/metadata",
+		domain: {
+			"pl7.app/columnId": "Barcode ID"
+		}
+	}, "barcodeId")
+	bundle := bundleBuilder.build()
+
+	return {
+		bundle: bundle
+	}
+})
 
 wf.body(func(args) {
 	outputs := {}
@@ -25,6 +63,188 @@ wf.body(func(args) {
 			chains: chains
 		})
 		outputs.referenceLibrary = file.exportFile(repseqioResults.output("referenceLibrary"))
+	}
+
+	// Validate barcode IDs when input is multiplexed
+	inputRef := args.datasetRef
+	barcodeIdValid := true
+	barcodeIdValidationMessage := ""
+	sampleGroups := undefined
+
+	if !is_undefined(inputRef) {
+		bundle := args.bundle
+
+		inputSpec := undefined
+		if !is_undefined(bundle) {
+			inputSpec = bundle.getSpec("main")
+		}
+
+		isMultiplexed := false
+		if !is_undefined(inputSpec) && !is_undefined(inputSpec.axesSpec) && len(inputSpec.axesSpec) > 0 {
+			isMultiplexed = inputSpec.axesSpec[0].name == "pl7.app/sampleGroupId"
+		}
+
+		// Parse sample groups from linker
+		if !is_undefined(bundle) {
+			linkerColumns := bundle.getColumns("linker")
+			if !is_undefined(linkerColumns) && len(linkerColumns) > 0 {
+				linker := linkerColumns[0]
+				linkerData := json.decode(linker.data.getData())
+				parsedGroups := {}
+				for key, value in linkerData {
+					k := json.decode(key)
+					if is_undefined(parsedGroups[k[0]]) {
+						parsedGroups[k[0]] = {}
+					}
+					parsedGroups[k[0]][k[1]] = value
+				}
+				sampleGroups = parsedGroups
+			}
+		}
+
+		if isMultiplexed {
+			barcodeIdCol := bundle.getColumn("barcodeId")
+
+			if is_undefined(barcodeIdCol) {
+				barcodeIdValid = false
+				barcodeIdValidationMessage = "Barcode ID metadata is required for multiplexed FASTQ input"
+			} else {
+				emptySamples := []
+				invalidBarcodeIds := []
+				missingSamples := []
+				mismatchedGroupSamples := []
+
+				barcodeData := json.decode(barcodeIdCol.data.getData())
+				dataMap := barcodeData
+				if is_map(barcodeData) && !is_undefined(barcodeData["data"]) {
+					dataMap = barcodeData["data"]
+				}
+
+				sampleIdToLabel := {}
+				allSampleIds := []
+				if !is_undefined(sampleGroups) {
+					for groupId, samples in sampleGroups {
+						for sampleId, label in samples {
+							sampleIdToLabel[sampleId] = label
+							allSampleIds = append(allSampleIds, sampleId)
+						}
+					}
+				}
+
+				sampleIdToBarcodeId := {}
+				for skey, value in dataMap {
+					sampleKey := skey
+					if text.has_prefix(skey, "[") {
+						keyArr := json.decode(skey)
+						if is_array(keyArr) && len(keyArr) == 1 {
+							sampleKey = keyArr[0]
+						}
+					}
+					if !is_undefined(value) {
+						barcodeIdStr := is_string(value) ? value : string(value)
+						if barcodeIdStr != "" && text.trim_space(barcodeIdStr) != "" {
+							sampleIdToBarcodeId[sampleKey] = barcodeIdStr
+						}
+					}
+				}
+
+				// Check for duplicate barcodeIds within the same group
+				if !is_undefined(sampleGroups) {
+					for groupId, samples in sampleGroups {
+						groupBarcodeIdToSamples := {}
+						for sampleId, label in samples {
+							if !is_undefined(sampleIdToBarcodeId[sampleId]) {
+								bid := sampleIdToBarcodeId[sampleId]
+								if is_undefined(groupBarcodeIdToSamples[bid]) {
+									groupBarcodeIdToSamples[bid] = []
+								}
+								groupBarcodeIdToSamples[bid] = append(groupBarcodeIdToSamples[bid], label + " (" + bid + ")")
+							}
+						}
+						for barcodeId, sampleLabels in groupBarcodeIdToSamples {
+							if len(sampleLabels) > 1 {
+								mismatchedGroupSamples = append(mismatchedGroupSamples, text.join(sampleLabels, ", "))
+							}
+						}
+					}
+				}
+
+				samplesWithBarcodeId := {}
+				for skey, _ in dataMap {
+					sampleKey := skey
+					if text.has_prefix(skey, "[") {
+						keyArr := json.decode(skey)
+						if is_array(keyArr) && len(keyArr) == 1 {
+							sampleKey = keyArr[0]
+						}
+					}
+					samplesWithBarcodeId[sampleKey] = true
+				}
+
+				for sampleId in allSampleIds {
+					if is_undefined(samplesWithBarcodeId[sampleId]) {
+						label := is_undefined(sampleIdToLabel[sampleId]) ? sampleId : sampleIdToLabel[sampleId]
+						missingSamples = append(missingSamples, label)
+					}
+				}
+
+				for skey, value in dataMap {
+					sampleKey := skey
+					if text.has_prefix(skey, "[") {
+						keyArr := json.decode(skey)
+						if is_array(keyArr) && len(keyArr) == 1 {
+							sampleKey = keyArr[0]
+						}
+					}
+					label := is_undefined(sampleIdToLabel[sampleKey]) ? sampleKey : sampleIdToLabel[sampleKey]
+
+					if is_undefined(value) {
+						emptySamples = append(emptySamples, label)
+						continue
+					}
+					barcodeIdStr := is_string(value) ? value : string(value)
+					if barcodeIdStr == "" || text.trim_space(barcodeIdStr) == "" {
+						emptySamples = append(emptySamples, label)
+						continue
+					}
+					// Barcodes are expected as raw DNA sequences (A/T/G/C)
+					isDna := true
+					for _, c in bytes(text.to_upper(barcodeIdStr)) {
+						if c != 65 && c != 84 && c != 71 && c != 67 {
+							isDna = false
+							break
+						}
+					}
+					if !isDna {
+						invalidBarcodeIds = append(invalidBarcodeIds, label + " (" + barcodeIdStr + ")")
+					}
+				}
+
+				if len(missingSamples) > 0 || len(emptySamples) > 0 || len(invalidBarcodeIds) > 0 || len(mismatchedGroupSamples) > 0 {
+					barcodeIdValid = false
+					parts := []
+					if len(missingSamples) > 0 {
+						parts = append(parts, "Missing Barcode ID for samples: " + text.join(missingSamples, ", "))
+					}
+					if len(emptySamples) > 0 {
+						parts = append(parts, "Empty Barcode ID for samples: " + text.join(emptySamples, ", "))
+					}
+					if len(invalidBarcodeIds) > 0 {
+						parts = append(parts, "Invalid Barcode for samples (must be DNA A/T/G/C): " + text.join(invalidBarcodeIds, ", "))
+					}
+					if len(mismatchedGroupSamples) > 0 {
+						parts = append(parts, "Duplicate Barcode IDs within a group: " + text.join(mismatchedGroupSamples, "; "))
+					}
+					barcodeIdValidationMessage = text.join(parts, ". ")
+				}
+			}
+		}
+	}
+
+	outputs.barcodeIdValid = smart.createJsonResource(barcodeIdValid)
+	outputs.barcodeIdValidationMessage = smart.createJsonResource(barcodeIdValidationMessage)
+	if !is_undefined(sampleGroups) {
+		outputs.sampleGroups = smart.createJsonResource(sampleGroups)
 	}
 
 	return {

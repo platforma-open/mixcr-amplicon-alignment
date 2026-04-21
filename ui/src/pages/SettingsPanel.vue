@@ -4,6 +4,7 @@ import type { ImportFileHandle, LocalImportFileHandle, PlRef } from '@platforma-
 import { getFilePathFromHandle, getRawPlatformaInstance } from '@platforma-sdk/model';
 import {
   PlAccordionSection,
+  PlAlert,
   PlBtnGroup,
   PlCheckbox,
   PlDropdown,
@@ -312,6 +313,14 @@ watch(stopCodonSelection, (selected) => {
   app.model.args.stopCodonReplacements = Object.keys(next).length > 0 ? next : undefined;
 });
 
+const barcodeIdValid = computed(() => app.model.outputs.barcodeIdValid ?? true);
+const barcodeIdValidationMessage = computed(() => app.model.outputs.barcodeIdValidationMessage ?? '');
+const showBarcodeWarning = computed(() => barcodeIdValidationMessage.value !== '');
+const isMultiplexed = computed(() => app.model.outputs.isMultiplexed ?? false);
+const barcodeWarningType = computed<'warn' | 'error'>(() =>
+  barcodeIdValid.value ? 'warn' : 'error',
+);
+
 </script>
 
 <template>
@@ -323,6 +332,26 @@ watch(stopCodonSelection, (selected) => {
     :required="true"
     @update:model-value="setInput"
   />
+
+  <PlAlert v-if="showBarcodeWarning" :type="barcodeWarningType" :style="{ width: '100%' }">
+    {{ barcodeIdValidationMessage }}
+  </PlAlert>
+
+  <PlTextField
+    v-if="isMultiplexed"
+    v-model="app.model.args.demuxPattern"
+    label="Demultiplexing pattern template"
+    placeholder="leave empty for default (barcode at read start)"
+    clearable
+  >
+    <template #tooltip>
+      Full mitool pattern template for demultiplexing. Use {SMPL} as a placeholder for the per-sample barcode sequence.
+      Single `\` separates R1 from R2 (mitool syntax).
+      Example with anchor before barcode: ^N{0:12}ANCHORSEQUENCE(SMPL:{SMPL})(R1:*)
+      Example with anchor after barcode: (SMPL:{SMPL})ANCHORSEQUENCE(R1:*)
+      Leave empty to use the default pattern (barcode at read start).
+    </template>
+  </PlTextField>
 
   <PlBtnGroup v-model="refMode" :options="refModeOptions" label="Reference input" />
 

@@ -1,0 +1,224 @@
+
+ll := import("@platforma-sdk/workflow-tengo:ll")
+self := import("@platforma-sdk/workflow-tengo:tpl.light")
+json := import("json")
+text := import("text")
+maps := import("@platforma-sdk/workflow-tengo:maps")
+pConstants := import("@platforma-sdk/workflow-tengo:pframes.constants")
+smart := import("@platforma-sdk/workflow-tengo:smart")
+pcolumn := import("@platforma-sdk/workflow-tengo:pframes.pcolumn")
+mitool := import(":mitool")
+
+self.defineOutputs("demultiplexedFastq", "mitoolLog")
+
+self.body(func(inputs) {
+	linker := inputs.linker
+	barcodeIdCol := inputs.barcodeIdCol
+	inputSpec := inputs.inputSpec
+	demuxPattern := inputs.demuxPattern
+	currentKey := inputs[pConstants.KEY_FIELD_NAME]
+	currentGroupId := ""
+	if is_array(currentKey) && len(currentKey) > 0 {
+		currentGroupId = string(currentKey[0])
+	}
+	if currentGroupId == "" {
+		return {
+			demultiplexedFastq: smart.createNullResource()
+		}
+	}
+
+	// Respect axis keys annotation (skip absent groups)
+	if !is_undefined(inputSpec) && !is_undefined(inputSpec.annotations) {
+		axisKeysJson := inputSpec.annotations["pl7.app/axisKeys/0"]
+		if !is_undefined(axisKeysJson) {
+			axisKeys := json.decode(axisKeysJson)
+			if is_array(axisKeys) {
+				found := false
+				for key in axisKeys {
+					if string(key) == currentGroupId {
+						found = true
+						break
+					}
+				}
+				if !found {
+					return {
+						demultiplexedFastq: smart.createNullResource()
+					}
+				}
+			}
+		}
+	}
+
+	// Gather samples for current group from linker
+	sampleIds := []
+	if !is_undefined(linker) {
+		linkerData := json.decode(linker.data.getData())
+		seen := {}
+		for skey, _ in linkerData {
+			keyArr := json.decode(skey)
+			if is_array(keyArr) && len(keyArr) == 2 {
+				groupId := string(keyArr[0])
+				sampleId := keyArr[1]
+				if groupId == currentGroupId {
+					if is_undefined(seen[sampleId]) {
+						sampleIds = append(sampleIds, sampleId)
+						seen[sampleId] = true
+					}
+				}
+			}
+		}
+	}
+
+	if len(sampleIds) == 0 {
+		return {
+			demultiplexedFastq: smart.createNullResource()
+		}
+	}
+
+	// Build sample -> barcode mapping for this group
+	sampleToBarcode := {}
+	if !is_undefined(barcodeIdCol) {
+		rawData := json.decode(barcodeIdCol.data.getData())
+		dataMap := rawData
+		if is_map(rawData) && !is_undefined(rawData["data"]) {
+			dataMap = rawData["data"]
+		}
+		allowed := {}
+		for sid in sampleIds { allowed[sid] = true }
+		for skey, val in dataMap {
+			sampleKey := skey
+			if text.has_prefix(skey, "[") {
+				keyArr := json.decode(skey)
+				if is_array(keyArr) && len(keyArr) == 1 {
+					sampleKey = keyArr[0]
+				}
+			}
+			if allowed[sampleKey] {
+				sampleToBarcode[sampleKey] = val
+			}
+		}
+	}
+
+	// Does the user pattern span both reads? In mitool syntax '\' is the R1/R2
+	// read separator, so a pattern containing '\' already describes paired reads.
+	// Such per-sample variants must be joined with '||' (ReadVariantSeparator),
+	// not '|' (which is a within-read sequence alternative).
+	userPatternSpansBothReads := false
+	if !is_undefined(demuxPattern) && demuxPattern != "" {
+		userPatternSpansBothReads = text.contains(demuxPattern, "\\")
+	}
+
+	// Barcode values come straight from the sample sheet as DNA sequences.
+	seqToSampleId := {}
+	patternParts := []
+	for sampleId in sampleIds {
+		smplSeq := sampleToBarcode[sampleId]
+		if is_undefined(smplSeq) || smplSeq == "" {
+			continue
+		}
+		seqToSampleId[smplSeq] = sampleId
+		if !is_undefined(demuxPattern) && demuxPattern != "" && text.contains(demuxPattern, "{SMPL}") {
+			// Replace every {SMPL} occurrence — a user pattern may reference the
+			// barcode in both R1 and R2.
+			patternParts = append(patternParts, text.replace(demuxPattern, "{SMPL}", smplSeq, -1))
+		} else {
+			prefix := ""
+			if !is_undefined(demuxPattern) {
+				prefix = demuxPattern
+			}
+			patternParts = append(patternParts, prefix + "(SMPL:" + smplSeq + ")(R1:*)")
+		}
+	}
+
+	if len(patternParts) == 0 {
+		return {
+			demultiplexedFastq: smart.createNullResource()
+		}
+	}
+
+	currentElement := inputs[pConstants.VALUE_FIELD_NAME]
+	if is_undefined(currentElement) || !smart.isResource(currentElement) {
+		return {
+			demultiplexedFastq: smart.createNullResource()
+		}
+	}
+
+	inputDataMeta := currentElement.getDataAsJson()
+	aggregationAxesNames := inputs[pConstants.AGGREGATION_AXES_NAMES_FIELD_NAME]
+	if is_undefined(aggregationAxesNames) {
+		aggregationAxesNames = []
+	}
+
+	isPairedEnd := false
+	if !is_undefined(inputSpec) && !is_undefined(inputSpec.axesSpec) {
+		for axisSpec in inputSpec.axesSpec {
+			if axisSpec.name == "pl7.app/sequencing/readIndex" {
+				readIndicesJson := axisSpec.domain["pl7.app/readIndices"]
+				if !is_undefined(readIndicesJson) {
+					indices := json.decode(readIndicesJson)
+					for idx in indices {
+						if idx == "R2" {
+							isPairedEnd = true
+							break
+						}
+					}
+				}
+				break
+			}
+		}
+	}
+
+	// Join strategy depends on whether each per-sample pattern already covers R2:
+	//   - "A | B | C" — within-read alternatives, then we add the shared R2 branch
+	//   - "A || B || C" — full R1+R2 variants; each piece already has its own R2
+	pattern := ""
+	if userPatternSpansBothReads {
+		pattern = text.join(patternParts, " || ")
+	} else {
+		pattern = text.join(patternParts, " | ")
+		if isPairedEnd {
+			pattern = pattern + "\\^(R2:*)"
+		}
+	}
+	progressPrefix := "[==MITOOL_PROGRESS==]"
+
+	demultiplexedFastq := mitool.run(
+		currentElement,
+		inputDataMeta,
+		aggregationAxesNames,
+		pattern,
+		progressPrefix,
+		seqToSampleId
+	)
+
+	demultiplexedFastqResource := smart.createNullResource()
+	mitoolLogResource := smart.createNullResource()
+	if !is_undefined(demultiplexedFastq) {
+		builder := pcolumn.resourceMapBuilder(2)
+		for sampleId, sampleFiles in demultiplexedFastq {
+			if sampleId == "parseLog" {
+				// Capture mitool parse log - pframes.processColumn will aggregate these by groupId
+				// Return the log handle directly, not wrapped in a resource map
+				if !is_undefined(sampleFiles) {
+					mitoolLogResource = sampleFiles
+				}
+				continue
+			}
+			if is_map(sampleFiles) {
+				if !is_undefined(sampleFiles.R1) {
+					builder.add([sampleId, "R1"], sampleFiles.R1)
+				}
+				if !is_undefined(sampleFiles.R2) {
+					builder.add([sampleId, "R2"], sampleFiles.R2)
+				}
+			}
+		}
+		demultiplexedFastqResource = builder.build()
+	}
+
+	return {
+		demultiplexedFastq: demultiplexedFastqResource,
+		mitoolLog: mitoolLogResource
+	}
+})
+

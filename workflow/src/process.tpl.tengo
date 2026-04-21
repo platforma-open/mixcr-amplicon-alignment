@@ -6,22 +6,28 @@ render := import("@platforma-sdk/workflow-tengo:render")
 ll := import("@platforma-sdk/workflow-tengo:ll")
 assets := import("@platforma-sdk/workflow-tengo:assets")
 pframes := import("@platforma-sdk/workflow-tengo:pframes")
+pConstants := import("@platforma-sdk/workflow-tengo:pframes.constants")
 slices := import("@platforma-sdk/workflow-tengo:slices")
 maps := import("@platforma-sdk/workflow-tengo:maps")
+smart := import("@platforma-sdk/workflow-tengo:smart")
 
 math := import("math")
 json := import("json")
 text := import("text")
+times := import("times")
 
 mixcrAnalyzeTpl := assets.importTemplate(":mixcr-analyze")
 mixcrExportTpl := assets.importTemplate(":mixcr-export")
 aggregateByClonotypeKeyTpl := assets.importTemplate(":aggregate-by-clonotype-key")
 exportReportTpl := assets.importTemplate(":export-report")
+fastqDemultiplexingTpl := assets.importTemplate(":fastq-demultiplexing")
+flattenDemuxMapTpl := assets.importTemplate(":flatten-demux-map")
 calculateExportSpecs := import(":calculate-export-specs")
 
 self.awaitState("InputsLocked")
 self.awaitState("params", "ResourceReady")
 self.awaitState("inputSpec", "ResourceReady")
+self.awaitState("bundle", "ResourceReady")
 
 self.body(func(inputs) {
 
@@ -29,10 +35,32 @@ self.body(func(inputs) {
 	params := inputs.params
 	blockId := params.blockId
 	referenceLibrary := inputs.referenceLibrary
+	demuxPattern := inputs.demuxPattern
 	chains := params.chains
 	mixcrChains := params.mixcrChains
+	chainDisplayNames := {
+		"IGHeavy": "IG Heavy", "IGLight": "IG Light",
+		"TCRAlpha": "TCR Alpha", "TCRBeta": "TCR Beta",
+		"TCRGamma": "TCR Gamma", "TCRDelta": "TCR Delta"
+	}
+	chainDisplayName := chainDisplayNames[chains]
+	if is_undefined(chainDisplayName) {
+		chainDisplayName = chains
+	}
 	cloneClusteringMode := params.cloneClusteringMode
 	tagPattern := params.tagPattern
+
+	// Extract linker and barcodeId from bundle (present for multiplexed FASTQ inputs)
+	bundle := inputs.bundle
+	linker := undefined
+	barcodeIdCol := undefined
+	if !is_undefined(bundle) {
+		linkerColumns := bundle.getColumns("linker")
+		if !is_undefined(linkerColumns) && len(linkerColumns) > 0 {
+			linker = linkerColumns[0]
+		}
+		barcodeIdCol = bundle.getColumn("barcodeId")
+	}
 
 	extractUmiTags := func(pattern) {
 		if is_undefined(pattern) || pattern == "" {
@@ -82,8 +110,121 @@ self.body(func(inputs) {
 		return string(int(math.max(floorGB, baseMemGB / divisor))) + "GiB"
 	}
 
-	fileExtension := inputSpec.domain["pl7.app/fileExtension"]
+	isMultiplexed := inputSpec.axesSpec[0].name == "pl7.app/sampleGroupId"
 	sampleIdAxisSpec := inputSpec.axesSpec[0]
+
+	mixcrInputData := inputs.inputData
+	mitoolLogsSpec := smart.createNullResource()
+	mitoolLogsData := smart.structBuilder(
+		pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP,
+		json.encode({ keyLength: 1 })
+	).lockAndBuild()
+
+	if isMultiplexed {
+		ll.assert(!is_undefined(linker), "linker column is required for multiplexed FASTQ input")
+		ll.assert(!is_undefined(barcodeIdCol), "Barcode ID metadata is required for multiplexed FASTQ input")
+
+		// Prefer barcodeId column's sampleId axis spec — it retains the pl7.app/block +
+		// pl7.app/dataset domain keys from samples-and-data that downstream blocks rely on
+		// to identify the source dataset. Fall back to the linker's second axis if unavailable.
+		barcodeIdAxes := barcodeIdCol.spec.axesSpec
+		if !is_undefined(barcodeIdAxes) && len(barcodeIdAxes) > 0 {
+			sampleIdAxisSpec = barcodeIdAxes[0]
+		} else {
+			linkerAxes := linker.spec.axesSpec
+			if is_array(linkerAxes) && len(linkerAxes) > 1 {
+				sampleIdAxisSpec = linkerAxes[1]
+			} else {
+				sampleIdAxisSpec = { name: "pl7.app/sampleId", type: "String" }
+			}
+		}
+
+		readIndexAxisSpec := {
+			type: "String",
+			name: "pl7.app/sequencing/readIndex",
+			annotations: { "pl7.app/label": "Read Index" },
+			domain: { "pl7.app/readIndices": string(json.encode(["R1", "R2"])) }
+		}
+
+		demultiplexedFastqSpec := {
+			kind: "PColumn",
+			name: "pl7.app/sequencing/data",
+			domain: {
+				"pl7.app/fileExtension": "fastq",
+				"pl7.app/block": blockId,
+				"pl7.app/dataset": "demultiplexed"
+			},
+			valueType: "File",
+			annotations: { "pl7.app/label": "Demultiplexed FASTQ" },
+			axesSpec: [sampleIdAxisSpec, readIndexAxisSpec]
+		}
+
+		groupIdAxisSpec := {
+			type: "String",
+			name: "pl7.app/sampleGroupId",
+			annotations: { "pl7.app/label": "Sample Group" },
+			domain: { "pl7.app/blockId": blockId }
+		}
+
+		mitoolLogSpec := {
+			kind: "PColumn",
+			name: "pl7.app/log",
+			domain: {
+				"pl7.app/vdj/clonotypingRunId": blockId,
+				"pl7.app/vdj/mitool": "true"
+			},
+			valueType: "Log",
+			axesSpec: [groupIdAxisSpec]
+		}
+
+		sampleSheetOutputs := [ {
+			type: "Resource",
+			spec: demultiplexedFastqSpec,
+			name: "demultiplexedFastq"
+		}, {
+			type: "Resource",
+			spec: mitoolLogSpec,
+			name: "mitoolLog"
+		} ]
+
+		sampleSheetResult := pframes.processColumn(
+			{ spec: inputSpec, data: inputs.inputData },
+			fastqDemultiplexingTpl,
+			sampleSheetOutputs,
+			{
+				aggregate: [{
+					name: "pl7.app/sequencing/lane",
+					optional: true
+				}, {
+					name: "pl7.app/sequencing/readIndex",
+					optional: true
+				}],
+				passAggregationAxesNames: true,
+				stepCache: 30 * times.minute,
+				passKey: true,
+				traceSteps: [{type: "milaboratories.mixcr-amplicon-alignment.demultiplex", id: blockId, importance: 10, label: "Demultiplexing"}],
+				extra: {
+					linker: linker,
+					barcodeIdCol: barcodeIdCol,
+					inputSpec: inputSpec,
+					demuxPattern: demuxPattern
+				}
+			}
+		)
+
+		mitoolLogsSpec = sampleSheetResult.outputSpec("mitoolLog")
+		mitoolLogsData = sampleSheetResult.outputData("mitoolLog")
+
+		flattenResult := render.create(flattenDemuxMapTpl, {
+			nestedMap: sampleSheetResult.outputData("demultiplexedFastq")
+		})
+
+		inputSpec = demultiplexedFastqSpec
+		mixcrInputData = flattenResult.output("flattenedFastq")
+		sampleIdAxisSpec = inputSpec.axesSpec[0]
+	}
+
+	fileExtension := inputSpec.domain["pl7.app/fileExtension"]
 
 	// Use calculateExportSpecs for output columns
 	presetSpecForBack := {
@@ -195,7 +336,7 @@ self.body(func(inputs) {
 
 	// Run MiXCR analysis
 	mixcrResults := pframes.processColumn(
-		{ spec: inputSpec, data: inputs.inputData },
+		{ spec: inputSpec, data: mixcrInputData },
 		mixcrAnalyzeTpl,
 		targetOutputs,
 		{
@@ -209,7 +350,7 @@ self.body(func(inputs) {
 
 			passAggregationAxesNames: true,
 
-			traceSteps: [{type: "milaboratories.mixcr-amplicon-alignment", id: blockId, importance: 20, label: "MiXCR generic amplicon"}],
+			traceSteps: [{type: "milaboratories.mixcr-amplicon-alignment", id: blockId, importance: 20, label: chainDisplayName}],
 
 			extra: {
 				params: maps.clone({
@@ -374,6 +515,9 @@ self.body(func(inputs) {
 
 		"logs.spec": mixcrResults.outputSpec("log"),
 		"logs.data": mixcrResults.outputData("log"),
+
+		"mitoolLogs.spec": mitoolLogsSpec,
+		"mitoolLogs.data": mitoolLogsData,
 
 		"reports.spec": mixcrResults.outputSpec("reports"),
 		"reports.data": mixcrResults.outputData("reports"),
