@@ -65,24 +65,24 @@ run := func(inputData, inputDataMeta, aggregationAxesNames, pattern, progressPre
 
     mitoolSw := assets.importSoftware("@platforma-open/milaboratories.software-mitool:main")
     
-    // Extract barcode sequences from pattern to know which files to expect
-    // Pattern format: ^N{0:12}tggtatcaacgcagagt(SMPL:<sequence>)(R1:*) | ... | \\^(R2:*)
-    // We'll extract all SMPL sequences from the pattern (skip R2 pattern part)
+    // Scan the whole pattern for every distinct (SMPL:<seq>) occurrence, regardless of
+    // which separator (' | ' for within-read alternatives or ' || ' for full read-pair
+    // variants) the caller used, and whether the same SMPL appears in both R1 and R2.
     smplSequences := []
-    patternParts := text.split(pattern, " | ")
-    for i, part in patternParts {
-        // Extract SMPL sequence from pattern part like: ^N{0:12}tggtatcaacgcagagt(SMPL:AACGG)(R1:*)
-        // Note: The last part might also contain \\^(R2:*) appended, so we extract SMPL first
-        smplStart := text.index(part, "(SMPL:")
-        if smplStart >= 0 {
-            // Get substring starting from after "(SMPL:" and find the closing ")"
-            remainingPart := text.substr(part, smplStart + 6, len(part))
-            smplEndInRemaining := text.index(remainingPart, ")")
-            if smplEndInRemaining >= 0 {
-                smplSeq := text.substr(remainingPart, 0, smplEndInRemaining)
-                smplSequences = append(smplSequences, smplSeq)
-            }
+    seenSmpl := {}
+    rest := pattern
+    for {
+        idx := text.index(rest, "(SMPL:")
+        if idx < 0 { break }
+        remaining := text.substr(rest, idx + 6, len(rest))
+        endIdx := text.index(remaining, ")")
+        if endIdx < 0 { break }
+        smplSeq := text.substr(remaining, 0, endIdx)
+        if is_undefined(seenSmpl[smplSeq]) {
+            smplSequences = append(smplSequences, smplSeq)
+            seenSmpl[smplSeq] = true
         }
+        rest = text.substr(remaining, endIdx + 1, len(remaining))
     }
     
     // parse with --split-by-tag to create separate .mic files per sample
