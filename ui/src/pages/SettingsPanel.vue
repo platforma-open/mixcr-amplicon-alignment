@@ -346,6 +346,7 @@ const barcodeWarningType = computed<'warn' | 'error'>(() =>
   >
     <template #tooltip>
       Full mitool pattern template for demultiplexing. Use {SMPL} as a placeholder for the per-sample barcode sequence.
+      Single `\` separates R1 from R2 (mitool syntax).
       Example with anchor before barcode: ^N{0:12}ANCHORSEQUENCE(SMPL:{SMPL})(R1:*)
       Example with anchor after barcode: (SMPL:{SMPL})ANCHORSEQUENCE(R1:*)
       Leave empty to use the default pattern (barcode at read start).

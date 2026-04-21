@@ -99,6 +99,15 @@ self.body(func(inputs) {
 		}
 	}
 
+	// Does the user pattern span both reads? In mitool syntax '\' is the R1/R2
+	// read separator, so a pattern containing '\' already describes paired reads.
+	// Such per-sample variants must be joined with '||' (ReadVariantSeparator),
+	// not '|' (which is a within-read sequence alternative).
+	userPatternSpansBothReads := false
+	if !is_undefined(demuxPattern) && demuxPattern != "" {
+		userPatternSpansBothReads = text.contains(demuxPattern, "\\")
+	}
+
 	// Barcode values come straight from the sample sheet as DNA sequences.
 	seqToSampleId := {}
 	patternParts := []
@@ -109,7 +118,9 @@ self.body(func(inputs) {
 		}
 		seqToSampleId[smplSeq] = sampleId
 		if !is_undefined(demuxPattern) && demuxPattern != "" && text.contains(demuxPattern, "{SMPL}") {
-			patternParts = append(patternParts, text.replace(demuxPattern, "{SMPL}", smplSeq, 1))
+			// Replace every {SMPL} occurrence — a user pattern may reference the
+			// barcode in both R1 and R2.
+			patternParts = append(patternParts, text.replace(demuxPattern, "{SMPL}", smplSeq, -1))
 		} else {
 			prefix := ""
 			if !is_undefined(demuxPattern) {
@@ -157,9 +168,17 @@ self.body(func(inputs) {
 		}
 	}
 
-	pattern := text.join(patternParts, " | ")
-	if isPairedEnd {
-		pattern = pattern + "\\^(R2:*)"
+	// Join strategy depends on whether each per-sample pattern already covers R2:
+	//   - "A | B | C" — within-read alternatives, then we add the shared R2 branch
+	//   - "A || B || C" — full R1+R2 variants; each piece already has its own R2
+	pattern := ""
+	if userPatternSpansBothReads {
+		pattern = text.join(patternParts, " || ")
+	} else {
+		pattern = text.join(patternParts, " | ")
+		if isPairedEnd {
+			pattern = pattern + "\\^(R2:*)"
+		}
 	}
 	progressPrefix := "[==MITOOL_PROGRESS==]"
 
