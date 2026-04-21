@@ -202,6 +202,16 @@ export const platforma = BlockModel.create('Heavy')
     });
   })
 
+  // Stable "is this dataset multiplexed?" signal derived from the input spec,
+  // not the prerun. Prerun re-runs on every args change and its outputs blip
+  // through undefined, which would flicker any UI gated on `sampleGroups`.
+  .output('isMultiplexed', (ctx): boolean => {
+    const inputRef = ctx.args.datasetRef;
+    if (inputRef === undefined) return false;
+    const spec = ctx.resultPool.getPColumnSpecByRef(inputRef);
+    return spec?.axesSpec?.[0]?.name === 'pl7.app/sampleGroupId';
+  })
+
   .output('sampleLabels', (ctx): Record<string, string> | undefined => {
     const inputRef = ctx.args.datasetRef;
     if (inputRef === undefined) return undefined;
