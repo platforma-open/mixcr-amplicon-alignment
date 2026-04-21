@@ -316,7 +316,7 @@ watch(stopCodonSelection, (selected) => {
 const barcodeIdValid = computed(() => app.model.outputs.barcodeIdValid ?? true);
 const barcodeIdValidationMessage = computed(() => app.model.outputs.barcodeIdValidationMessage ?? '');
 const showBarcodeWarning = computed(() => barcodeIdValidationMessage.value !== '');
-const isMultiplexed = computed(() => app.model.outputs.sampleGroups !== undefined);
+const isMultiplexed = computed(() => app.model.outputs.isMultiplexed ?? false);
 const barcodeWarningType = computed<'warn' | 'error'>(() =>
   barcodeIdValid.value ? 'warn' : 'error',
 );
