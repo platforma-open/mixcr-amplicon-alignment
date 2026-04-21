@@ -6,6 +6,7 @@ render := import("@platforma-sdk/workflow-tengo:render")
 ll := import("@platforma-sdk/workflow-tengo:ll")
 assets := import("@platforma-sdk/workflow-tengo:assets")
 pframes := import("@platforma-sdk/workflow-tengo:pframes")
+pConstants := import("@platforma-sdk/workflow-tengo:pframes.constants")
 slices := import("@platforma-sdk/workflow-tengo:slices")
 maps := import("@platforma-sdk/workflow-tengo:maps")
 smart := import("@platforma-sdk/workflow-tengo:smart")
@@ -114,7 +115,10 @@ self.body(func(inputs) {
 
 	mixcrInputData := inputs.inputData
 	mitoolLogsSpec := smart.createNullResource()
-	mitoolLogsData := smart.createNullResource()
+	mitoolLogsData := smart.structBuilder(
+		pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP,
+		json.encode({ keyLength: 1 })
+	).lockAndBuild()
 
 	if isMultiplexed {
 		ll.assert(!is_undefined(linker), "linker column is required for multiplexed FASTQ input")
