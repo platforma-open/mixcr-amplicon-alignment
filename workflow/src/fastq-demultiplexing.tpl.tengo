@@ -99,45 +99,13 @@ self.body(func(inputs) {
 		}
 	}
 
-	seqToBarcodeId := {
-		"AACGG": "ID_103", "AGTTT": "ID_129", "ATGAC": "ID_134", "CCTAG": "ID_155", "CGAGC": "ID_159",
-		"CTCCT": "ID_172", "GAAAT": "ID_180", "GCCTC": "ID_194", "GGGCG": "ID_209", "GTTGA": "ID_224",
-		"TTATG": "ID_253", "ACCAA": "ID_111", "AGGGA": "ID_125", "ATTCG": "ID_137", "CATTC": "ID_147",
-		"CTAAA": "ID_168", "GCTCT": "ID_199", "GGATA": "ID_204", "TACAC": "ID_229", "TAGTT": "ID_234",
-		"TGTCC": "ID_249", "AAACT": "ID_101", "AAAGA": "ID_102", "AACTC": "ID_104", "AAGAG": "ID_105",
-		"AAGCC": "ID_106", "AAGGT": "ID_107", "AATGC": "ID_108", "AATTG": "ID_109", "ACAAT": "ID_110",
-		"ACCCT": "ID_112", "ACCTG": "ID_113", "ACGCG": "ID_114", "ACGGC": "ID_115", "ACTCC": "ID_116",
-		"ACTGA": "ID_117", "AGACA": "ID_118", "AGAGT": "ID_119", "AGATG": "ID_120", "AGCAC": "ID_121",
-		"AGCCG": "ID_122", "AGCTA": "ID_123", "AGGCT": "ID_124", "AGGTC": "ID_126", "AGTAA": "ID_127",
-		"AGTGG": "ID_128", "ATACC": "ID_130", "ATAGG": "ID_131", "ATATT": "ID_132", "ATCGC": "ID_133",
-		"ATGCA": "ID_135", "ATGTG": "ID_136", "ATTGT": "ID_138", "ATTTC": "ID_139", "CAAGG": "ID_140",
-		"CACAG": "ID_141", "CACCA": "ID_142", "CAGAT": "ID_143", "CAGCG": "ID_144", "CATAA": "ID_145",
-		"CATCT": "ID_146", "CCATG": "ID_148", "CCCAT": "ID_149", "CCCGC": "ID_150", "CCGAA": "ID_151",
-		"CCGCT": "ID_152", "CCGGG": "ID_153", "CCGTC": "ID_154", "CCTGT": "ID_156", "CGAAG": "ID_157",
-		"CGACT": "ID_158", "CGCAA": "ID_160", "CGCGG": "ID_161", "CGCTT": "ID_162", "CGGCC": "ID_163",
-		"CGGGT": "ID_164", "CGTAT": "ID_165", "CGTCG": "ID_166", "CGTGA": "ID_167", "CTACG": "ID_169",
-		"CTAGT": "ID_170", "CTATC": "ID_171", "CTCTG": "ID_173", "CTGAG": "ID_174", "CTGGA": "ID_175",
-		"CTGTT": "ID_176", "CTTAC": "ID_177", "CTTGG": "ID_178", "CTTTA": "ID_179", "GAATC": "ID_181",
-		"GACAA": "ID_182", "GACCC": "ID_183", "GACTT": "ID_184", "GAGCA": "ID_185", "GAGGG": "ID_186",
-		"GATAC": "ID_187"
-	}
-
-	barcodeIdToSeq := {}
-	for seq, barcodeId in seqToBarcodeId {
-		barcodeIdToSeq[barcodeId] = seq
-	}
-
+	// Barcode values come straight from the sample sheet as DNA sequences.
 	seqToSampleId := {}
 	patternParts := []
 	for sampleId in sampleIds {
-		barcodeId := sampleToBarcode[sampleId]
-		if is_undefined(barcodeId) {
+		smplSeq := sampleToBarcode[sampleId]
+		if is_undefined(smplSeq) || smplSeq == "" {
 			continue
-		}
-		smplSeq := barcodeIdToSeq[barcodeId]
-		if is_undefined(smplSeq) {
-			// Not a predefined ID_xxx — treat the value as a raw barcode sequence
-			smplSeq = barcodeId
 		}
 		seqToSampleId[smplSeq] = sampleId
 		if !is_undefined(demuxPattern) && demuxPattern != "" && text.contains(demuxPattern, "{SMPL}") {
