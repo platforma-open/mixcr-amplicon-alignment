@@ -103,25 +103,6 @@ wf.body(func(args) {
 		}
 
 		if isMultiplexed {
-			validBarcodeIds := {
-				"ID_103": true, "ID_129": true, "ID_134": true, "ID_155": true, "ID_159": true, "ID_172": true,
-				"ID_180": true, "ID_194": true, "ID_209": true, "ID_224": true, "ID_253": true, "ID_111": true,
-				"ID_125": true, "ID_137": true, "ID_147": true, "ID_168": true, "ID_199": true, "ID_204": true,
-				"ID_229": true, "ID_234": true, "ID_249": true, "ID_101": true, "ID_102": true, "ID_104": true,
-				"ID_105": true, "ID_106": true, "ID_107": true, "ID_108": true, "ID_109": true, "ID_110": true,
-				"ID_112": true, "ID_113": true, "ID_114": true, "ID_115": true, "ID_116": true, "ID_117": true,
-				"ID_118": true, "ID_119": true, "ID_120": true, "ID_121": true, "ID_122": true, "ID_123": true,
-				"ID_124": true, "ID_126": true, "ID_127": true, "ID_128": true, "ID_130": true, "ID_131": true,
-				"ID_132": true, "ID_133": true, "ID_135": true, "ID_136": true, "ID_138": true, "ID_139": true,
-				"ID_140": true, "ID_141": true, "ID_142": true, "ID_143": true, "ID_144": true, "ID_145": true,
-				"ID_146": true, "ID_148": true, "ID_149": true, "ID_150": true, "ID_151": true, "ID_152": true,
-				"ID_153": true, "ID_154": true, "ID_156": true, "ID_157": true, "ID_158": true, "ID_160": true,
-				"ID_161": true, "ID_162": true, "ID_163": true, "ID_164": true, "ID_165": true, "ID_166": true,
-				"ID_167": true, "ID_169": true, "ID_170": true, "ID_171": true, "ID_173": true, "ID_174": true,
-				"ID_175": true, "ID_176": true, "ID_177": true, "ID_178": true, "ID_179": true, "ID_181": true,
-				"ID_182": true, "ID_183": true, "ID_184": true, "ID_185": true, "ID_186": true, "ID_187": true
-			}
-
 			barcodeIdCol := bundle.getColumn("barcodeId")
 
 			if is_undefined(barcodeIdCol) {
@@ -226,7 +207,7 @@ wf.body(func(args) {
 						emptySamples = append(emptySamples, label)
 						continue
 					}
-					// Accept ID_xxx format or any raw DNA sequence (A/T/G/C only)
+					// Barcodes are expected as raw DNA sequences (A/T/G/C)
 					isDna := true
 					for _, c in bytes(text.to_upper(barcodeIdStr)) {
 						if c != 65 && c != 84 && c != 71 && c != 67 {
@@ -234,7 +215,7 @@ wf.body(func(args) {
 							break
 						}
 					}
-					if is_undefined(validBarcodeIds[barcodeIdStr]) && !isDna {
+					if !isDna {
 						invalidBarcodeIds = append(invalidBarcodeIds, label + " (" + barcodeIdStr + ")")
 					}
 				}
@@ -249,7 +230,7 @@ wf.body(func(args) {
 						parts = append(parts, "Empty Barcode ID for samples: " + text.join(emptySamples, ", "))
 					}
 					if len(invalidBarcodeIds) > 0 {
-						parts = append(parts, "Invalid Barcode ID for samples: " + text.join(invalidBarcodeIds, ", "))
+						parts = append(parts, "Invalid Barcode for samples (must be DNA A/T/G/C): " + text.join(invalidBarcodeIds, ", "))
 					}
 					if len(mismatchedGroupSamples) > 0 {
 						parts = append(parts, "Duplicate Barcode IDs within a group: " + text.join(mismatchedGroupSamples, "; "))
