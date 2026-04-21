@@ -32,6 +32,7 @@ import { parseProgressString } from '../parseProgress';
 import type { AmpliconAlignmentResult } from '../results';
 import { resultMap } from '../results';
 import LogsPanel from './LogsPanel.vue';
+import MitoolLogsPanel from './MitoolLogsPanel.vue';
 import SampleReportPanel from './SampleReportPanel.vue';
 import SettingsPanel from './SettingsPanel.vue';
 import { ExportRawBtn } from '../ExportRawBtn';
@@ -77,13 +78,19 @@ const data = reactive<{
   settingsOpen: boolean;
   sampleReportOpen: boolean;
   logsOpen: boolean;
+  mitoolLogsOpen: boolean;
   selectedSample: string | undefined;
 }>({
   settingsOpen: app.model.outputs.started === false,
   sampleReportOpen: false,
   logsOpen: false,
+  mitoolLogsOpen: false,
   selectedSample: undefined,
 });
+
+const hasMitoolLogs = computed(() =>
+  (app.model.outputs.mitoolLogs?.data?.length ?? 0) > 0,
+);
 
 ModuleRegistry.registerModules([ClientSideRowModelModule]);
 
@@ -192,6 +199,10 @@ const showLogs = () => {
   data.logsOpen = true;
 };
 
+const showMitoolLogs = () => {
+  data.mitoolLogsOpen = true;
+};
+
 const isLibraryReady = computed(() => app.model.outputs.referenceLibrary !== undefined);
 const downloadingLibrary = ref(false);
 
@@ -232,6 +243,12 @@ const downloadLibrary = async () => {
         <template #append><PlMaskIcon24 name="download" /></template>
       </PlBtnGhost>
       <ExportRawBtn />
+      <PlBtnGhost v-if="hasMitoolLogs" @click.stop="showMitoolLogs">
+        Demultiplexing Logs
+        <template #append>
+          <PlMaskIcon24 name="file-logs" />
+        </template>
+      </PlBtnGhost>
       <PlBtnGhost @click.stop="showLogs">
         Reference Alignment Logs
         <template #append>
@@ -261,6 +278,15 @@ const downloadLibrary = async () => {
       />
     </div>
   </PlBlockPage>
+
+  <PlSlideModal
+    v-model="data.mitoolLogsOpen"
+    :close-on-outside-click="false"
+    width="100%"
+  >
+    <template #title>Demultiplexing Logs</template>
+    <MitoolLogsPanel />
+  </PlSlideModal>
 
   <PlSlideModal
     v-model="data.logsOpen"
