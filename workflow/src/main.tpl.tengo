@@ -12,6 +12,8 @@ pframes := import("@platforma-sdk/workflow-tengo:pframes")
 exec := import("@platforma-sdk/workflow-tengo:exec")
 json := import("json")
 
+canonicalJson := import(":canonical-json")
+
 processTpl := assets.importTemplate(":process")
 repseqioLibraryTpl := assets.importTemplate(":repseqio-library")
 
@@ -110,7 +112,7 @@ wf.body(func(args) {
 			sequenceFragments: fragments,
 			checksumVersion: 1
 		}]
-		referenceLibrary = string(json.encode(library))
+		referenceLibrary = smart.createJsonResource(library)
 	} else if mode == "libraryFile" {
 		fImport := file.importFile(args.libraryFile)
     	libraryImportHandle = fImport.handle
@@ -133,7 +135,7 @@ wf.body(func(args) {
 		referenceLibrary: referenceLibrary,
 		limitInput: limitInput,
 
-		params: smart.createJsonResource(maps.clone({
+		params: canonicalJson.jsonResource(maps.clone({
 			blockId: blockId,
 			perProcessMemGB: perProcessMemGB,
 			perProcessCPUs: perProcessCPUs,
