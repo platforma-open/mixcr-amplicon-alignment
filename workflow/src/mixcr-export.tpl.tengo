@@ -165,6 +165,7 @@ self.body(func(inputs) {
 	clnsFile := inputs[pConstants.VALUE_FIELD_NAME]
 
 	params := inputs.params
+	referenceLibrary := inputs.referenceLibrary
 	exportArgs := params.exportArgs
 
 	clonotypeKeyColumns := params.clonotypeKeyColumns
@@ -227,11 +228,7 @@ self.body(func(inputs) {
 			arg("clones.tsv").
 			saveFile("clones.tsv")
 
-		if is_string(params.referenceLibrary) {
-			mixcrCmdBuilder.writeFile(libraryFileName, params.referenceLibrary).saveFile(libraryFileName)
-		} else {
-			mixcrCmdBuilder.addFile(libraryFileName, params.referenceLibrary)
-		}
+		mixcrCmdBuilder.addFile(libraryFileName, referenceLibrary)
 
 		return mixcrCmdBuilder.
 			cacheHours(3).
