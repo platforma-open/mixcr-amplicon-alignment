@@ -19,13 +19,15 @@ import {
 } from '@platforma-sdk/ui-vue';
 import { computed, ref, watch } from 'vue';
 import { useApp } from '../app';
+import { retentive } from '../retentive';
 import { parseFasta, parseFastaRecords } from '../utils/parseFasta';
 import BuildLibraryPanel from './BuildLibraryPanel.vue';
 
 const app = useApp();
 
-const hasInputOptions = computed(() => (app.model.outputs.inputOptions?.length ?? 0) > 0);
-const hasMultiplexedFastq = computed(() => app.model.outputs.hasMultiplexedFastq === true);
+const inputOptions = retentive(computed(() => app.model.outputs.inputOptions));
+const hasMultiplexedFastq = retentive(computed(() => app.model.outputs.hasMultiplexedFastq));
+const hasInputOptions = computed(() => (inputOptions.value?.length ?? 0) > 0);
 
 const refModeOptions: ListOption<ReferenceInputMode>[] = [
   { label: 'FASTA sequence', value: 'fastaSequence' },
@@ -126,7 +128,7 @@ function clearRecordSelection() {
 function setInput(inputRef: PlRef | undefined) {
   app.model.args.datasetRef = inputRef;
   if (inputRef)
-    app.model.args.title = app.model.outputs.inputOptions?.find(
+    app.model.args.title = inputOptions.value?.find(
       (o) => o.ref.blockId === inputRef.blockId && o.ref.name === inputRef.name,
     )?.label;
   else app.model.args.title = undefined;
@@ -327,7 +329,7 @@ watch(stopCodonSelection, (selected) => {
   </PlAlert>
 
   <PlDropdownRef
-    :options="app.model.outputs.inputOptions"
+    :options="inputOptions"
     :model-value="app.model.args.datasetRef"
     label="Select dataset"
     clearable
