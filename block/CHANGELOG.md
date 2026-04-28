@@ -1,5 +1,13 @@
 ## 1.0.0
 
+## 1.8.24
+
+### Patch Changes
+
+- Updated dependencies [a9c8cec]
+  - @platforma-open/milaboratories.mixcr-amplicon-alignment.model@1.19.3
+  - @platforma-open/milaboratories.mixcr-amplicon-alignment.ui@1.19.3
+
 ## 1.8.23
 
 ### Patch Changes
