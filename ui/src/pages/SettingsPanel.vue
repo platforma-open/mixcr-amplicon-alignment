@@ -4,6 +4,7 @@ import type { ImportFileHandle, LocalImportFileHandle, PlRef } from '@platforma-
 import { getFilePathFromHandle, getRawPlatformaInstance } from '@platforma-sdk/model';
 import {
   PlAccordionSection,
+  PlAlert,
   PlBtnGroup,
   PlCheckbox,
   PlDropdown,
@@ -18,10 +19,15 @@ import {
 } from '@platforma-sdk/ui-vue';
 import { computed, ref, watch } from 'vue';
 import { useApp } from '../app';
+import { retentive } from '../retentive';
 import { parseFasta, parseFastaRecords } from '../utils/parseFasta';
 import BuildLibraryPanel from './BuildLibraryPanel.vue';
 
 const app = useApp();
+
+const inputOptions = retentive(computed(() => app.model.outputs.inputOptions));
+const hasMultiplexedFastq = retentive(computed(() => app.model.outputs.hasMultiplexedFastq));
+const hasInputOptions = computed(() => (inputOptions.value?.length ?? 0) > 0);
 
 const refModeOptions: ListOption<ReferenceInputMode>[] = [
   { label: 'FASTA sequence', value: 'fastaSequence' },
@@ -122,7 +128,7 @@ function clearRecordSelection() {
 function setInput(inputRef: PlRef | undefined) {
   app.model.args.datasetRef = inputRef;
   if (inputRef)
-    app.model.args.title = app.model.outputs.inputOptions?.find(
+    app.model.args.title = inputOptions.value?.find(
       (o) => o.ref.blockId === inputRef.blockId && o.ref.name === inputRef.name,
     )?.label;
   else app.model.args.title = undefined;
@@ -315,8 +321,15 @@ watch(stopCodonSelection, (selected) => {
 </script>
 
 <template>
+  <PlAlert v-if="!hasInputOptions && hasMultiplexedFastq" type="warn" icon>
+    Multiplexed FASTQ detected. Add a <b>FASTQ Demultiplexing</b> block above this one to split by sample.
+  </PlAlert>
+  <PlAlert v-else-if="!hasInputOptions" type="warn" icon>
+    Make sure you have an executed <b>Samples &amp; Data</b> block above this one.
+  </PlAlert>
+
   <PlDropdownRef
-    :options="app.model.outputs.inputOptions"
+    :options="inputOptions"
     :model-value="app.model.args.datasetRef"
     label="Select dataset"
     clearable
