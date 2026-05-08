@@ -74,13 +74,13 @@ self.body(func(inputs) {
 		arg("--force").
 		addFile("referenceLibrary.json", referenceLibrary).
 		arg("referenceLibrary.json").
-		arg("referenceLibrary.json").
-		saveFile("referenceLibrary.json").
+		arg("referenceLibrary.out.json").
+		saveFile("referenceLibrary.out.json").
 		addFile("vGene.fasta", vGeneFasta).
 		cpu(1).mem("4GB")
 	
 	repseqioInferPointsVResult := repseqioInferPointsVCmd.run()
-	referenceLibraryV := repseqioInferPointsVResult.getFile("referenceLibrary.json")
+	referenceLibraryV := repseqioInferPointsVResult.getFile("referenceLibrary.out.json")
 	
 	repseqioInferPointsJCmd := exec.builder().
 		software(repseqioSw).
@@ -90,13 +90,13 @@ self.body(func(inputs) {
 		arg("--force").
 		addFile("referenceLibrary.json", referenceLibraryV).
 		arg("referenceLibrary.json").
-		arg("referenceLibrary.json").
-		saveFile("referenceLibrary.json").
+		arg("referenceLibrary.out.json").
+		saveFile("referenceLibrary.out.json").
 		addFile("jGene.fasta", jGeneFasta).
 		cpu(1).mem("4GB")
 	
 	repseqioInferPointsJResult := repseqioInferPointsJCmd.run()
-	referenceLibraryJ := repseqioInferPointsJResult.getFile("referenceLibrary.json")
+	referenceLibraryJ := repseqioInferPointsJResult.getFile("referenceLibrary.out.json")
 
 	repseqioCompileCmd := exec.builder().
 		software(repseqioSw).
@@ -104,14 +104,14 @@ self.body(func(inputs) {
 		arg("--force").
 		addFile("referenceLibrary.json", referenceLibraryJ).
 		arg("referenceLibrary.json").
-		arg("referenceLibrary.json").
-		saveFile("referenceLibrary.json").
+		arg("referenceLibrary.out.json").
+		saveFile("referenceLibrary.out.json").
 		addFile("vGene.fasta", vGeneFasta).
 		addFile("jGene.fasta", jGeneFasta).
 		cpu(1).mem("4GB")
 	
 	repseqioCompileResult := repseqioCompileCmd.run()
-	referenceLibraryCompiled := repseqioCompileResult.getFile("referenceLibrary.json")
+	referenceLibraryCompiled := repseqioCompileResult.getFile("referenceLibrary.out.json")
 	
 	repseqioDebugCmd := exec.builder().
 		software(repseqioSw).
