@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow
 
+## 1.21.10
+
+### Patch Changes
+
+- d26daa1: Make axis label visible by default
+
 ## 1.21.9
 
 ### Patch Changes
