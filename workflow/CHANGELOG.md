@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow
 
+## 1.21.11
+
+### Patch Changes
+
+- a44cc33: Add an option to disable low-quality read mapping
+
 ## 1.21.10
 
 ### Patch Changes

@@ -1,5 +1,13 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment.ui
 
+## 1.19.4
+
+### Patch Changes
+
+- a44cc33: Add an option to disable low-quality read mapping
+- Updated dependencies [a44cc33]
+  - @platforma-open/milaboratories.mixcr-amplicon-alignment.model@1.19.4
+
 ## 1.19.3
 
 ### Patch Changes
