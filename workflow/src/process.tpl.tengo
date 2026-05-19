@@ -221,6 +221,7 @@ self.body(func(inputs) {
 					assemblingFeature: params.assemblingFeature,
 					imputeGermline: params.imputeGermline,
 					badQualityThreshold: params.badQualityThreshold,
+					disableLowQualityMapping: params.disableLowQualityMapping,
 					isLibraryFileGzipped: params.isLibraryFileGzipped
 				}, { removeUndefs: true }),
 				limitInput: limitInput
