@@ -123,7 +123,8 @@ self.body(func(inputs) {
 	}
 
 	// Disable the deferred-reads mapping phase
-	if !is_undefined(params.disableLowQualityMapping) && params.disableLowQualityMapping {
+	disableLowQualityMapping := params.disableLowQualityMapping
+	if !is_undefined(disableLowQualityMapping) && disableLowQualityMapping {
 		mixcrCmdBuilder.arg("-Massemble.cloneAssemblerParameters.maxBadPointsPercent=0")
 	}
 
