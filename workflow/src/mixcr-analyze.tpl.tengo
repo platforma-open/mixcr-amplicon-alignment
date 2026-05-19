@@ -122,6 +122,11 @@ self.body(func(inputs) {
 		mixcrCmdBuilder.arg("-Massemble.cloneAssemblerParameters.minimalQuality=" + string(int(badQualityThreshold)))
 	}
 
+	// Disable the deferred-reads mapping phase
+	if !is_undefined(params.disableLowQualityMapping) && params.disableLowQualityMapping {
+		mixcrCmdBuilder.arg("-Massemble.cloneAssemblerParameters.maxBadPointsPercent=0")
+	}
+
 		// if (!is_undefined(threePrimePrimer)) {
 		// 	mixcrCmdBuilder.arg("--floating-left-alignment-boundary")
 		// } else {
