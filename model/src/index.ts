@@ -59,6 +59,7 @@ export interface BlockArgs {
   cloneClusteringMode?: CloneClusteringMode; // default: 'off'
   assemblingFeature?: AssemblingFeature; // default: 'VDJRegion'
   badQualityThreshold?: number; // default: 15 (MiXCR default)
+  disableLowQualityMapping?: boolean; // default: false; when true, passes maxBadPointsPercent=0 to MiXCR to skip the deferred-reads mapping phase
   stopCodonTypes?: StopCodonType[];
   stopCodonReplacements?: StopCodonReplacements;
   referenceFileHandle?: ImportFileHandle;
