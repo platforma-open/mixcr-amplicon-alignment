@@ -15,6 +15,7 @@ import {
   PlSectionSeparator,
   PlTextArea,
   PlTextField,
+  PlTooltip,
   type ListOption,
 } from '@platforma-sdk/ui-vue';
 import { computed, ref, watch } from 'vue';
@@ -252,6 +253,13 @@ const imputeGermline = computed({
   },
 });
 
+const disableLowQualityMapping = computed({
+  get: () => app.model.args.disableLowQualityMapping ?? false,
+  set: (value: boolean) => {
+    app.model.args.disableLowQualityMapping = value;
+  },
+});
+
 const stopCodonOptions: ListOption<StopCodonType>[] = [
   { label: 'Amber (TAG)', value: 'amber' },
   { label: 'Ochre (TAA)', value: 'ochre' },
@@ -468,6 +476,15 @@ ATCGATCGATCG..."
         prevent erroneous reads from creating spurious clonotypes. Leave empty to use the MiXCR default (15).
       </template>
     </PlNumberField>
+    <PlCheckbox v-model="disableLowQualityMapping">
+      Skip low-quality read mapping
+      <PlTooltip class="info" position="top">
+        <template #tooltip>
+          Reduces memory usage on large datasets by dropping low-quality reads
+          instead of mapping them to existing clonotypes.
+        </template>
+      </PlTooltip>
+    </PlCheckbox>
     <PlNumberField
       v-model="app.model.args.limitInput"
       label="Take only this number of reads into analysis"
