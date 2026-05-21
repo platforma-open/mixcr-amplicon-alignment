@@ -1,0 +1,125 @@
+{
+  "capturedAt": "2026-05-21",
+  "block": "mixcr-amplicon-alignment",
+  "version": "V1 (BlockModel)",
+  "testCase": "simple project",
+  "blockVersion": "1.8.27",
+  "notes": "Baseline captured from origin/main (f8174c4) before V3 migration. Test dataset: s1_R{1,2}.fastq.gz, chains: IGHeavy, assemblingFeature: VDJRegion, cloneClusteringMode: relaxed. Reference gene (vGenesFasta/jGenesFasta) is a synthetic heavy chain sequence. All 250 reads were processed; 0 aligned (expected for synthetic reference — test validates the pipeline runs end-to-end, not that reads align).",
+  "sanityChecks": {
+    "started": true,
+    "totalReadsProcessed_gt_0": true,
+    "qcArrayLength_gt_0": true,
+    "doneSamplesCount": 1
+  },
+  "started": true,
+  "alignReport": {
+    "type": "alignerReport",
+    "totalReadsProcessed": 250,
+    "aligned": 0,
+    "notAligned": 250,
+    "notAlignedReasons": {
+      "NoHits": 187,
+      "FailedAfterAOverlap": 0,
+      "NoCDR3Parts": 0,
+      "NoVHits": 0,
+      "NoJHits": 63,
+      "VAndJOnDifferentTargets": 0,
+      "LowTotalScore": 0,
+      "NoBarcode": 0,
+      "SampleNotMatched": 0
+    },
+    "overlapped": 187,
+    "overlappedAligned": 0,
+    "overlappedNotAligned": 187,
+    "alignmentAidedOverlaps": 0,
+    "noCDR3PartsAlignments": 0,
+    "partialAlignments": 0,
+    "chimeras": 0,
+    "vChimeras": 0,
+    "jChimeras": 0,
+    "pairedEndAlignmentConflicts": 0,
+    "realignedWithForcedNonFloatingBound": 126,
+    "realignedWithForcedNonFloatingRightBoundInLeftRead": 2,
+    "realignedWithForcedNonFloatingLeftBoundInRightRead": 2,
+    "chainUsage": {
+      "chimeras": 0,
+      "total": 0,
+      "chains": {}
+    }
+  },
+  "qc": [
+    {
+      "step": "align",
+      "status": "ALERT",
+      "check": {
+        "type": "SuccessfullyAlignedReads",
+        "upper": 0.8,
+        "middle": 0.6,
+        "label": "Successfully aligned reads"
+      },
+      "payload": {
+        "printedValue": "0.0%",
+        "value": "0"
+      }
+    },
+    {
+      "step": "align",
+      "status": "ALERT",
+      "check": {
+        "type": "OffTargetReads",
+        "upper": 0.4,
+        "middle": 0.2,
+        "label": "Off target (non TCR/IG) reads"
+      },
+      "payload": {
+        "printedValue": "74.8%",
+        "value": "0.748"
+      }
+    },
+    {
+      "step": "align",
+      "status": "WARN",
+      "check": {
+        "type": "ReadsWithNoVOrJHits",
+        "upper": 0.4,
+        "middle": 0.2,
+        "label": "Reads with no V or J hits"
+      },
+      "payload": {
+        "printedValue": "25.2%",
+        "value": "0.252"
+      }
+    },
+    {
+      "step": "assemble",
+      "status": "ALERT",
+      "check": {
+        "type": "ReadsUsedInClonotypes",
+        "upper": 0.7,
+        "middle": 0.5,
+        "label": "Reads used in clonotypes"
+      },
+      "payload": {
+        "printedValue": "0.0%",
+        "value": "0"
+      }
+    },
+    {
+      "step": "assemble",
+      "status": "ALERT",
+      "check": {
+        "type": "AlignmentsDroppedInPostFiltering",
+        "upper": 0.15,
+        "middle": 0.05,
+        "label": "Alignments dropped in clones post-filtering"
+      },
+      "payload": {
+        "printedValue": "NaN",
+        "value": "NaN"
+      }
+    }
+  ],
+  "doneSamples": [
+    "EFDFRJPHHXRRI67V6SQ3OCNI"
+  ]
+}

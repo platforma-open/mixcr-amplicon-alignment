@@ -1,0 +1,75 @@
+{
+  "planPath": "docs/superpowers/plans/2026-05-21-amplicon-v3-and-preview.md",
+  "lastUpdated": "2026-05-21T00:00:00Z",
+  "tasks": [
+    {
+      "id": 0,
+      "subject": "Task 0: Capture V1 baseline against published-block code",
+      "status": "pending",
+      "description": "**Goal:** Prove V1 test suite passes unchanged on origin/main and capture baseline outputs (qc, alignReport, clones) for 'simple project' as the regression target.\n\n**Files:**\n- Read: test/src/wf.test.ts, test/assets/s1_R{1,2}.fastq.gz\n- Create: docs/superpowers/plans/baselines/2026-05-21-v1-baseline.json\n\n**Verify:** `rtk pnpm test` from worktree root, all 4 cases green.\n\n```json:metadata\n{\"files\": [\"test/src/wf.test.ts\", \"docs/superpowers/plans/baselines/2026-05-21-v1-baseline.json\"], \"verifyCommand\": \"rtk pnpm test\", \"acceptanceCriteria\": [\"all four cases pass\", \"baseline JSON committed\", \"sanity check passes\"]}\n```"
+    },
+    {
+      "id": 1,
+      "subject": "Task 1: V1→V3 skeleton — BlockData, DataModelBuilder, ctx.data sweep",
+      "status": "pending",
+      "blockedBy": [0],
+      "description": "**Goal:** Compile-green V3 model that behaves identically to V1 (no behavior change yet).\n\n**Files:** model/src/index.ts, model/src/args.ts, ui/src/**/*.vue, ui/src/app.ts\n\n**Verify:** `rtk pnpm build && rtk pnpm test`\n\n```json:metadata\n{\"files\": [\"model/src/index.ts\", \"model/src/args.ts\", \"ui/src/pages/SettingsPanel.vue\", \"ui/src/app.ts\"], \"verifyCommand\": \"rtk pnpm build && rtk pnpm test\", \"acceptanceCriteria\": [\"build green\", \"type-check green\", \"tests pass\", \"no ctx.args. or app.model.args. references\"]}\n```"
+    },
+    {
+      "id": 2,
+      "subject": "Task 2: Phase 0 audit — lock field channel decisions",
+      "status": "pending",
+      "blockedBy": [1],
+      "description": "**Goal:** Written mapping of every BlockArgs/UiState field to args / prerunArgs / data-only.\n\n**Files:** docs/superpowers/plans/2026-05-21-amplicon-v3-and-preview.field-audit.md\n\n**Verify:** Each args-row corresponds to a main.tpl.tengo `args.X` read; each prerunArgs-row to a prerun.tpl.tengo read; data-only fields read by neither.\n\n```json:metadata\n{\"files\": [\"docs/superpowers/plans/2026-05-21-amplicon-v3-and-preview.field-audit.md\", \"workflow/src/main.tpl.tengo\", \"workflow/src/prerun.tpl.tengo\"], \"verifyCommand\": \"\", \"acceptanceCriteria\": [\"all BlockArgs fields classified\", \"all UiState fields classified\", \"each row workflow-anchored\"]}\n```"
+    },
+    {
+      "id": 3,
+      "subject": "Task 3: Wire .args() — validate, canonicalize, conditional limitInput",
+      "status": "pending",
+      "blockedBy": [2],
+      "description": "**Goal:** V3 .args lambda matching the field audit. Throws on invalid, canonicalises tagPattern, suppresses limitInput when runMode==='full'.\n\n**Files:** model/src/index.ts, model/src/args.ts\n\n**Verify:** `rtk pnpm build && rtk pnpm test`\n\n```json:metadata\n{\"files\": [\"model/src/index.ts\", \"model/src/args.ts\"], \"verifyCommand\": \"rtk pnpm build && rtk pnpm test\", \"acceptanceCriteria\": [\".args pure\", \"field set matches audit\", \"limitInput conditional\", \"throws on invalid\"]}\n```"
+    },
+    {
+      "id": 4,
+      "subject": "Task 4: Wire .prerunArgs() for repseqio discovery",
+      "status": "pending",
+      "blockedBy": [2],
+      "description": "**Goal:** Discovery / build-library fields into .prerunArgs so they auto-rerun without a Run gate.\n\n**Files:** model/src/index.ts\n\n**Verify:** `rtk pnpm test` + pl MCP check that prerun re-runs and Run button does NOT stale on discovery edits.\n\n```json:metadata\n{\"files\": [\"model/src/index.ts\", \"workflow/src/prerun.tpl.tengo\"], \"verifyCommand\": \"rtk pnpm test\", \"acceptanceCriteria\": [\".prerunArgs pure\", \"covers prerun template reads\", \"no Run-button stale on discovery edits\"]}\n```"
+    },
+    {
+      "id": 5,
+      "subject": "Task 5: Add Preview/Full Run toggle to SettingsPanel.vue",
+      "status": "pending",
+      "blockedBy": [3],
+      "description": "**Goal:** UI matching mixcr-clonotyping pattern — PlBtnGroup for runMode + conditional limitInput.\n\n**Files:** ui/src/pages/SettingsPanel.vue\n\n**Verify:** Manual pl MCP — `get_block_state transform: \"data.runMode\"` shows the toggle persists.\n\n```json:metadata\n{\"files\": [\"ui/src/pages/SettingsPanel.vue\"], \"verifyCommand\": \"rtk pnpm build:dev\", \"acceptanceCriteria\": [\"toggle renders\", \"limitInput conditional\", \"no args references\"]}\n```"
+    },
+    {
+      "id": 6,
+      "subject": "Task 6: Migrate test/src/wf.test.ts to V3 + add preview-mode case",
+      "status": "pending",
+      "blockedBy": [3, 4],
+      "description": "**Goal:** Tests use mutateBlockStorage; add 'preview mode reads a subset' case asserting limitInput round-trip.\n\n**Files:** test/src/wf.test.ts\n\n**Verify:** `rtk pnpm test` → 5 green cases. Baseline parity vs Task 0 holds for simple project.\n\n```json:metadata\n{\"files\": [\"test/src/wf.test.ts\"], \"verifyCommand\": \"rtk pnpm test\", \"acceptanceCriteria\": [\"4 migrated cases pass\", \"1 new dry-run case passes\", \"baseline parity holds\"]}\n```"
+    },
+    {
+      "id": 7,
+      "subject": "Task 7: CID/dedup audit on workflow + model contract",
+      "status": "pending",
+      "blockedBy": [6],
+      "description": "**Goal:** Verify no CID conflicts or dedup regressions from the V3 contract shift.\n\n**Files:** read-only sweep of workflow/src/*.tpl.tengo + .lib.tengo; documentation in the field-audit.md\n\n**Verify:** pl MCP test-by-duplication — 2nd identical-input instance cache-hits at the process step.\n\n```json:metadata\n{\"files\": [\"workflow/src/main.tpl.tengo\", \"workflow/src/process.tpl.tengo\", \"workflow/src/mixcr-analyze.tpl.tengo\", \"workflow/src/repseqio-library.tpl.tengo\", \"docs/superpowers/plans/2026-05-21-amplicon-v3-and-preview.field-audit.md\"], \"verifyCommand\": \"\", \"acceptanceCriteria\": [\"args reads accounted\", \"splitDataAndSpec pattern intact\", \"hash_override intact\", \"duplication test passes\"]}\n```"
+    },
+    {
+      "id": 8,
+      "subject": "Task 8: Verify legacy upgrade fires on a real V1 project",
+      "status": "pending",
+      "blockedBy": [7],
+      "description": "**Goal:** Confirm DataModelBuilder.upgradeLegacy actually fires for a V1-saved project under the V3 build, with full output parity.\n\n**Files:** none — may produce a fixup commit in model/src/index.ts.\n\n**Verify:** pl MCP `update_block` → `get_block_state transform: \"data\"` → review shape + run + compare to Task 0 baseline.\n\n```json:metadata\n{\"files\": [\"model/src/index.ts\"], \"verifyCommand\": \"\", \"acceptanceCriteria\": [\"upgrade fires\", \"runMode derived correctly\", \"no undefined fields\", \"output parity with V1 baseline\"]}\n```"
+    },
+    {
+      "id": 9,
+      "subject": "Task 9: SDK bump, changeset, final build, open PR",
+      "status": "pending",
+      "blockedBy": [8],
+      "description": "**Goal:** Ship-ready PR — block-tools 2.8.1, changeset, lockfile in sync.\n\n**Files:** pnpm-workspace.yaml, pnpm-lock.yaml, .changeset/milab-6069-amplicon-v3.md\n\n**Verify:** `rtk pnpm build && rtk pnpm test && git diff --name-only origin/main..HEAD`\n\n```json:metadata\n{\"files\": [\"pnpm-workspace.yaml\", \"pnpm-lock.yaml\", \".changeset/milab-6069-amplicon-v3.md\"], \"verifyCommand\": \"rtk pnpm build && rtk pnpm test\", \"acceptanceCriteria\": [\"block-tools matches latest\", \"lockfile committed\", \"changeset present\", \"PR opened\"]}\n```"
+    }
+  ]
+}
