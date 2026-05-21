@@ -1,105 +1,100 @@
-import type { ImportFileHandle, InferHrefType, PlDataTableStateV2, PlRef } from '@platforma-sdk/model';
+import type { DataModel, InferHrefType, PlDataTableStateV2 } from '@platforma-sdk/model';
 import {
-  BlockModel,
+  BlockModelV3,
+  DataModelBuilder,
   createPlDataTableStateV2,
   createPlDataTableV2,
   isPColumnSpec,
   parseResourceMap,
+  type ImportFileHandle,
   type InferOutputsType,
 } from '@platforma-sdk/model';
+import type { BlockArgs, CloneClusteringMode, LegacyBlockArgs, LegacyBlockUiState, ReferenceInputMode } from './args';
 import { ProgressPrefix } from './progress';
 
-export type CloneClusteringMode = 'relaxed' | 'default' | 'off';
-export type AssemblingFeature = string;
-export type StopCodonType = 'amber' | 'ochre' | 'opal';
-export type ReferenceInputMode = 'fastaFile' | 'fastaSequence' | 'libraryFile' | 'buildLibrary';
+export type {
+  CloneClusteringMode,
+  AssemblingFeature,
+  StopCodonType,
+  ReferenceInputMode,
+  VAnchorPoints,
+  JAnchorPoints,
+  LibraryEntryDefinition,
+  StopCodonReplacements,
+  BlockArgs,
+  UiState,
+  BlockArgsValid,
+  LegacyBlockArgs,
+  LegacyBlockUiState,
+} from './args';
 
-export interface VAnchorPoints {
-  fr1Begin: number;
-  cdr1Begin: number;
-  fr2Begin: number;
-  cdr2Begin: number;
-  fr3Begin: number;
-  cdr3Begin: number;
-  vEnd: number;
-}
-
-export interface JAnchorPoints {
-  jBegin: number;
-  fr4Begin: number;
-  fr4End: number;
-}
-
-export interface LibraryEntryDefinition {
-  name: string;
-  vSequence: string;
-  jSequence: string;
-  vAnchorPoints: VAnchorPoints;
-  jAnchorPoints: JAnchorPoints;
-}
-
-export interface StopCodonReplacements {
-  amber?: string;
-  ochre?: string;
-  opal?: string;
-}
-
-export interface BlockArgs {
-  defaultBlockLabel?: string;
-  customBlockLabel?: string;
-  datasetRef?: PlRef;
-  chains?: string; // default: 'IGHeavy'
-  title?: string;
-  tagPattern: string;
-  vGenes?: string; // now a single FASTA string
-  jGenes?: string; // now a single FASTA string
-  limitInput?: number;
-  perProcessMemGB?: number; // 1GB or more required
-  perProcessCPUs?: number; // 1 or more required
-  cloneClusteringMode?: CloneClusteringMode; // default: 'off'
-  assemblingFeature?: AssemblingFeature; // default: 'VDJRegion'
-  badQualityThreshold?: number; // default: 15 (MiXCR default)
-  disableLowQualityMapping?: boolean; // default: false; when true, passes maxBadPointsPercent=0 to MiXCR to skip the deferred-reads mapping phase
-  stopCodonTypes?: StopCodonType[];
-  stopCodonReplacements?: StopCodonReplacements;
-  referenceFileHandle?: ImportFileHandle;
-  libraryFile?: ImportFileHandle;
-  isLibraryFileGzipped?: boolean;
-  imputeGermline?: boolean;
-  libraryEntries?: LibraryEntryDefinition[];
-  buildLibraryVGenes?: string;
-  buildLibraryJGenes?: string;
-  referenceInputMode?: ReferenceInputMode;
-}
-
-export interface UiState {
+export type BlockData = BlockArgs & {
+  // UI-only fields lifted from UiState
   referenceInputMode?: ReferenceInputMode;
   librarySequence?: string;
   selectedRecordHeaders?: string[];
   buildLibraryFastaFile?: ImportFileHandle;
   tableState: PlDataTableStateV2;
-}
+  // Run-mode
+  runMode: 'dry' | 'full';
+};
 
-export interface BlockArgsValid extends BlockArgs {
-  dataset: PlRef;
-  chains: string;
-  librarySequence: string;
-}
-
-export const platforma = BlockModel.create('Heavy')
-
-  .withArgs<BlockArgs>({
+const dataModel = new DataModelBuilder()
+  .from<BlockData>('v1')
+  .upgradeLegacy<LegacyBlockArgs, LegacyBlockUiState>(({ args, uiState }) => ({
+    ...args,
+    referenceInputMode: uiState.referenceInputMode,
+    librarySequence: uiState.librarySequence,
+    selectedRecordHeaders: uiState.selectedRecordHeaders,
+    buildLibraryFastaFile: uiState.buildLibraryFastaFile,
+    tableState: uiState.tableState,
+    runMode: (args.limitInput ?? 0) > 0 ? 'dry' : 'full',
+  }))
+  .init(() => ({
     defaultBlockLabel: '',
     customBlockLabel: '',
     chains: 'IGHeavy',
-    cloneClusteringMode: 'off',
+    cloneClusteringMode: 'off' as CloneClusteringMode,
     tagPattern: '',
     assemblingFeature: 'VDJRegion',
     imputeGermline: false,
-  })
-  .withUiState<UiState>({
-    referenceInputMode: 'fastaSequence',
+    referenceInputMode: 'fastaSequence' as ReferenceInputMode,
     tableState: createPlDataTableStateV2(),
+    runMode: 'full' as const,
+  }));
+
+export const platforma = BlockModelV3.create(dataModel as unknown as DataModel<BlockData & Record<string, unknown>>)
+
+  // Args gate — replaces V1 argsValid. Projects BlockData → BlockArgs, stripping
+  // UI-only fields (tableState, librarySequence, selectedRecordHeaders,
+  // buildLibraryFastaFile, runMode) so the workflow receives exactly the same
+  // shape as V1. Tasks 3/4 will replace this with proper projection.
+  .args((data) => {
+    const mode = data.referenceInputMode ?? 'fastaSequence';
+    const hasDataset = data.datasetRef !== undefined;
+    if (mode === 'libraryFile') {
+      if (!hasDataset || data.libraryFile === undefined) throw new Error('Dataset and library file are required');
+    } else if (mode === 'buildLibrary') {
+      if (!hasDataset || (data.libraryEntries?.length ?? 0) === 0) throw new Error('Dataset and library entries are required');
+    } else {
+      if (!hasDataset || (data.librarySequence === undefined && data.vGenes === undefined)) throw new Error('Dataset and reference sequence are required');
+    }
+    // Project only BlockArgs fields — exclude UI-only fields from BlockData
+    // so the workflow receives the same shape as V1 (CID stability).
+    const {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      tableState: _tableState,
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      librarySequence: _librarySequence,
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      selectedRecordHeaders: _selectedRecordHeaders,
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      buildLibraryFastaFile: _buildLibraryFastaFile,
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      runMode: _runMode,
+      ...blockArgs
+    } = data;
+    return blockArgs;
   })
 
   .output('qc', (ctx) => {
@@ -199,7 +194,7 @@ export const platforma = BlockModel.create('Heavy')
   })
 
   .output('sampleLabels', (ctx): Record<string, string> | undefined => {
-    const inputRef = ctx.args.datasetRef;
+    const inputRef = ctx.data.datasetRef;
     if (inputRef === undefined) return undefined;
 
     const spec = ctx.resultPool.getPColumnSpecByRef(inputRef);
@@ -237,7 +232,7 @@ export const platforma = BlockModel.create('Heavy')
     return createPlDataTableV2(
       ctx,
       pCols,
-      ctx.uiState.tableState,
+      ctx.data.tableState,
     );
   })
 
@@ -248,18 +243,6 @@ export const platforma = BlockModel.create('Heavy')
     ];
   })
 
-  .argsValid((ctx) => {
-    const mode = ctx.uiState.referenceInputMode ?? 'fastaSequence';
-    const hasDataset = ctx.args.datasetRef !== undefined;
-    if (mode === 'libraryFile') {
-      return hasDataset && ctx.args.libraryFile !== undefined;
-    }
-    if (mode === 'buildLibrary') {
-      return hasDataset && (ctx.args.libraryEntries?.length ?? 0) > 0;
-    }
-    return hasDataset && (ctx.uiState.librarySequence !== undefined || ctx.args.vGenes !== undefined);
-  })
-
   .output('isRunning', (ctx) => ctx.outputs?.getIsReadyOrError() === false)
 
   .output('libraryUploadProgress', (ctx) =>
@@ -267,9 +250,9 @@ export const platforma = BlockModel.create('Heavy')
 
   .title(() => 'MiXCR Amplicon Alignment')
 
-  .subtitle((ctx) => ctx.args.customBlockLabel || ctx.args.defaultBlockLabel || '')
+  .subtitle((ctx) => ctx.data.customBlockLabel || ctx.data.defaultBlockLabel || '')
 
-  .done(2);
+  .done();
 
 export type BlockOutputs = InferOutputsType<typeof platforma>;
 export type Href = InferHrefType<typeof platforma>;

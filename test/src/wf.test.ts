@@ -1,4 +1,4 @@
-import type { BlockArgs, BlockOutputs, platforma } from '@platforma-open/milaboratories.mixcr-amplicon-alignment.model';
+import type { BlockData, BlockOutputs, platforma } from '@platforma-open/milaboratories.mixcr-amplicon-alignment.model';
 import {
   AlignReport,
   Qc,
@@ -9,7 +9,7 @@ import type { BlockArgs as SamplesAndDataBlockArgs } from '@platforma-open/milab
 import { uniquePlId } from '@platforma-open/milaboratories.samples-and-data.model';
 import { blockSpec as myBlockSpec } from 'this-block';
 import type { InferBlockState } from '@platforma-sdk/model';
-import { wrapOutputs } from '@platforma-sdk/model';
+import { createPlDataTableStateV2, wrapOutputs } from '@platforma-sdk/model';
 
 // prettier-ignore
 const referenceSequence = 'GAGGTGCAGCTCGTGGAGTCTGGGGGAGGCTTGGTCCAGCCTGGGGGGTCCCTGACACTTTCCTGTGCAGCCTCTGGATTCACCTTTAACACCTATTGGATGACCTGGGTCCGCCAGGCTCCAGGGAAGGGGCTGGAGTGGGTGGCCAATATAAATGAAGATGGAAGTGAAAACTACTATGCGGACTCTGTGAGGGGCCGATTCACCATTTTCAGAGACAACGCCAAGAACTCACTGTATCTGCAACTGAGCAGCCTGAGAGCCGAGGACACGTCTGTGTATTACTGTGCGAGATTCCGCGGGGGCCTTTGGGGCCAGGGAACCCTGGTCATTGTCTCCTCA';
@@ -96,15 +96,20 @@ blockTest(
     const vGenesFasta = `>ref_heavy\n${referenceSequence}`;
     const jGenesFasta = `>ref_heavy_j\n${referenceSequence.slice(-80)}`;
 
-    await project.setBlockArgs(alignBlockId, {
-      datasetRef: alignOutputs1.inputOptions[0].ref,
-      chains: 'IGHeavy',
-      tagPattern: '',
-      vGenes: vGenesFasta,
-      jGenes: jGenesFasta,
-      assemblingFeature: 'VDJRegion',
-      cloneClusteringMode: 'relaxed',
-    } satisfies BlockArgs);
+    await project.mutateBlockStorage(alignBlockId, {
+      operation: 'update-block-data',
+      value: {
+        datasetRef: alignOutputs1.inputOptions[0].ref,
+        chains: 'IGHeavy',
+        tagPattern: '',
+        vGenes: vGenesFasta,
+        jGenes: jGenesFasta,
+        assemblingFeature: 'VDJRegion',
+        cloneClusteringMode: 'relaxed',
+        tableState: createPlDataTableStateV2(),
+        runMode: 'full',
+      } satisfies BlockData,
+    });
 
     const alignStableState2 = (await awaitStableState(
       project.getBlockState(alignBlockId),
@@ -216,16 +221,21 @@ blockTest(
     const vGenesFasta = `>ref_heavy\n${referenceSequence}`;
     const jGenesFasta = `>ref_heavy_j\n${referenceSequence.slice(-80)}`;
 
-    await project.setBlockArgs(alignBlockId, {
-      datasetRef: alignOutputs1.inputOptions[0].ref,
-      chains: 'IGHeavy',
-      tagPattern: '',
-      vGenes: vGenesFasta,
-      jGenes: jGenesFasta,
-      assemblingFeature: 'FR2:FR4',
-      imputeGermline: true,
-      cloneClusteringMode: 'relaxed',
-    } satisfies BlockArgs);
+    await project.mutateBlockStorage(alignBlockId, {
+      operation: 'update-block-data',
+      value: {
+        datasetRef: alignOutputs1.inputOptions[0].ref,
+        chains: 'IGHeavy',
+        tagPattern: '',
+        vGenes: vGenesFasta,
+        jGenes: jGenesFasta,
+        assemblingFeature: 'FR2:FR4',
+        imputeGermline: true,
+        cloneClusteringMode: 'relaxed',
+        tableState: createPlDataTableStateV2(),
+        runMode: 'full',
+      } satisfies BlockData,
+    });
 
     await project.runBlock(alignBlockId);
     const alignStableState3 = await helpers.awaitBlockDoneAndGetStableBlockState(
@@ -316,16 +326,21 @@ blockTest(
     const vGenesFasta = `>ref_heavy\n${referenceSequence}`;
     const jGenesFasta = `>ref_heavy_j\n${referenceSequence.slice(-80)}`;
 
-    await project.setBlockArgs(alignBlockId, {
-      datasetRef: alignOutputs1.inputOptions[0].ref,
-      chains: 'IGHeavy',
-      tagPattern: '',
-      vGenes: vGenesFasta,
-      jGenes: jGenesFasta,
-      assemblingFeature: 'CDR1:CDR3',
-      imputeGermline: false,
-      cloneClusteringMode: 'relaxed',
-    } satisfies BlockArgs);
+    await project.mutateBlockStorage(alignBlockId, {
+      operation: 'update-block-data',
+      value: {
+        datasetRef: alignOutputs1.inputOptions[0].ref,
+        chains: 'IGHeavy',
+        tagPattern: '',
+        vGenes: vGenesFasta,
+        jGenes: jGenesFasta,
+        assemblingFeature: 'CDR1:CDR3',
+        imputeGermline: false,
+        cloneClusteringMode: 'relaxed',
+        tableState: createPlDataTableStateV2(),
+        runMode: 'full',
+      } satisfies BlockData,
+    });
 
     await project.runBlock(alignBlockId);
     const alignStableState3 = await helpers.awaitBlockDoneAndGetStableBlockState(
