@@ -321,6 +321,17 @@ const runModeOptions: ListOption<'dry' | 'full'>[] = [
   { label: 'Full run', value: 'full' },
 ];
 
+const DRY_RUN_READS_DEFAULT = 100_000;
+
+watch(
+  () => app.model.data.runMode,
+  (value) => {
+    if (value === 'dry' && app.model.data.limitInput === undefined) {
+      app.model.data.limitInput = DRY_RUN_READS_DEFAULT;
+    }
+  },
+);
+
 watch(stopCodonSelection, (selected) => {
   const current = app.model.data.stopCodonReplacements;
   if (!current) return;
