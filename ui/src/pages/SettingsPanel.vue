@@ -316,6 +316,11 @@ const amberReplacement = stopCodonReplacementModel('amber');
 const ochreReplacement = stopCodonReplacementModel('ochre');
 const opalReplacement = stopCodonReplacementModel('opal');
 
+const runModeOptions: ListOption<'dry' | 'full'>[] = [
+  { label: 'Preview', value: 'dry' },
+  { label: 'Full run', value: 'full' },
+];
+
 watch(stopCodonSelection, (selected) => {
   const current = app.model.data.stopCodonReplacements;
   if (!current) return;
@@ -446,6 +451,12 @@ ATCGATCGATCG..."
     </template>
   </PlTextField>
 
+  <PlBtnGroup v-model="app.model.data.runMode" :options="runModeOptions" label="Run mode">
+    <template #tooltip>
+      Preview — runs the analysis on a small fraction of reads per sample. Use it to check that settings are correct and results look reasonable before launching a full run, which may take much longer.
+    </template>
+  </PlBtnGroup>
+
   <PlAccordionSection label="Advanced Settings">
     <PlSectionSeparator>MiXCR Settings</PlSectionSeparator>
     <PlDropdown
@@ -485,11 +496,13 @@ ATCGATCGATCG..."
         </template>
       </PlTooltip>
     </PlCheckbox>
-    <PlNumberField
-      v-model="app.model.data.limitInput"
-      label="Take only this number of reads into analysis"
-      :validate="(v) => (Number.isInteger(v) ? undefined : 'Value must be an integer')"
-    />
+    <template v-if="app.model.data.runMode === 'dry'">
+      <PlNumberField
+        v-model="app.model.data.limitInput"
+        label="Take only this number of reads into analysis"
+        :validate="(v) => (Number.isInteger(v) ? undefined : 'Value must be an integer')"
+      />
+    </template>
 
     <PlSectionSeparator>Stop codon replacement</PlSectionSeparator>
     <PlDropdownMulti
