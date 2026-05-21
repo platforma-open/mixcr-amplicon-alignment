@@ -65,37 +65,66 @@ const dataModel = new DataModelBuilder()
 
 export const platforma = BlockModelV3.create(dataModel as unknown as DataModel<BlockData & Record<string, unknown>>)
 
-  // Args gate — replaces V1 argsValid. Projects BlockData → BlockArgs, stripping
-  // UI-only fields (tableState, librarySequence, selectedRecordHeaders,
-  // buildLibraryFastaFile, runMode) so the workflow receives exactly the same
-  // shape as V1. Tasks 3/4 will replace this with proper projection.
+  // Args — explicit projection from BlockData → workflow args channel.
+  // Validates all required fields by throwing, canonicalises tagPattern
+  // (whitespace strip), and conditionally suppresses limitInput when
+  // runMode === 'full' so a stale Preview value never leaks into Full runs.
+  // Field channel per docs/superpowers/plans/2026-05-21-amplicon-v3-and-preview.field-audit.md.
   .args((data) => {
-    const mode = data.referenceInputMode ?? 'fastaSequence';
-    const hasDataset = data.datasetRef !== undefined;
-    if (mode === 'libraryFile') {
-      if (!hasDataset || data.libraryFile === undefined) throw new Error('Dataset and library file are required');
-    } else if (mode === 'buildLibrary') {
-      if (!hasDataset || (data.libraryEntries?.length ?? 0) === 0) throw new Error('Dataset and library entries are required');
-    } else {
-      if (!hasDataset || (data.librarySequence === undefined && data.vGenes === undefined)) throw new Error('Dataset and reference sequence are required');
+    if (data.datasetRef === undefined) throw new Error('Input dataset is required');
+    if (!data.chains) throw new Error('Chain selection is required');
+    if (data.runMode === 'dry' && (data.limitInput == null || data.limitInput <= 0)) {
+      throw new Error('Read limit must be a positive integer for Preview mode');
     }
-    // Project only BlockArgs fields — exclude UI-only fields from BlockData
-    // so the workflow receives the same shape as V1 (CID stability).
-    const {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      tableState: _tableState,
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      librarySequence: _librarySequence,
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      selectedRecordHeaders: _selectedRecordHeaders,
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      buildLibraryFastaFile: _buildLibraryFastaFile,
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      runMode: _runMode,
-      ...blockArgs
-    } = data;
-    return blockArgs;
+
+    const mode = data.referenceInputMode ?? 'fastaSequence';
+    if (mode === 'libraryFile' && data.libraryFile === undefined) {
+      throw new Error('Library file is required');
+    }
+    if (mode === 'buildLibrary' && (data.libraryEntries?.length ?? 0) === 0) {
+      throw new Error('Library entries are required for Build Library mode');
+    }
+    if (mode !== 'libraryFile' && mode !== 'buildLibrary' && data.librarySequence === undefined && data.vGenes === undefined) {
+      throw new Error('Reference sequence or V/J genes are required');
+    }
+
+    // Canonicalise tagPattern: strip leading/trailing whitespace so visually
+    // equivalent inputs hash to the same CID.
+    const tagPattern = data.tagPattern.trim();
+
+    return {
+      datasetRef: data.datasetRef,
+      chains: data.chains,
+      tagPattern,
+      vGenes: data.vGenes,
+      jGenes: data.jGenes,
+      limitInput: data.runMode === 'dry' ? data.limitInput : undefined,
+      perProcessMemGB: data.perProcessMemGB,
+      perProcessCPUs: data.perProcessCPUs,
+      cloneClusteringMode: data.cloneClusteringMode,
+      assemblingFeature: data.assemblingFeature,
+      badQualityThreshold: data.badQualityThreshold,
+      disableLowQualityMapping: data.disableLowQualityMapping,
+      stopCodonTypes: data.stopCodonTypes,
+      stopCodonReplacements: data.stopCodonReplacements,
+      referenceInputMode: data.referenceInputMode,
+      libraryFile: data.libraryFile,
+      isLibraryFileGzipped: data.isLibraryFileGzipped,
+      imputeGermline: data.imputeGermline,
+      libraryEntries: data.libraryEntries,
+    };
   })
+
+  // PrerunArgs — discovery fields for repseqio buildLibrary.
+  // Pure projection: auto-reruns the library build when FASTA inputs change,
+  // without requiring the user to press Run.
+  // Field channel per docs/superpowers/plans/2026-05-21-amplicon-v3-and-preview.field-audit.md.
+  .prerunArgs((data) => ({
+    referenceInputMode: data.referenceInputMode,
+    chains: data.chains,
+    buildLibraryVGenes: data.buildLibraryVGenes,
+    buildLibraryJGenes: data.buildLibraryJGenes,
+  }))
 
   .output('qc', (ctx) => {
     const acc = ctx.outputs?.resolve('qc');
