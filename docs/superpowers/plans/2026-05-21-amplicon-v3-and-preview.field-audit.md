@@ -184,7 +184,7 @@ The `.prerunArgs` lambda should return exactly the fields `prerun.tpl.tengo` rea
 
 ### Investigation References
 
-- **F1a** (export-report pure-template collapse): `docs/superpowers/plans/cid-investigation-2026-05-21.md` — **FIXED** in commit `10fe263`.
+- **F1a** (export-report pure-template collapse): `docs/superpowers/plans/cid-investigation-2026-05-21.md` — fix attempted in `10fe263`, **REVERTED** in `286a21b` due to a runtime regression (`render.createEphemeral` changed how `clonotypeTablesData` is passed; `chainData.inputs()` at `export-report.tpl.tengo:180` failed with "strictMap key 'inputs' not found"). **DEFERRED** to a separate Notion ticket (sibling section to F1b).
 - **F1b** (SDK-side processColumn retry-within-session): `docs/superpowers/plans/cid-investigation-2-2026-05-21.md` — **DEFERRED** to a separate Notion ticket.
 
 ### Recommended Separate Ticket
@@ -202,7 +202,7 @@ The `.prerunArgs` lambda should return exactly the fields `prerun.tpl.tengo` rea
 | `main.tpl.tengo` | wf.body | uses `render.createEphemeral` only for downstream renders | clean |
 | `process.tpl.tengo` | ephemeral (`InputsLocked`) | per-instance domains baked in but ephemeral so no CID | clean |
 | `mixcr-analyze.tpl.tengo` | pure (`defineOutputs`) | carries `hash_override` UUID `D70EDB25-6FF6-4615-966D-B79B04B5751C` for identity stability across refactors | clean |
-| `export-report.tpl.tengo` | ephemeral (`AllInputsSet`) | was pure; collapsed CIDs across test instances — fixed in `10fe263` | fixed in `10fe263` |
+| `export-report.tpl.tengo` | pure (`defineOutputs`) — restored | collapses CIDs across test instances under quasi-static inputs (F1a). Fix attempted (ephemeral + splitDataAndSpec) introduced a regression at line 180 via `render.createEphemeral` boundary — reverted in `286a21b` | deferred (same ticket as F1b) |
 | `repseqio-library.tpl.tengo` | pure (`defineOutputs`) | identical inputs → identical CID is the intended caching behaviour | clean |
 | `process-pcolumn-data.tpl.tengo` (SDK) | pure body inside ephemeral wrapper | retry-within-session collision on `outputs/files` of `RenderTemplate:1` | deferred (separate ticket) |
 | `aggregate-by-clonotype-key.tpl.tengo` | pure | downstream of `mixcr-analyze`; error propagates from F1b root cause | clean (root cause is F1b) |

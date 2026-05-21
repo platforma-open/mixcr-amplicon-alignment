@@ -101,31 +101,42 @@ Lock the decision before writing code. The exact set will be refined when readin
 - [x] Snapshot sanity-checked: `started === true`, `totalReadsProcessed === 250`, `doneSamples.length === 1`
 - [ ] `FR2:FR4` and `CDR1:CDR3 without imputation` cases: **pre-existing CIDConflictError flakiness** when run sequentially in the same `pnpm test` invocation. They pass in isolation. NOT introduced by this work — observed against `origin/main @ f8174c4` unchanged. See **Finding F1** below.
 
-### Finding F1 — pre-existing CID conflicts (investigated; partial fix in-scope, residual deferred)
+### Finding F1 — pre-existing CID conflicts (both investigated; both deferred)
 
-Two distinct CID conflict mechanisms surfaced during the Task 0 baseline run. Both are pre-existing in V1; neither was introduced by V3 work.
+Two distinct CID conflict mechanisms surfaced during the Task 0 baseline run. Both are pre-existing in V1; neither was introduced by V3 work. **Both are now deferred to a separate SDK ticket** — initial F1a fix attempt was reverted because it introduced a runtime regression.
 
-**F1a — `export-report.tpl.tengo` pure-template collapse (FIXED in commit `10fe263`).**
+**F1a — `export-report.tpl.tengo` pure-template collapse (investigated, fix attempted and REVERTED in commit `286a21b`).**
 
-`process.tpl.tengo:357` called `render.create(exportReportTpl, ...)` — a pure call inside an ephemeral template. `export-report.tpl.tengo` was itself pure (`self.defineOutputs("qcReportTable")`) and called `xsv.importFile` without `splitDataAndSpec: true`. With quasi-static inputs (same FASTA + same `chains: "IGH"` across multiple tests), two block instances raced on the same CID slot → conflict.
+`process.tpl.tengo:357` calls `render.create(exportReportTpl, ...)` — a pure call inside an ephemeral template. `export-report.tpl.tengo` is itself pure (`self.defineOutputs("qcReportTable")`) and calls `xsv.importFile` without `splitDataAndSpec: true`. With quasi-static inputs (same FASTA + same `chains: "IGH"` across multiple tests), two block instances race on the same CID slot → conflict.
 
-Fix applied (PR9 pattern): pure → ephemeral, `splitDataAndSpec: true`, results assembled via `pframes.pFrameBuilder` with canonical sorted iteration. See `docs/superpowers/plans/cid-investigation-2026-05-21.md` for the full root-cause analysis.
+A fix was applied in commit `10fe263` (PR9 pattern: pure → ephemeral, `splitDataAndSpec: true`, `pframes.pFrameBuilder`) and reverted in `286a21b`. The Option-A fix also flipped `render.create → render.createEphemeral` at `process.tpl.tengo:357`. Under `render.createEphemeral`, the `clonotypeTablesData` map (a Tengo map whose values are `PColumnData` accessors) crosses the template boundary as a raw strictMap instead of rehydrated accessors — so `chainData.inputs()` at `export-report.tpl.tengo:180` fails with `cannot get element from strictMap: key "inputs" not found`. Confirmed in the AmpAlign-v3 desktop project during Task 8 verification.
 
-After this fix, `FR2:FR4` cases pass. `CDR1:CDR3` continues to fail with a separate conflict — see F1b.
+Full root-cause analysis preserved in `docs/superpowers/plans/cid-investigation-2026-05-21.md`. A correct PR9-style fix needs either: (a) reshape how `clonotypeTablesData` is passed so a pure caller still rehydrates it correctly across an ephemeral body, or (b) wait for the F1b SDK fix — at which point F1a may become moot since both stem from the same pure-template-CID-collapse family.
 
 **F1b — SDK-side `pframes.processColumn` retry-within-session conflict (DEFERRED — separate ticket).**
 
-`pframes.processColumn` defaults to `eph: false`, so the SDK's `process-pcolumn-data.tpl.tengo` invokes the body template (here, `mixcr-analyze.tpl.tengo`) as a pure render. This is intentional and correct in production — exec dedup across identical-input block instances is valuable. The conflict only manifests when vitest **retries** a failed test in the same backend session: the retry creates a new block instance with the same FASTQ input CID and the same `params` JSON CID, producing the same structural CID, which then collides with the prior attempt's `outputs/files` glossary entry.
+`pframes.processColumn` defaults to `eph: false`, so the SDK's `process-pcolumn-data.tpl.tengo` invokes the body template (here, `mixcr-analyze.tpl.tengo`) as a pure render. This is intentional and correct in production — exec dedup across identical-input block instances is valuable. The conflict only manifests when vitest **retries** a failed test in the same backend session, OR when two block instances with identical inputs exist in the same pl session: a same structural CID gets registered from two topological paths, and `SetFieldCID` fires `CIDConflictError`.
 
 Fix scope: **separate Notion ticket targeting the SDK or test harness.** Block-side workaround (`isEphemeral: true`) would disable exec dedup in production — an unacceptable regression. Full analysis in `docs/superpowers/plans/cid-investigation-2-2026-05-21.md` (committed in `4116a2c`).
 
-Recommended ticket title: `pframes.processColumn retry-within-session CIDConflictError on pure body templates`. Body to mirror Section 4 of the investigation #2 report.
+Recommended ticket title: `pframes.processColumn retry-within-session CIDConflictError on pure body templates`. Body to mirror Section 4 of the investigation #2 report. **Add F1a as a sibling section to this ticket** — both are pure-template CID collapse from the same pattern family; fixing F1b's retry-aware CID disambiguation should automatically resolve F1a too.
+
+**Workarounds available today (none applied in this PR):**
+
+| Workaround | Where | Production impact |
+|---|---|---|
+| Restart `pl` backend between runs | Local dev / test only | None |
+| Vary inputs across instances (different chains / FASTA) | User config | None — but defeats intentional dedup if applied to prod |
+| `retry: 0` in `test/vitest.config.mts` | Test infra | Test signal slightly more brittle |
+| Pass `isEphemeral: true` to `pframes.processColumn` for `mixcr-analyze.tpl.tengo` | `process.tpl.tengo` | **Disables exec dedup — production perf regression** |
+| SDK adds retry-aware CID disambiguation | `core/platforma/sdk` | The proper fix |
 
 **Implication for the rest of this plan:**
 
-- `'simple project'` is the **single** reliable regression target for Task 6 and Task 9.
-- Task 7's CID/dedup audit checklist gains two extra items (per investigation #2 §5): (1) verify every `render.create` inside an ephemeral template has canonically stable inputs; (2) verify every `pframes.processColumn` body template wrapping `exec.builder()` is used in a context where retry-within-session semantics are safe — or document that test retries must be disabled for this block.
-- No further CID work is in scope of MILAB-6069. If the deferred SDK fix lands first, retest amplicon at that point — the conflict should disappear automatically.
+- `'simple project'` is the **single** reliable regression target for Task 6 and Task 9. Other test cases (`FR2:FR4`, `CDR1:CDR3 without imputation`) and the skipped preview test all fail with F1-class CID conflicts in same-session sequential runs.
+- Task 7's CID/dedup audit checklist stays as-is: workflow templates are clean by V3-introduced criteria; no new CID surface from `.args()` / `.prerunArgs()` projections.
+- **No workflow changes ship in this PR.** All template changes were reverted. The PR is now strictly the V3 migration + Preview/Full mode UI. The F1 family belongs in the SDK ticket.
+- F1a/F1b only affect users who run multiple amplicon blocks with identical inputs in the same pl session, or test environments with retry-on-failure. Single-instance production use is unaffected.
 
 **Verify:** `pnpm -C blocks/mixcr-amplicon-alignment test` → all green.
 
