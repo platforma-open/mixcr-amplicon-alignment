@@ -354,7 +354,7 @@ self.body(func(inputs) {
 	exportResults.addXsvOutputToBuilder(clones, "byCloneKeyBySample", "clonotypeProperties/bySample/" + chains + "/")
 	aggregationResults.addXsvOutputToBuilder(clones, "aggregates", "clonotypeProperties/aggregates/" + chains + "/")
 
-	qcReportTable := render.create(exportReportTpl, {
+	qcReportTable := render.createEphemeral(exportReportTpl, {
 		clnsData: mixcrResults.outputData("clns"),
 		sampleIdAxisSpec: sampleIdAxisSpec,
 		chains: [chains],
