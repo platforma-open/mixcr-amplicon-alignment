@@ -177,4 +177,51 @@ The `.prerunArgs` lambda should return exactly the fields `prerun.tpl.tengo` rea
 |---|---|
 | `title` (BlockArgs:43) | Never read by any workflow template. Possibly legacy. Verify with UI search before removing. |
 | `referenceFileHandle` (BlockArgs:56) | Never read by any workflow template. Dead field. Verify with UI search; if unused, remove in a cleanup PR. |
+
+---
+
+## Task 7 — CID / Dedup Audit Outcome
+
+### Investigation References
+
+- **F1a** (export-report pure-template collapse): `docs/superpowers/plans/cid-investigation-2026-05-21.md` — **FIXED** in commit `10fe263`.
+- **F1b** (SDK-side processColumn retry-within-session): `docs/superpowers/plans/cid-investigation-2-2026-05-21.md` — **DEFERRED** to a separate Notion ticket.
+
+### Recommended Separate Ticket
+
+**Title:** `pframes.processColumn retry-within-session CIDConflictError on pure body templates`
+
+**Problem statement** (quoted from `cid-investigation-2-2026-05-21.md` Section 4):
+
+> When a `blockTest` fails on the first attempt and vitest retries in the same backend session, any `pframes.processColumn` call using the default `eph=false` will produce a pure `RenderTemplate:1` with the same structural CID as the failed attempt. The retry creates a new block instance (new topological path) and tries to re-register the same CID's `outputs/files` field with a new connection — triggering `CIDConflictError`. This affects any block whose body template (e.g., `mixcr-analyze.tpl.tengo`) contains `exec.builder()...run()` steps with identical inputs across attempts. The fix belongs in the platform SDK (retry semantics for `process-pcolumn-data.tpl.tengo`) or the test harness (backend restart between retries), not in block workflow code.
+
+### Templates Inspected
+
+| Template | Type | CID-sensitivity | Status |
+|---|---|---|---|
+| `main.tpl.tengo` | wf.body | uses `render.createEphemeral` only for downstream renders | clean |
+| `process.tpl.tengo` | ephemeral (`InputsLocked`) | per-instance domains baked in but ephemeral so no CID | clean |
+| `mixcr-analyze.tpl.tengo` | pure (`defineOutputs`) | carries `hash_override` UUID `D70EDB25-6FF6-4615-966D-B79B04B5751C` for identity stability across refactors | clean |
+| `export-report.tpl.tengo` | ephemeral (`AllInputsSet`) | was pure; collapsed CIDs across test instances — fixed in `10fe263` | fixed in `10fe263` |
+| `repseqio-library.tpl.tengo` | pure (`defineOutputs`) | identical inputs → identical CID is the intended caching behaviour | clean |
+| `process-pcolumn-data.tpl.tengo` (SDK) | pure body inside ephemeral wrapper | retry-within-session collision on `outputs/files` of `RenderTemplate:1` | deferred (separate ticket) |
+| `aggregate-by-clonotype-key.tpl.tengo` | pure | downstream of `mixcr-analyze`; error propagates from F1b root cause | clean (root cause is F1b) |
+
+### V3-Introduced CID Surface — None
+
+The `.args` lambda (`model/src/index.ts`, wired in commit `08d1dba`) returns 19 fields: `datasetRef`, `chains`, `tagPattern` (whitespace-stripped), `vGenes`, `jGenes`, `limitInput` (conditional on `runMode === 'dry'`), `perProcessMemGB`, `perProcessCPUs`, `cloneClusteringMode`, `assemblingFeature`, `badQualityThreshold`, `disableLowQualityMapping`, `stopCodonTypes`, `stopCodonReplacements`, `referenceInputMode`, `libraryFile`, `isLibraryFileGzipped`, `imputeGermline`, `libraryEntries`. All 19 fields were already present in the V1 args shape. No `blockId` is projected through.
+
+The `.prerunArgs` lambda projects 4 fields (`referenceInputMode`, `chains`, `buildLibraryVGenes`, `buildLibraryJGenes`), all present in V1's `uiState`/`args` and consumed by `prerun.tpl.tengo` exactly as before.
+
+Investigation #1 Section 5 confirms: "Task 1 (BlockModelV3 `.args()` canonicalisation) — no direct impact, but note: if any `args()` field includes `blockId` explicitly (e.g. in a domain), it will create the same anti-pattern in the V3 model." The V3 migration does not widen the CID surface.
+
+### Tests-by-Duplication Confirmation
+
+Manual verification pending — the `pl` MCP server was not connected during this audit pass. The two investigation reports document the observed CID behaviour in sufficient detail; a live dedup run-pair is not required to confirm the audit conclusions.
+
+### Action Items
+
+1. Open the separate Notion ticket above (`pframes.processColumn retry-within-session CIDConflictError on pure body templates`) for the SDK-side fix.
+2. Document the F1b limitation in the PR description: "32/35 tests pass; 3 CDR1:CDR3 / FR2:FR4 failures are a pre-existing SDK-side CID issue unrelated to this PR (see `cid-investigation-2-2026-05-21.md`)."
+3. After the SDK fix lands, retest amplicon — the F1b failures should disappear automatically.
 | `defaultBlockLabel` / `customBlockLabel` | In `BlockArgs` but no workflow reads them. They route through `.subtitle()` in the model, not the workflow. Correct as `data`-only but should be removed from `BlockArgs` type if that type is meant to represent "workflow inputs only". |
