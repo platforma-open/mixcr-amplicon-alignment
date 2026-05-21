@@ -457,6 +457,20 @@ ATCGATCGATCG..."
     </template>
   </PlBtnGroup>
 
+  <template v-if="app.model.data.runMode === 'dry'">
+    <PlNumberField
+      v-model="app.model.data.limitInput"
+      label="Reads per sample limit"
+      :clearable="true"
+      :minValue="1"
+      :error-message="app.model.data.limitInput == null ? 'Read limit is required for Preview mode' : undefined"
+    >
+      <template #tooltip>
+        Number of reads to use per sample in the dry run. Recommended: 100,000 for bulk data.
+      </template>
+    </PlNumberField>
+  </template>
+
   <PlAccordionSection label="Advanced Settings">
     <PlSectionSeparator>MiXCR Settings</PlSectionSeparator>
     <PlDropdown
@@ -496,13 +510,6 @@ ATCGATCGATCG..."
         </template>
       </PlTooltip>
     </PlCheckbox>
-    <template v-if="app.model.data.runMode === 'dry'">
-      <PlNumberField
-        v-model="app.model.data.limitInput"
-        label="Take only this number of reads into analysis"
-        :validate="(v) => (Number.isInteger(v) ? undefined : 'Value must be an integer')"
-      />
-    </template>
 
     <PlSectionSeparator>Stop codon replacement</PlSectionSeparator>
     <PlDropdownMulti
