@@ -9,7 +9,6 @@ ll := import("@platforma-sdk/workflow-tengo:ll")
 exec := import("@platforma-sdk/workflow-tengo:exec")
 assets := import("@platforma-sdk/workflow-tengo:assets")
 pcolumn := import("@platforma-sdk/workflow-tengo:pframes.pcolumn")
-times := import("times")
 maps := import("@platforma-sdk/workflow-tengo:maps")
 text := import("text")
 
@@ -91,10 +90,11 @@ self.body(func(inputs) {
         arg("--species").arg("custom").
 		arg("--library").arg(libraryFileName)
 
-	if is_string(params.referenceLibrary) {
-		mixcrCmdBuilder.writeFile(libraryFileName, params.referenceLibrary).saveFile(libraryFileName)
+	referenceLibrary := inputs.referenceLibrary
+	if is_string(referenceLibrary) {
+		mixcrCmdBuilder.writeFile(libraryFileName, referenceLibrary).saveFile(libraryFileName)
 	} else {
-		mixcrCmdBuilder.addFile(libraryFileName, params.referenceLibrary)
+		mixcrCmdBuilder.addFile(libraryFileName, referenceLibrary)
 	}
 
     mixcrCmdBuilder.

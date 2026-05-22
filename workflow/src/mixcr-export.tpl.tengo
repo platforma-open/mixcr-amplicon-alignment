@@ -3,6 +3,7 @@ self := import("@platforma-sdk/workflow-tengo:tpl.light")
 pConstants := import("@platforma-sdk/workflow-tengo:pframes.constants")
 smart := import("@platforma-sdk/workflow-tengo:smart")
 slices := import("@platforma-sdk/workflow-tengo:slices")
+maps := import("@platforma-sdk/workflow-tengo:maps")
 assets := import("@platforma-sdk/workflow-tengo:assets")
 exec := import("@platforma-sdk/workflow-tengo:exec")
 pt := import("@platforma-sdk/workflow-tengo:pt")
@@ -99,7 +100,11 @@ applyStopCodonReplacementsPt := func(df, opts) {
 	translateNtToAaExpr := func(ntExpr, codonMap) {
 		seq := ntExpr.fillNull("").strToUpper()
 		seq = seq.strReplace("(.{3})", "$1|", { replaceAll: true })
-		for codon, aa in codonMap {
+		// Sorted-key iteration so the PTabler workflow JSON is byte-identical across
+		// runs (Tengo map iteration is non-deterministic). Codon replacements are
+		// pairwise-independent so the semantic result is unchanged.
+		for codon in maps.getKeys(codonMap) {
+			aa := codonMap[codon]
 			seq = seq.strReplace(codon + "|", aa + "|", { replaceAll: true, literal: true })
 		}
 		seq = seq.strReplace("\\|$", "", { replaceAll: false })
@@ -165,6 +170,9 @@ self.body(func(inputs) {
 	clnsFile := inputs[pConstants.VALUE_FIELD_NAME]
 
 	params := inputs.params
+	// referenceLibrary lives on its own input field because it may be a
+	// resource reference that cannot round-trip through a JSON value resource.
+	referenceLibrary := inputs.referenceLibrary
 	exportArgs := params.exportArgs
 
 	clonotypeKeyColumns := params.clonotypeKeyColumns
@@ -227,10 +235,10 @@ self.body(func(inputs) {
 			arg("clones.tsv").
 			saveFile("clones.tsv")
 
-		if is_string(params.referenceLibrary) {
-			mixcrCmdBuilder.writeFile(libraryFileName, params.referenceLibrary).saveFile(libraryFileName)
+		if is_string(referenceLibrary) {
+			mixcrCmdBuilder.writeFile(libraryFileName, referenceLibrary).saveFile(libraryFileName)
 		} else {
-			mixcrCmdBuilder.addFile(libraryFileName, params.referenceLibrary)
+			mixcrCmdBuilder.addFile(libraryFileName, referenceLibrary)
 		}
 
 		return mixcrCmdBuilder.

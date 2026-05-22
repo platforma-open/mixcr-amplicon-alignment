@@ -4,11 +4,11 @@ ll := import("@platforma-sdk/workflow-tengo:ll")
 exec := import("@platforma-sdk/workflow-tengo:exec")
 assets := import("@platforma-sdk/workflow-tengo:assets")
 pcolumn := import("@platforma-sdk/workflow-tengo:pframes.pcolumn")
-times := import("times")
 text := import("text")
 pframes := import("@platforma-sdk/workflow-tengo:pframes")
 xsv := import("@platforma-sdk/workflow-tengo:pframes.xsv")
 slices := import("@platforma-sdk/workflow-tengo:slices")
+maps := import("@platforma-sdk/workflow-tengo:maps")
 pConstants := import("@platforma-sdk/workflow-tengo:pframes.constants")
 pt := import("@platforma-sdk/workflow-tengo:pt")
 qcReportColumns := import(":qc-report-columns")
@@ -95,7 +95,11 @@ self.body(func(inputs) {
 	translateNtToAaExpr := func(ntExpr, codonMap) {
 		seq := ntExpr.fillNull("").strToUpper()
 		seq = seq.strReplace("(.{3})", "$1|", { replaceAll: true })
-		for codon, aa in codonMap {
+		// Sorted-key iteration so the PTabler workflow JSON is byte-identical across
+		// runs (Tengo map iteration is non-deterministic). Codon replacements are
+		// pairwise-independent so the semantic result is unchanged.
+		for codon in maps.getKeys(codonMap) {
+			aa := codonMap[codon]
 			seq = seq.strReplace(codon + "|", aa + "|", { replaceAll: true, literal: true })
 		}
 		seq = seq.strReplace("\\|$", "", { replaceAll: false })
