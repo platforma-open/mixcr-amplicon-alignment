@@ -1,0 +1,25 @@
+smart := import("@platforma-sdk/workflow-tengo:smart")
+constants := import("@platforma-sdk/workflow-tengo:constants")
+canonical := import("@platforma-sdk/workflow-tengo:canonical")
+ll := import("@platforma-sdk/workflow-tengo:ll")
+
+// Create a JSON value resource with canonical (sorted-key) encoding.
+//
+// Use this instead of smart.createJsonResource(map) anywhere the value is
+// read as a CID input by a pure template downstream. Tengo's stdlib
+// json.encode does not sort map keys, so createJsonResource(map) on a map
+// (or array containing maps) produces non-deterministic bytes and therefore
+// a non-deterministic resource CID. See the harness reflection at
+// mictx-helper/harnesses/block-dev/_meta/reflections/processed/2026-04-29-create-json-resource-dedup-trap.md
+// for the full trap.
+//
+// Consumers read the resource through `inputs.X` as a Tengo map; the
+// framework auto-decodes JSON resources, so there is no need for explicit
+// `json.decode` calls on the consumer side.
+create := func(value) {
+	return smart.createValueResource(constants.RTYPE_JSON, canonical.encode(value))
+}
+
+export ll.toStrict({
+	create: create
+})
