@@ -18,6 +18,7 @@ mixcrExportTpl := assets.importTemplate(":mixcr-export")
 aggregateByClonotypeKeyTpl := assets.importTemplate(":aggregate-by-clonotype-key")
 exportReportTpl := assets.importTemplate(":export-report")
 calculateExportSpecs := import(":calculate-export-specs")
+canonicalResource := import(":canonical-resource")
 
 self.awaitState("InputsLocked")
 self.awaitState("params", "ResourceReady")
@@ -212,9 +213,12 @@ self.body(func(inputs) {
 			traceSteps: [{type: "milaboratories.mixcr-amplicon-alignment", id: blockId, importance: 20, label: "MiXCR generic amplicon"}],
 
 			extra: {
-				params: maps.clone({
+				// referenceLibrary is split out of the params map because it may be a
+				// resource reference (file or future-output) that cannot live inside a
+				// canonical-JSON value resource. The body template reads it from its own
+				// input field instead of params.referenceLibrary.
+				params: canonicalResource.create(maps.clone({
 					fileExtension: fileExtension,
-					referenceLibrary: referenceLibrary,
 					cloneClusteringMode: cloneClusteringMode,
 					hasUMI: hasUMI,
 					tagPattern: tagPattern,
@@ -223,7 +227,8 @@ self.body(func(inputs) {
 					badQualityThreshold: params.badQualityThreshold,
 					disableLowQualityMapping: params.disableLowQualityMapping,
 					isLibraryFileGzipped: params.isLibraryFileGzipped
-				}, { removeUndefs: true }),
+				}, { removeUndefs: true })),
+				referenceLibrary: referenceLibrary,
 				limitInput: limitInput
 			},
 
@@ -275,10 +280,11 @@ self.body(func(inputs) {
 		exportOutputs,
 		{
 			extra: {
-				params: maps.clone({
+				// referenceLibrary is split out of the params map: see comment on the
+				// mixcr-analyze call above.
+				params: canonicalResource.create(maps.clone({
 					clonotypeKeyColumns: clonotypeKeyColumns,
 					exportArgs: exportArgs,
-					referenceLibrary: referenceLibrary,
 					mixcrChains: mixcrChains,
 					mainIsProductiveColumn: mainIsProductiveColumn,
 					aminoAcidSeqColumns: aminoAcidSeqColumns,
@@ -287,7 +293,8 @@ self.body(func(inputs) {
 					stopCodonTypes: params.stopCodonTypes,
 					stopCodonReplacements: params.stopCodonReplacements,
 					isLibraryFileGzipped: params.isLibraryFileGzipped
-				}, { removeUndefs: true })
+				}, { removeUndefs: true })),
+				referenceLibrary: referenceLibrary
 			},
 			metaExtra: {
 				perProcessMemGB: perProcessMemGB
@@ -335,13 +342,13 @@ self.body(func(inputs) {
 			traceSteps: [{type: "milaboratories.mixcr-amplicon-alignment.aggregate", id: blockId + "." + chains, importance: 150, label: "Aggregate " + chains}],
 
 			extra: {
-				params: {
+				params: canonicalResource.create({
 					mainAbundanceColumnNormalized: mainAbundanceColumnNormalized,
 					mainAbundanceColumnUnnormalized: mainAbundanceColumnUnnormalized,
 					schemaPerClonotypeNoAggregates: columnsToSchema(columnsSpecPerClonotypeNoAggregates),
 					schemaPerClonotypeAggregates: columnsToSchema(columnsSpecPerClonotypeAggregates),
 					schemaPerSample: columnsToSchema(columnsSpecPerSample)
-				}
+				})
 			},
 			metaExtra: {
 				perProcessMemGB: perProcessMemGB
@@ -354,9 +361,14 @@ self.body(func(inputs) {
 	exportResults.addXsvOutputToBuilder(clones, "byCloneKeyBySample", "clonotypeProperties/bySample/" + chains + "/")
 	aggregationResults.addXsvOutputToBuilder(clones, "aggregates", "clonotypeProperties/aggregates/" + chains + "/")
 
+	// sampleIdAxisSpec and stopCodonReplacements are Tengo maps with no nested
+	// resource references; passed raw they would route to non-canonical
+	// createJsonResource() inside the SDK and produce unstable CIDs. Wrap each
+	// in a canonical JSON resource so the exportReportTpl render's identity is
+	// deterministic.
 	qcReportTable := render.create(exportReportTpl, {
 		clnsData: mixcrResults.outputData("clns"),
-		sampleIdAxisSpec: sampleIdAxisSpec,
+		sampleIdAxisSpec: canonicalResource.create(sampleIdAxisSpec),
 		chains: [chains],
 		library: referenceLibrary,
 		isLibraryFileGzipped: params.isLibraryFileGzipped,
@@ -366,7 +378,7 @@ self.body(func(inputs) {
 		perProcessMemGB: perProcessMemGB,
 		productiveFeature: productiveFeature,
 		stopCodonTypes: params.stopCodonTypes,
-		stopCodonReplacements: params.stopCodonReplacements
+		stopCodonReplacements: !is_undefined(params.stopCodonReplacements) ? canonicalResource.create(params.stopCodonReplacements) : undefined
 	})
 
 	return {
