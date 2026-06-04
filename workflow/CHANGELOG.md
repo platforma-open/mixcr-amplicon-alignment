@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow
 
+## 1.21.12
+
+### Patch Changes
+
+- 2bd5020: Fixed bug in QC table when using FR1:FR4 assembling feature. SDK Update
+
 ## 1.21.11
 
 ### Patch Changes
