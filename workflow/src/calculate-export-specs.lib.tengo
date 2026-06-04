@@ -166,16 +166,22 @@ calculateExportSpecs := func(presetSpecForBack, blockId) {
 	productiveFeature := formatAssemblingFeature(assemblingFeature)
 
 	// MiXCR column naming for range features:
-	// - Ranges ending at FR4 have named aliases: CDR1_TO_FR4, FR2_TO_FR4, CDR2_TO_FR4, FR3_TO_FR4
-	//   (defined in repseqio GeneFeature.java)
+	// - FR1:FR4 is the full VDJRegion; MiXCR names it "VDJRegion", NOT "FR1_TO_FR4"
+	//   (FR1Begin:FR4End is the canonical VDJRegion in repseqio GeneFeature.java)
+	// - Other ranges ending at FR4 have named aliases: CDR1_TO_FR4, FR2_TO_FR4, CDR2_TO_FR4, FR3_TO_FR4
 	// - All other ranges use {XBegin:YEnd} format (e.g. {CDR1Begin:CDR3End})
 	// - Simple features (CDR3, VDJRegion) use their name directly
 	outputProductiveFeature := productiveFeature
 	if assemblingFeature != "VDJRegion" && assemblingFeature != "CDR3" {
 		parts := text.split(assemblingFeature, ":")
 		if len(parts) == 2 && parts[1] == "FR4" {
-			// MiXCR has a named alias for this range
-			outputProductiveFeature = parts[0] + "_TO_FR4"
+			if parts[0] == "FR1" {
+				// Full range: MiXCR uses the canonical "VDJRegion" name, not "FR1_TO_FR4"
+				outputProductiveFeature = "VDJRegion"
+			} else {
+				// MiXCR has a named alias for this range
+				outputProductiveFeature = parts[0] + "_TO_FR4"
+			}
 		}
 	}
 	
