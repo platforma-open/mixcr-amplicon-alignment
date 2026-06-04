@@ -19,6 +19,14 @@ function formatAssemblingFeature(fstr: string): string {
   return `{${parts[0]}Begin:${parts[1]}End}`;
 }
 
+// Mirrors productiveFeature in calculate-export-specs.lib.tengo: the feature passed to
+// MiXCR export args (-isProductive/-isOOF/-hasStops/-nFeature). FR1:FR4 is the full
+// VDJRegion, so it is normalized to "VDJRegion" to match MiXCR's column naming.
+function productiveFeature(assemblingFeature: string): string {
+  if (assemblingFeature === 'FR1:FR4') return 'VDJRegion';
+  return formatAssemblingFeature(assemblingFeature);
+}
+
 // Mirrors outputProductiveFeature logic
 // MiXCR has named aliases for ranges ending at FR4; other ranges use {XBegin:YEnd}
 function outputProductiveFeature(assemblingFeature: string): string {
@@ -285,5 +293,27 @@ describe('isProductive column naming (must match MiXCR output)', () => {
   test('CDR1:CDR3: isProductive{CDR1Begin:CDR3End} (no alias)', () => {
     const col = `isProductive${outputProductiveFeature('CDR1:CDR3')}`;
     expect(col).toBe('isProductive{CDR1Begin:CDR3End}');
+  });
+});
+
+// export-report.tpl derives isOOF/hasStops/nSeq column names from the raw productiveFeature
+// (not outputProductiveFeature). These must also resolve to VDJRegion for FR1:FR4, otherwise
+// the qcReportTable ptabler looks for isOOF{FR1Begin:FR4End} and crashes with ColumnNotFound.
+describe('export-report flag column naming (productiveFeature)', () => {
+  test('FR1:FR4: isOOF/hasStops/nSeq use VDJRegion (regression)', () => {
+    const f = productiveFeature('FR1:FR4');
+    expect(f).toBe('VDJRegion');
+    expect(`isOOF${f}`).toBe('isOOFVDJRegion');
+    expect(`hasStopsIn${f}`).toBe('hasStopsInVDJRegion');
+    expect(`nSeq${f}`).toBe('nSeqVDJRegion');
+  });
+
+  test('VDJRegion and CDR3 pass through unchanged', () => {
+    expect(productiveFeature('VDJRegion')).toBe('VDJRegion');
+    expect(productiveFeature('CDR3')).toBe('CDR3');
+  });
+
+  test('CDR1:CDR3 keeps {XBegin:YEnd} form', () => {
+    expect(productiveFeature('CDR1:CDR3')).toBe('{CDR1Begin:CDR3End}');
   });
 });

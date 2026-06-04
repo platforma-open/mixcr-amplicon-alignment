@@ -165,6 +165,14 @@ calculateExportSpecs := func(presetSpecForBack, blockId) {
 
 	productiveFeature := formatAssemblingFeature(assemblingFeature)
 
+	// FR1:FR4 spans the entire VDJRegion; MiXCR canonicalizes {FR1Begin:FR4End} to the
+	// "VDJRegion" name in every exported column (isProductiveVDJRegion, isOOFVDJRegion,
+	// nSeqVDJRegion, ...). Normalize here so the export args we pass and the column names
+	// we (and export-report.tpl) expect both agree with MiXCR's output.
+	if assemblingFeature == "FR1:FR4" {
+		productiveFeature = "VDJRegion"
+	}
+
 	// MiXCR column naming for range features:
 	// - FR1:FR4 is the full VDJRegion; MiXCR names it "VDJRegion", NOT "FR1_TO_FR4"
 	//   (FR1Begin:FR4End is the canonical VDJRegion in repseqio GeneFeature.java)
