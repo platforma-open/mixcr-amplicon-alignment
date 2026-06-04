@@ -6,7 +6,8 @@ import { test, expect, describe } from 'vitest';
  *
  * MiXCR column naming rules (from repseqio GeneFeature.java):
  * - CDR3, VDJRegion: use name directly (isProductiveCDR3, nSeqVDJRegion)
- * - Ranges ending at FR4: named aliases (CDR1_TO_FR4, FR2_TO_FR4, CDR2_TO_FR4, FR3_TO_FR4)
+ * - FR1:FR4 is the full VDJRegion: MiXCR names it "VDJRegion", NOT "FR1_TO_FR4"
+ * - Other ranges ending at FR4: named aliases (CDR1_TO_FR4, FR2_TO_FR4, CDR2_TO_FR4, FR3_TO_FR4)
  * - Other ranges: {XBegin:YEnd} format (e.g. {CDR1Begin:CDR3End})
  */
 
@@ -25,6 +26,8 @@ function outputProductiveFeature(assemblingFeature: string): string {
   if (assemblingFeature !== 'VDJRegion' && assemblingFeature !== 'CDR3') {
     const parts = assemblingFeature.split(':');
     if (parts.length === 2 && parts[1] === 'FR4') {
+      // FR1:FR4 is the full VDJRegion; MiXCR names it "VDJRegion", not "FR1_TO_FR4"
+      if (parts[0] === 'FR1') return 'VDJRegion';
       return `${parts[0]}_TO_FR4`;
     }
   }
@@ -138,6 +141,11 @@ describe('outputProductiveFeature (MiXCR column naming)', () => {
 
   test('VDJRegion returns VDJRegion', () => {
     expect(outputProductiveFeature('VDJRegion')).toBe('VDJRegion');
+  });
+
+  test('FR1:FR4 (full range) returns VDJRegion, not FR1_TO_FR4', () => {
+    // MiXCR canonicalizes FR1Begin:FR4End to "VDJRegion"; FR1_TO_FR4 is not a real column
+    expect(outputProductiveFeature('FR1:FR4')).toBe('VDJRegion');
   });
 
   test('ranges ending at FR4 use named aliases (X_TO_FR4)', () => {
@@ -258,6 +266,12 @@ describe('isProductive column naming (must match MiXCR output)', () => {
 
   test('VDJRegion: isProductiveVDJRegion', () => {
     expect(`isProductive${outputProductiveFeature('VDJRegion')}`).toBe('isProductiveVDJRegion');
+  });
+
+  test('FR1:FR4: isProductiveVDJRegion (regression: was isProductiveFR1_TO_FR4)', () => {
+    // FR1:FR4 and VDJRegion are the same region; MiXCR exports isProductiveVDJRegion for both.
+    // Selecting FR1:FR4 previously looked for the non-existent isProductiveFR1_TO_FR4 and crashed.
+    expect(`isProductive${outputProductiveFeature('FR1:FR4')}`).toBe('isProductiveVDJRegion');
   });
 
   test('FR2:FR4: isProductiveFR2_TO_FR4 (MiXCR named alias)', () => {
