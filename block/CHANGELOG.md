@@ -1,5 +1,15 @@
 ## 1.0.0
 
+## 1.8.28
+
+### Patch Changes
+
+- 2bd5020: Fixed bug in QC table when using FR1:FR4 assembling feature. SDK Update
+- Updated dependencies [2bd5020]
+  - @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow@1.21.12
+  - @platforma-open/milaboratories.mixcr-amplicon-alignment.model@1.19.5
+  - @platforma-open/milaboratories.mixcr-amplicon-alignment.ui@1.19.5
+
 ## 1.8.27
 
 ### Patch Changes

@@ -1,6 +1,6 @@
 {
   "name": "@platforma-open/milaboratories.mixcr-amplicon-alignment.ui",
-  "version": "1.19.4",
+  "version": "1.19.5",
   "type": "module",
   "scripts": {
     "dev": "ts-builder serve --target block-ui",
