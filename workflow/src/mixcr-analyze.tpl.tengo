@@ -150,17 +150,20 @@ self.body(func(inputs) {
         // memory per process was set in "Advanced Settings" block directly
 		mixcrCmdBuilder.mem(string(perProcessMemGB) + "GiB")
 	} else {
-		// Was a static 64 GiB. Now sized from the input reads: a 64 GiB floor (so
-		// we never under-provision vs the old static value) + 4 bytes of RAM per
-		// byte of compressed FASTQ, clamped to 256 GiB. Adding to the floor (rather
-		// than a bare clamp(size*k, floor, cap)) keeps the allocation responsive to
-		// input size for typical samples. On backends without getBlobSize the
-		// formula is skipped and the floor is used as a static fallback.
+		// Was a static 64 GiB. Now sized LINEARLY from the input reads' LINE COUNT
+		// (not byte size, which varies with compression): a 64 GiB floor (so we
+		// never under-provision vs the old static value) + 32 bytes of RAM per FASTQ
+		// line (~4 bytes/byte x ~8 bytes/line, comparable to the old byte term for
+		// typical FASTQ but compression-independent), clamped to 256 GiB. lineCount
+		// is read off the full files, so it is independent of --limit-input. Adding
+		// to the floor keeps the allocation responsive to input size for typical
+		// samples. On backends that can't evaluate formulas the floor is the static
+		// fallback.
 		baseMemGiB := 64
 		f := exec.formula
 		mixcrCmdBuilder.memFormula(
 			f.clamp(
-				f.add(f.gib(baseMemGiB), f.mul(f.size("reads"), 4)),
+				f.add(f.gib(baseMemGiB), f.mul(f.lineCount("reads"), 32)),
 				f.gib(baseMemGiB),
 				f.gib(256)),
 			{ fallback: string(baseMemGiB) + "GiB" })
