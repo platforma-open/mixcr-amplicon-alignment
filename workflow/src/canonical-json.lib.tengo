@@ -1,0 +1,22 @@
+// Deterministic JSON resource construction for stable CIDs.
+//
+// The SDK's smart.createJsonResource uses json.encode, which iterates Tengo
+// map keys in Go's random hash order. Under BlockModelV3 body re-evaluation
+// this produces different bytes (and therefore different CIDs) for the same
+// logical value, triggering CIDConflictError when pframes.processColumn
+// tries to reuse a previously-assigned field slot.
+//
+// The SDK's :canonical module sorts keys recursively — this wrapper builds
+// a json/object resource from those canonical bytes directly.
+
+canonical := import("@platforma-sdk/workflow-tengo:canonical")
+constants := import("@platforma-sdk/workflow-tengo:constants")
+smart := import("@platforma-sdk/workflow-tengo:smart")
+
+jsonResource := func(value) {
+	return smart.createValueResource(constants.RTYPE_JSON, bytes(canonical.encode(value)))
+}
+
+export {
+	jsonResource: jsonResource
+}
