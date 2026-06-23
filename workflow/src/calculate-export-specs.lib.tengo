@@ -273,7 +273,7 @@ calculateExportSpecs := func(presetSpecForBack, blockId) {
 					"pl7.app/vdj/feature": outputProductiveFeature,
 					"pl7.app/alphabet": "nucleotide"
 				},
-				annotations: a(80100, false, {
+				annotations: a(80099, false, {
 					"pl7.app/vdj/isAssemblingFeature": "true",
 					"pl7.app/vdj/isMainSequence": "true",
 					"pl7.app/vdj/imputed": "false",
