@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow
 
+## 1.21.13
+
+### Patch Changes
+
+- 481accd: Fix downstream Sequence Liabilities and Lead Selection errors with range assembling features by exporting the aminoacid assembling feature sequence.
+
 ## 1.21.12
 
 ### Patch Changes
