@@ -272,6 +272,28 @@ calculateExportSpecs := func(presetSpecForBack, blockId) {
 				})
 			}
 		} ]
+		// aa sibling: downstream blocks need an aminoacid assembling-feature column.
+		aaColName := "aaSeq" + outputProductiveFeature
+		columnsSpecPerClonotypeNoAggregates += [ {
+			column: aaColName,
+			id: "aa-seq-" + featureIdL,
+			naRegex: "region_not_covered",
+			spec: {
+				name: "pl7.app/vdj/sequence",
+				valueType: "String",
+				domain: {
+					"pl7.app/vdj/feature": outputProductiveFeature,
+					"pl7.app/alphabet": "aminoacid"
+				},
+				annotations: a(80100, false, {
+					"pl7.app/vdj/isAssemblingFeature": "true",
+					"pl7.app/vdj/isMainSequence": "false",
+					"pl7.app/vdj/imputed": "false",
+					"pl7.app/table/fontFamily": "monospace",
+					"pl7.app/label": outputProductiveFeature + " aa"
+				})
+			}
+		} ]
 	}
 
 	clonotypeLabelColumn := {
@@ -293,6 +315,7 @@ calculateExportSpecs := func(presetSpecForBack, blockId) {
 	// Add the assembling feature export arg if needed (column spec was added above)
 	if needsAssemblingFeatureExport {
 		exportArgs += [ [ "-nFeature", productiveFeature ] ]
+		exportArgs += [ [ "-aaFeature", productiveFeature ] ]
 	}
 
 	// Abundance - reads by default; switch to UMI columns if umiTags are present
