@@ -150,21 +150,21 @@ self.body(func(inputs) {
         // memory per process was set in "Advanced Settings" block directly
 		mixcrCmdBuilder.mem(string(perProcessMemGB) + "GiB")
 	} else {
-		// Size analyze RAM from the input reads' line count. Line count tracks real
-		// read depth, while compressed byte size varies with the FASTQ compression
-		// ratio. lineCount("reads") sums newlines across the sample's R1+R2 FASTQ via
-		// a line-counter pre-exec, so it measures the full files and ignores
-		// --limit-input (FASTQ uses 4 lines per read).
-		//     mem = clamp(64 GiB + 32 bytes/line * lineCount, 64 GiB, 256 GiB)
-		// The 64 GiB floor covers small inputs, the linear term scales with depth, and
-		// the 256 GiB cap bounds the largest. An "Advanced Settings" memory override
-		// takes precedence; on backends that cannot evaluate resource formulas,
+		// Size analyze RAM from the input reads' file size, on top of a 64 GiB floor.
+		// size("reads") sums the stored blob size of the sample's R1+R2 FASTQ
+		// (compressed, for gzipped inputs) via getBlobSize — a metadata read, no
+		// pre-exec — so it tracks input volume, capturing read length, which a line
+		// count would miss.
+		//     mem = clamp(64 GiB + 4 bytes/byte * size, 64 GiB, 256 GiB)
+		// The 64 GiB floor covers small inputs, the linear term scales with input
+		// volume, and the 256 GiB cap bounds the largest. An "Advanced Settings" memory
+		// override takes precedence; on backends that cannot evaluate resource formulas,
 		// memFormula falls back to the 64 GiB floor.
 		baseMemGiB := 64
 		f := exec.formula
 		mixcrCmdBuilder.memFormula(
 			f.clamp(
-				f.add(f.gib(baseMemGiB), f.mul(f.lineCount("reads"), 32)),
+				f.add(f.gib(baseMemGiB), f.mul(f.size("reads"), 4)),
 				f.gib(baseMemGiB),
 				f.gib(256)),
 			{ fallback: string(baseMemGiB) + "GiB" })
