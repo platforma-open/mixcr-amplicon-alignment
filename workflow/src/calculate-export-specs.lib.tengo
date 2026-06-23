@@ -250,6 +250,11 @@ calculateExportSpecs := func(presetSpecForBack, blockId) {
 	columnsSpecPerClonotypeNoAggregates := []
 	mutationColumns := []
 
+	// Declared here (not at the feature loop below) so the combined assembling-feature
+	// columns can register themselves for downstream stop-codon replacement.
+	aminoAcidSeqColumns := []
+	aminoAcidSeqColumnPairs := []
+
 	// For range features where VDJRegion is not the assembling feature, we need to export
 	// the combined assembling feature sequence column explicitly (individual features are
 	// exported in the loop below, but the combined feature like {CDR1Begin:CDR3End} is not)
@@ -299,6 +304,9 @@ calculateExportSpecs := func(presetSpecForBack, blockId) {
 				})
 			}
 		} ]
+		// Register for stop-codon replacement, like every other aa sequence column.
+		aminoAcidSeqColumns += [ aaColName ]
+		aminoAcidSeqColumnPairs += [ { aa: aaColName, nt: keyColName } ]
 	}
 
 	clonotypeLabelColumn := {
@@ -509,8 +517,6 @@ calculateExportSpecs := func(presetSpecForBack, blockId) {
 	columnsSpecPerClonotypeAggregates += [ sampleCountColumn ]
 
 	orderP := 80000
-	aminoAcidSeqColumns := []
-	aminoAcidSeqColumnPairs := []
 	cdr3SeqColumns := []
 
 	// Sequences
