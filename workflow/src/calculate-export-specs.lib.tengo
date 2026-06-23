@@ -197,6 +197,11 @@ calculateExportSpecs := func(presetSpecForBack, blockId) {
 
 	// column with nucleotide sequence of this feature will be marked as anchor
 	anchorFeature := assemblingFeature
+	// Full-span range (FR1:FR4) is exported as VDJRegion in the feature loop; align
+	// anchorFeature so isAssemblingFeature/isMainSequence flags hit that column.
+	if assemblingFeature == "FR1:FR4" {
+		anchorFeature = outputProductiveFeature
+	}
 
 	features := parsedFeature.nonImputed
 	if imputeGermline {
