@@ -31,7 +31,6 @@ self.body(func(inputs) {
 	perProcessMemGB := inputs.perProcessMemGB
 	perProcessCPUs := inputs.perProcessCPUs
 	cloneClusteringMode := params.cloneClusteringMode
-	ll.print("__THE_LOG__" + string(limitInput))
 
 	threePrimePrimer := inputs.threePrimePrimer
 	fivePrimePrimer := inputs.fivePrimePrimer
@@ -151,7 +150,24 @@ self.body(func(inputs) {
         // memory per process was set in "Advanced Settings" block directly
 		mixcrCmdBuilder.mem(string(perProcessMemGB) + "GiB")
 	} else {
-		mixcrCmdBuilder.mem("64GiB")
+		// Size analyze RAM from the input reads' file size, on top of a 64 GiB floor.
+		// size("reads") sums the stored blob size of the sample's R1+R2 FASTQ
+		// (compressed, for gzipped inputs) via getBlobSize — a metadata read, no
+		// pre-exec — so it tracks input volume, capturing read length, which a line
+		// count would miss.
+		//     mem = clamp(64 GiB + 4 bytes/byte * size, 64 GiB, 256 GiB)
+		// The 64 GiB floor covers small inputs, the linear term scales with input
+		// volume, and the 256 GiB cap bounds the largest. An "Advanced Settings" memory
+		// override takes precedence; on backends that cannot evaluate resource formulas,
+		// memFormula falls back to the 64 GiB floor.
+		baseMemGiB := 64
+		f := exec.formula
+		mixcrCmdBuilder.memFormula(
+			f.clamp(
+				f.add(f.gib(baseMemGiB), f.mul(f.size("reads"), 4)),
+				f.gib(baseMemGiB),
+				f.gib(256)),
+			{ fallback: string(baseMemGiB) + "GiB" })
 	}
 
 	if !is_undefined(limitInput) {
@@ -166,7 +182,7 @@ self.body(func(inputs) {
 		inputFile := inputMap["[]"]
 		ll.assert(!is_undefined(inputFile), "unexpected agg group structure")
 		inputFileName := "input." + fileExtension
-		mixcrCmdBuilder.addFile(inputFileName, inputFile)
+		mixcrCmdBuilder.addFile(inputFileName, inputFile, { tag: "reads" })
 		mixcrCmdBuilder.arg(inputFileName)
 	} else if inputDataMeta.keyLength == 1 {
 		ll.assert(aggregationAxesNames == ["pl7.app/sequencing/readIndex"], "unexpected aggregation axes names")
@@ -180,7 +196,7 @@ self.body(func(inputs) {
 			if (r[0] != 'R' && r[0] != "I") || (r[1] != '1' && r[1] != '2') || len(r) != 2 {
 				ll.panic("malformed read index: %v", r)
 			}
-			mixcrCmdBuilder.addFile("input_" + r + "." + fileExtension, inputFile)
+			mixcrCmdBuilder.addFile("input_" + r + "." + fileExtension, inputFile, { tag: "reads" })
 		}
 		mixcrCmdBuilder.arg("input_{{R}}." + fileExtension)
 	} else if inputDataMeta.keyLength == 2 {
@@ -199,7 +215,7 @@ self.body(func(inputs) {
 			if is_undefined(int(lane)) {
 				ll.panic("malformed lane: %v", lane)
 			}
-			mixcrCmdBuilder.addFile("input_L" + lane + "_" + r + "." + fileExtension, inputFile)
+			mixcrCmdBuilder.addFile("input_L" + lane + "_" + r + "." + fileExtension, inputFile, { tag: "reads" })
 		}
 		mixcrCmdBuilder.arg("input_L{{n}}_{{R}}." + fileExtension)
 	} else {
