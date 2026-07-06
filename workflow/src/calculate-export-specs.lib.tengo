@@ -55,7 +55,10 @@ addSpec := func(columns, additionalSpec) {
 parseAssemblingFeature := func(assemblingFeature) {
 	if assemblingFeature == "VDJRegion" || assemblingFeature == "CDR3" {
 		return {
-			imputed: [],
+			// VDJRegion already spans the whole read, so nothing is left to restore from
+			// germline. CDR3 assembly, in contrast, only fixes CDR3 - the surrounding
+			// features can be imputed from germline (equivalent to the "CDR3:CDR3" range).
+			imputed: assemblingFeature == "CDR3" ? ["FR1", "CDR1", "FR2", "CDR2", "FR3", "FR4", "VDJRegion"] : [],
 			nonImputed: assemblingFeature == "CDR3" ? ["CDR3"] : ["CDR1", "FR1", "FR2", "CDR2", "FR3", "CDR3", "FR4", "VDJRegion"],
 			coreGeneFeatures: {
 				V: "{FR1Begin:FR3End}",
