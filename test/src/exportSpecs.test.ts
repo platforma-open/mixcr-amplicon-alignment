@@ -46,7 +46,11 @@ function outputProductiveFeature(assemblingFeature: string): string {
 function parseAssemblingFeature(assemblingFeature: string) {
   if (assemblingFeature === 'VDJRegion' || assemblingFeature === 'CDR3') {
     return {
-      imputed: [] as string[],
+      // VDJRegion already spans the whole read (nothing to impute). CDR3 assembly only
+      // fixes CDR3 - the surrounding features can be restored from germline.
+      imputed: assemblingFeature === 'CDR3'
+        ? ['FR1', 'CDR1', 'FR2', 'CDR2', 'FR3', 'FR4', 'VDJRegion']
+        : ([] as string[]),
       nonImputed: assemblingFeature === 'CDR3'
         ? ['CDR3']
         : ['CDR1', 'FR1', 'FR2', 'CDR2', 'FR3', 'CDR3', 'FR4', 'VDJRegion'],
@@ -171,9 +175,9 @@ describe('outputProductiveFeature (MiXCR column naming)', () => {
 });
 
 describe('parseAssemblingFeature', () => {
-  test('CDR3 has no imputed features', () => {
+  test('CDR3 imputes the features surrounding CDR3 from germline', () => {
     const result = parseAssemblingFeature('CDR3');
-    expect(result.imputed).toEqual([]);
+    expect(result.imputed).toEqual(['FR1', 'CDR1', 'FR2', 'CDR2', 'FR3', 'FR4', 'VDJRegion']);
     expect(result.nonImputed).toEqual(['CDR3']);
   });
 
