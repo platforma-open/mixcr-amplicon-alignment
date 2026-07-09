@@ -152,9 +152,9 @@ self.body(func(inputs) {
 		ram = string(perProcessMemGB) + "GiB"
 	} else {
 		baseMemGiB := 64
-		ram = f.size("reads").times(4).plus(f.gib(baseMemGiB))
-			.between(f.gib(baseMemGiB), f.gib(256))
-			.staticFallback(string(baseMemGiB) + "GiB")
+		ram = f.size("reads").times(4).plus(f.gib(baseMemGiB)).
+			between(f.gib(baseMemGiB), f.gib(256)).
+			staticFallback(string(baseMemGiB) + "GiB")
 	}
 	mixcrCmdBuilder.resources({
 		onCPU: {
