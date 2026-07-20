@@ -1,10 +1,6 @@
-import { z } from 'zod';
+import { z } from "zod";
 
-export const QcStatus = z.union([
-  z.literal('OK'),
-  z.literal('WARN'),
-  z.literal('ALERT'),
-]);
+export const QcStatus = z.union([z.literal("OK"), z.literal("WARN"), z.literal("ALERT")]);
 
 export const QcCheck = z.object({
   type: z.string(),

@@ -21,3 +21,5 @@ test/trim_test.log
 test_aliases.sh
 test_mixcr_cols.sh
 test_mixcr_prod.sh
+software/**/*.tgz
+.vscode/sftp.json

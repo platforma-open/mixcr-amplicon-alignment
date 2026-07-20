@@ -1,9 +1,4 @@
 {
-  "extends": "@milaboratories/ts-configs/blocks/tsconfig.ui.json",
-  "compilerOptions": {
-    "rootDir": "./src",
-    "outDir": "./dist",
-    "types": ["wicg-file-system-access"]
-  },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue"]
+  "extends": "@milaboratories/ts-configs/block/ui",
+  "include": ["src/**/*"]
 }

@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { AgGridVue } from 'ag-grid-vue3';
+import { AgGridVue } from "ag-grid-vue3";
 
-import { plRefsEqual } from '@platforma-sdk/model';
-import type { PlAgHeaderComponentParams } from '@platforma-sdk/ui-vue';
+import { plRefsEqual } from "@platforma-sdk/model";
+import type { PlAgHeaderComponentParams } from "@platforma-sdk/ui-vue";
 import {
   AgGridTheme,
   PlAgChartStackedBarCell,
@@ -16,26 +16,21 @@ import {
   autoSizeRowNumberColumn,
   createAgGridColDef,
   makeRowNumberColDef,
-} from '@platforma-sdk/ui-vue';
-import { whenever } from '@vueuse/core';
-import type {
-  ColDef,
-  GridApi,
-  GridOptions,
-  GridReadyEvent,
-} from 'ag-grid-enterprise';
-import { ClientSideRowModelModule, ModuleRegistry } from 'ag-grid-enterprise';
-import { computed, reactive, ref, shallowRef, watch, watchEffect } from 'vue';
-import { useApp } from '../app';
-import { getAlignmentChartSettings } from '../charts/alignmentChartSettings';
-import { parseProgressString } from '../parseProgress';
-import type { AmpliconAlignmentResult } from '../results';
-import { resultMap } from '../results';
-import LogsPanel from './LogsPanel.vue';
-import SampleReportPanel from './SampleReportPanel.vue';
-import SettingsPanel from './SettingsPanel.vue';
-import { ExportRawBtn } from '../ExportRawBtn';
-import { ChunkedStreamReader } from '../ChunkedStreamReader';
+} from "@platforma-sdk/ui-vue";
+import { whenever } from "@vueuse/core";
+import type { ColDef, GridApi, GridOptions, GridReadyEvent } from "ag-grid-enterprise";
+import { ClientSideRowModelModule, ModuleRegistry } from "ag-grid-enterprise";
+import { computed, reactive, ref, shallowRef, watch, watchEffect } from "vue";
+import { useApp } from "../app";
+import { getAlignmentChartSettings } from "../charts/alignmentChartSettings";
+import { parseProgressString } from "../parseProgress";
+import type { AmpliconAlignmentResult } from "../results";
+import { resultMap } from "../results";
+import LogsPanel from "./LogsPanel.vue";
+import SampleReportPanel from "./SampleReportPanel.vue";
+import SettingsPanel from "./SettingsPanel.vue";
+import { ExportRawBtn } from "../ExportRawBtn";
+import { ChunkedStreamReader } from "../ChunkedStreamReader";
 
 const app = useApp();
 
@@ -59,18 +54,16 @@ watchEffect(() => {
   if (app.model.args.assemblingFeature) {
     parts.push(app.model.args.assemblingFeature);
   }
-  app.model.args.defaultBlockLabel = parts.filter(Boolean).join(' - ');
+  app.model.args.defaultBlockLabel = parts.filter(Boolean).join(" - ");
 });
 
-const result = computed(() =>
-  resultMap.value ? [...resultMap.value.values()] : undefined,
-);
+const result = computed(() => (resultMap.value ? [...resultMap.value.values()] : undefined));
 
 const loadingOverlayParams = computed(() => {
   if (app.model.outputs.started) {
-    return { variant: 'running' as const, runningText: 'Loading Sample List' };
+    return { variant: "running" as const, runningText: "Loading Sample List" };
   }
-  return { variant: 'not-ready' as const };
+  return { variant: "not-ready" as const };
 });
 
 const data = reactive<{
@@ -122,11 +115,11 @@ const defaultColumnDef: ColDef = {
 const columnDefs: ColDef<AmpliconAlignmentResult>[] = [
   makeRowNumberColDef(),
   createAgGridColDef<AmpliconAlignmentResult, string>({
-    colId: 'label',
-    field: 'label',
-    headerName: 'Sample',
-    headerComponentParams: { type: 'Text' } satisfies PlAgHeaderComponentParams,
-    pinned: 'left',
+    colId: "label",
+    field: "label",
+    headerName: "Sample",
+    headerComponentParams: { type: "Text" } satisfies PlAgHeaderComponentParams,
+    pinned: "left",
     lockPinned: true,
     sortable: true,
     cellRenderer: PlAgTextAndButtonCell,
@@ -135,37 +128,37 @@ const columnDefs: ColDef<AmpliconAlignmentResult>[] = [
     },
   }),
   createAgGridColDef<AmpliconAlignmentResult, string>({
-    colId: 'progress',
-    field: 'progress',
-    headerName: 'Progress',
+    colId: "progress",
+    field: "progress",
+    headerName: "Progress",
     headerComponentParams: {
-      type: 'Progress',
+      type: "Progress",
     } satisfies PlAgHeaderComponentParams,
     progress(cellData) {
       const parsed = parseProgressString(cellData);
 
-      if (parsed.stage === 'Queued') {
+      if (parsed.stage === "Queued") {
         return {
-          status: 'not_started',
+          status: "not_started",
           text: parsed.stage,
         };
       }
 
       return {
-        status: parsed.stage === 'Done' ? 'done' : 'running',
+        status: parsed.stage === "Done" ? "done" : "running",
         percent: parsed.percentage,
         text: parsed.stage,
-        suffix: parsed.etaLabel ?? '',
+        suffix: parsed.etaLabel ?? "",
       };
     },
   }),
   createAgGridColDef<AmpliconAlignmentResult, string>({
-    colId: 'alignmentStats',
-    headerName: 'Alignments',
-    headerComponentParams: { type: 'Text' } satisfies PlAgHeaderComponentParams,
+    colId: "alignmentStats",
+    headerName: "Alignments",
+    headerComponentParams: { type: "Text" } satisfies PlAgHeaderComponentParams,
     flex: 1,
     cellStyle: {
-      '--ag-cell-horizontal-padding': '12px',
+      "--ag-cell-horizontal-padding": "12px",
     },
     cellRendererSelector: (cellData) => {
       const value = getAlignmentChartSettings(cellData.data?.alignReport);
@@ -202,11 +195,13 @@ const downloadLibrary = async () => {
   try {
     downloadingLibrary.value = true;
     const fileHandle = await window.showSaveFilePicker({
-      types: [{
-        description: 'JSON files',
-        accept: { 'application/json': ['.json'] },
-      }],
-      suggestedName: 'referenceLibrary.json',
+      types: [
+        {
+          description: "JSON files",
+          accept: { "application/json": [".json"] },
+        },
+      ],
+      suggestedName: "referenceLibrary.json",
     });
     const writable = await fileHandle.createWritable();
     const reader = new ChunkedStreamReader(lib.handle, lib.size);
@@ -223,11 +218,13 @@ const downloadLibrary = async () => {
 </script>
 
 <template>
-  <PlBlockPage
-    title="MiXCR Amplicon Alignment"
-  >
+  <PlBlockPage title="MiXCR Amplicon Alignment">
     <template #append>
-      <PlBtnGhost :disabled="!isLibraryReady" :loading="downloadingLibrary" @click.stop="downloadLibrary">
+      <PlBtnGhost
+        :disabled="!isLibraryReady"
+        :loading="downloadingLibrary"
+        @click.stop="downloadLibrary"
+      >
         Export Library
         <template #append><PlMaskIcon24 name="download" /></template>
       </PlBtnGhost>
@@ -262,11 +259,7 @@ const downloadLibrary = async () => {
     </div>
   </PlBlockPage>
 
-  <PlSlideModal
-    v-model="data.logsOpen"
-    :close-on-outside-click="false"
-    width="100%"
-  >
+  <PlSlideModal v-model="data.logsOpen" :close-on-outside-click="false" width="100%">
     <template #title>Reference Library Generation Logs</template>
     <LogsPanel />
   </PlSlideModal>
@@ -289,9 +282,8 @@ const downloadLibrary = async () => {
     <template #title>
       Results for
       {{
-        (data.selectedSample
-          ? app.model.outputs.sampleLabels?.[data.selectedSample]
-          : undefined) ?? "..."
+        (data.selectedSample ? app.model.outputs.sampleLabels?.[data.selectedSample] : undefined) ??
+        "..."
       }}
     </template>
     <SampleReportPanel v-model="data.selectedSample" />
