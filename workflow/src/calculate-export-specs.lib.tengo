@@ -152,6 +152,44 @@ coveredRegions := func(disjointStr) {
 	return covered
 }
 
+// MiXCR GeneFeature.encode names a range's START with a "Begin" reference point and its END with
+// an "End" one, canonicalizing boundary points to that form (e.g. a range ending at FR3Begin is
+// exported as CDR2End, since FR3Begin == CDR2End). We replicate that here so the column names we
+// predict for a disjoint (composite) feature match MiXCR's actual exported headers. NOTE: verified
+// for plain boundary points (no offsets); offset points like FR3Begin(+40) are passed through with
+// the base point canonicalized, which is the untested case.
+rangeStartCanonical := {
+	"FR1End": "CDR1Begin",
+	"CDR1End": "FR2Begin",
+	"FR2End": "CDR2Begin",
+	"CDR2End": "FR3Begin",
+	"FR3End": "CDR3Begin",
+	"CDR3End": "FR4Begin"
+}
+rangeEndCanonical := {
+	"CDR1Begin": "FR1End",
+	"FR2Begin": "CDR1End",
+	"CDR2Begin": "FR2End",
+	"FR3Begin": "CDR2End",
+	"CDR3Begin": "FR3End",
+	"FR4Begin": "CDR3End"
+}
+
+canonicalizeRefPoint := func(rp, isEnd) {
+	parts := text.split(rp, "(")
+	base := parts[0]
+	suffix := ""
+	if len(parts) >= 2 {
+		suffix = "(" + parts[1]
+	}
+	m := isEnd ? rangeEndCanonical : rangeStartCanonical
+	mapped := m[base]
+	if !is_undefined(mapped) {
+		base = mapped
+	}
+	return base + suffix
+}
+
 parseAssemblingFeature := func(assemblingFeature) {
 	if assemblingFeature == "VDJRegion" || assemblingFeature == "CDR3" {
 		return {
@@ -291,11 +329,12 @@ calculateExportSpecs := func(presetSpecForBack, blockId) {
 			return fstr
 		}
 		// Disjoint feature: comma-separated pieces -> a single composite MiXCR gene feature joined
-		// with "+", e.g. "FR1Begin:FR3Begin(+40),FR3Begin(+46):FR4End"
-		//   -> "{FR1Begin:FR3Begin(+40)}+{FR3Begin(+46):FR4End}".
-		// This is the form GeneFeature.parse accepts for exportClones -nFeature/-aaFeature/
-		// -isProductive (it splits on "+" respecting {} brackets). NOTE: --assemble-clonotypes-by
-		// takes the LIST form "[{..},{..}]" instead — see mixcr-analyze.tpl.tengo.
+		// with "+" (the form GeneFeature.parse accepts for exportClones -nFeature/-aaFeature/
+		// -isProductive; it splits on "+" respecting {} brackets). Reference points are canonicalized
+		// to match MiXCR's own column naming, e.g.
+		//   "CDR1Begin:FR3Begin,CDR3Begin:FR4End" -> "{CDR1Begin:CDR2End}+{CDR3Begin:FR4End}".
+		// NOTE: --assemble-clonotypes-by takes the LIST form "[{..},{..}]" instead (see
+		// mixcr-analyze.tpl.tengo).
 		if text.contains(fstr, ",") {
 			res := ""
 			for i, p in text.split(fstr, ",") {
@@ -303,7 +342,7 @@ calculateExportSpecs := func(presetSpecForBack, blockId) {
 				if i > 0 {
 					res += "+"
 				}
-				res += "{" + pbe[0] + ":" + pbe[1] + "}"
+				res += "{" + canonicalizeRefPoint(pbe[0], false) + ":" + canonicalizeRefPoint(pbe[1], true) + "}"
 			}
 			return res
 		}
