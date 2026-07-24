@@ -2,7 +2,7 @@ import type {
   LibraryEntryDefinition,
   VAnchorPoints,
   JAnchorPoints,
-} from '@platforma-open/milaboratories.mixcr-amplicon-alignment.model';
+} from "@platforma-open/milaboratories.mixcr-amplicon-alignment.model";
 
 interface RepseqioGene {
   baseSequence: string;
@@ -53,11 +53,11 @@ export function parseRepseqioLibrary(jsonContent: string): LibraryEntryDefinitio
     const jGenes = new Map<string, RepseqioGene>();
 
     for (const gene of entry.genes) {
-      if (gene.geneType === 'V' && gene.name.endsWith('_Vgene')) {
-        const prefix = gene.name.slice(0, -'_Vgene'.length);
+      if (gene.geneType === "V" && gene.name.endsWith("_Vgene")) {
+        const prefix = gene.name.slice(0, -"_Vgene".length);
         vGenes.set(prefix, gene);
-      } else if (gene.geneType === 'J' && gene.name.endsWith('_Jgene')) {
-        const prefix = gene.name.slice(0, -'_Jgene'.length);
+      } else if (gene.geneType === "J" && gene.name.endsWith("_Jgene")) {
+        const prefix = gene.name.slice(0, -"_Jgene".length);
         jGenes.set(prefix, gene);
       }
     }
