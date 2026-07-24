@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment.model
 
+## 1.19.6
+
+### Patch Changes
+
+- 8d33d3b: Migrate block onto the structurer (`block-tools structure`) and refresh the SDK toolchain: block-tools 2.12.8, model/ui-vue 1.80.8, workflow-tengo 6.8.1, tengo-builder 4.0.19. Tool-managed tsconfig/oxlint/oxfmt/turbo/block-index layout replaces the hand-maintained config.
+
 ## 1.19.5
 
 ### Patch Changes
