@@ -152,44 +152,6 @@ coveredRegions := func(disjointStr) {
 	return covered
 }
 
-// MiXCR GeneFeature.encode names a range's START with a "Begin" reference point and its END with
-// an "End" one, canonicalizing boundary points to that form (e.g. a range ending at FR3Begin is
-// exported as CDR2End, since FR3Begin == CDR2End). We replicate that here so the column names we
-// predict for a disjoint (composite) feature match MiXCR's actual exported headers. NOTE: verified
-// for plain boundary points (no offsets); offset points like FR3Begin(+40) are passed through with
-// the base point canonicalized, which is the untested case.
-rangeStartCanonical := {
-	"FR1End": "CDR1Begin",
-	"CDR1End": "FR2Begin",
-	"FR2End": "CDR2Begin",
-	"CDR2End": "FR3Begin",
-	"FR3End": "CDR3Begin",
-	"CDR3End": "FR4Begin"
-}
-rangeEndCanonical := {
-	"CDR1Begin": "FR1End",
-	"FR2Begin": "CDR1End",
-	"CDR2Begin": "FR2End",
-	"FR3Begin": "CDR2End",
-	"CDR3Begin": "FR3End",
-	"FR4Begin": "CDR3End"
-}
-
-canonicalizeRefPoint := func(rp, isEnd) {
-	parts := text.split(rp, "(")
-	base := parts[0]
-	suffix := ""
-	if len(parts) >= 2 {
-		suffix = "(" + parts[1]
-	}
-	m := isEnd ? rangeEndCanonical : rangeStartCanonical
-	mapped := m[base]
-	if !is_undefined(mapped) {
-		base = mapped
-	}
-	return base + suffix
-}
-
 parseAssemblingFeature := func(assemblingFeature) {
 	if assemblingFeature == "VDJRegion" || assemblingFeature == "CDR3" {
 		return {
@@ -328,23 +290,14 @@ calculateExportSpecs := func(presetSpecForBack, blockId) {
 		if fstr == "VDJRegion" || fstr == "CDR3" {
 			return fstr
 		}
-		// Disjoint feature: comma-separated pieces -> a single composite MiXCR gene feature joined
-		// with "+" (the form GeneFeature.parse accepts for exportClones -nFeature/-aaFeature/
-		// -isProductive; it splits on "+" respecting {} brackets). Reference points are canonicalized
-		// to match MiXCR's own column naming, e.g.
-		//   "CDR1Begin:FR3Begin,CDR3Begin:FR4End" -> "{CDR1Begin:CDR2End}+{CDR3Begin:FR4End}".
-		// NOTE: --assemble-clonotypes-by takes the LIST form "[{..},{..}]" instead (see
-		// mixcr-analyze.tpl.tengo).
+		// Disjoint feature (comma-separated pieces): the composite covered sequence is NOT exported
+		// as a single column — MiXCR's GeneFeature.encode rewrites such a column header
+		// unpredictably (ref-point duals like FR3Begin->CDR2End, and whole-region ranges collapse to
+		// their name, e.g. {CDR3Begin:CDR3End}->CDR3). Instead we key on the individual covered
+		// regions and drive productivity off CDR3 (see the disjoint override + key branch below), so
+		// this return value is unused for disjoint features (productiveFeature is overridden).
 		if text.contains(fstr, ",") {
-			res := ""
-			for i, p in text.split(fstr, ",") {
-				pbe := text.split(p, ":")
-				if i > 0 {
-					res += "+"
-				}
-				res += "{" + canonicalizeRefPoint(pbe[0], false) + ":" + canonicalizeRefPoint(pbe[1], true) + "}"
-			}
-			return res
+			return fstr
 		}
 		parts := text.split(fstr, ":")
 		if len(parts) == 1 {
@@ -393,6 +346,16 @@ calculateExportSpecs := func(presetSpecForBack, blockId) {
 		anchorFeature = outputProductiveFeature
 	}
 
+	// Disjoint feature: MiXCR can't export the composite covered sequence as a predictably-named
+	// single column, so drive productivity off CDR3 (always covered, predictable name) and make the
+	// full-length imputed VDJRegion the main sequence; the clonotype key is the covered regions
+	// (see the key branch below).
+	if text.contains(assemblingFeature, ",") {
+		productiveFeature = "CDR3"
+		outputProductiveFeature = "CDR3"
+		anchorFeature = "VDJRegion"
+	}
+
 	features := parsedFeature.nonImputed
 	if imputeGermline {
 		features = features + parsedFeature.imputed
@@ -407,6 +370,20 @@ calculateExportSpecs := func(presetSpecForBack, blockId) {
 			[ "-vGene" ],
 			[ "-jGene" ]
 		]
+	} else if text.contains(assemblingFeature, ",") {
+		// Disjoint feature: key on the covered whole regions (predictable, verbatim column names,
+		// already exported in the feature loop) plus V and J. The composite covered sequence can't
+		// be a single predictably-named column; the covered regions together identify the clone
+		// (for synthetic fixed-framework libraries CDR1/CDR2 are independently diversified, so all
+		// covered regions are needed to distinguish members — CDR3 alone would collapse them).
+		for f in parsedFeature.nonImputed {
+			if f != "VDJRegion" {
+				clonotypeKeyColumns = append(clonotypeKeyColumns, "nSeq" + f)
+				clonotypeKeyArgs = append(clonotypeKeyArgs, [ "-nFeature", f ])
+			}
+		}
+		clonotypeKeyColumns = append(clonotypeKeyColumns, "bestVGene", "bestJGene")
+		clonotypeKeyArgs = append(clonotypeKeyArgs, [ "-vGene" ], [ "-jGene" ])
 	} else {
 		// VDJRegion is the assembling feature itself only when it's NOT in the imputed list
 		// (e.g. VDJRegion or FR1:FR4 as the assembling feature)
@@ -448,7 +425,9 @@ calculateExportSpecs := func(presetSpecForBack, blockId) {
 	// For range features where VDJRegion is not the assembling feature, we need to export
 	// the combined assembling feature sequence column explicitly (individual features are
 	// exported in the loop below, but the combined feature like {CDR1Begin:CDR3End} is not)
-	needsAssemblingFeatureExport := assemblingFeature != "CDR3" && assemblingFeature != "VDJRegion" && !is_undefined(imputedFeaturesMap["VDJRegion"])
+	// Disjoint features are excluded: their composite sequence has no predictably-named MiXCR
+	// column, so we key on covered regions instead and never export a combined column.
+	needsAssemblingFeatureExport := assemblingFeature != "CDR3" && assemblingFeature != "VDJRegion" && !text.contains(assemblingFeature, ",") && !is_undefined(imputedFeaturesMap["VDJRegion"])
 	if needsAssemblingFeatureExport {
 		featureIdL := text.to_lower(formatId(assemblingFeature))
 		keyColName := "nSeq" + outputProductiveFeature

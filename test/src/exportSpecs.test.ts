@@ -11,46 +11,13 @@ import { test, expect, describe } from "vitest";
  * - Other ranges: {XBegin:YEnd} format (e.g. {CDR1Begin:CDR3End})
  */
 
-// Mirrors the reference-point canonicalization MiXCR's GeneFeature.encode applies (range start ->
-// "Begin" form, range end -> "End" form), so predicted composite column names match MiXCR's output.
-const RANGE_START_CANONICAL: Record<string, string> = {
-  FR1End: "CDR1Begin",
-  CDR1End: "FR2Begin",
-  FR2End: "CDR2Begin",
-  CDR2End: "FR3Begin",
-  FR3End: "CDR3Begin",
-  CDR3End: "FR4Begin",
-};
-const RANGE_END_CANONICAL: Record<string, string> = {
-  CDR1Begin: "FR1End",
-  FR2Begin: "CDR1End",
-  CDR2Begin: "FR2End",
-  FR3Begin: "CDR2End",
-  CDR3Begin: "FR3End",
-  FR4Begin: "CDR3End",
-};
-function canonicalizeRefPoint(rp: string, isEnd: boolean): string {
-  const [base, offsetPart] = rp.split("(");
-  const suffix = offsetPart !== undefined ? `(${offsetPart}` : "";
-  const m = isEnd ? RANGE_END_CANONICAL : RANGE_START_CANONICAL;
-  return (m[base] ?? base) + suffix;
-}
-
 // Mirrors formatAssemblingFeature in calculate-export-specs.lib.tengo
 function formatAssemblingFeature(fstr: string): string {
   if (fstr === "VDJRegion" || fstr === "CDR3") return fstr;
-  // Disjoint feature: comma-separated pieces -> a single composite gene feature joined with "+",
-  // with reference points canonicalized to match MiXCR's column naming, e.g.
-  // "CDR1Begin:FR3Begin,CDR3Begin:FR4End" -> "{CDR1Begin:CDR2End}+{CDR3Begin:FR4End}".
-  if (fstr.includes(",")) {
-    return fstr
-      .split(",")
-      .map((p) => {
-        const [b, e] = p.split(":");
-        return `{${canonicalizeRefPoint(b, false)}:${canonicalizeRefPoint(e, true)}}`;
-      })
-      .join("+");
-  }
+  // Disjoint feature (comma-separated): the composite is NOT exported as a single column (MiXCR
+  // renames such headers unpredictably); productiveFeature is overridden to CDR3, so this value is
+  // unused for disjoint.
+  if (fstr.includes(",")) return fstr;
   const parts = fstr.split(":");
   if (parts.length === 1) return `{${parts[0]}Begin:${parts[0]}End}`;
   return `{${parts[0]}Begin:${parts[1]}End}`;
@@ -60,6 +27,8 @@ function formatAssemblingFeature(fstr: string): string {
 // MiXCR export args (-isProductive/-isOOF/-hasStops/-nFeature). FR1:FR4 is the full
 // VDJRegion, so it is normalized to "VDJRegion" to match MiXCR's column naming.
 function productiveFeature(assemblingFeature: string): string {
+  // Disjoint feature: productivity is driven off CDR3 (predictable, covered), not the composite.
+  if (assemblingFeature.includes(",")) return "CDR3";
   if (assemblingFeature === "FR1:FR4") return "VDJRegion";
   return formatAssemblingFeature(assemblingFeature);
 }
@@ -67,6 +36,7 @@ function productiveFeature(assemblingFeature: string): string {
 // Mirrors outputProductiveFeature logic
 // MiXCR has named aliases for ranges ending at FR4; other ranges use {XBegin:YEnd}
 function outputProductiveFeature(assemblingFeature: string): string {
+  if (assemblingFeature.includes(",")) return "CDR3";
   const productive = formatAssemblingFeature(assemblingFeature);
   if (assemblingFeature !== "VDJRegion" && assemblingFeature !== "CDR3") {
     const parts = assemblingFeature.split(":");
@@ -204,6 +174,13 @@ function computeClonotypeKeyAndExport(
 
   if (assemblingFeature === "CDR3") {
     clonotypeKeyColumns = ["nSeqCDR3", "bestVGene", "bestJGene"];
+  } else if (assemblingFeature.includes(",")) {
+    // Disjoint feature: key on the covered whole regions (predictable names) + V + J.
+    clonotypeKeyColumns = [
+      ...parsed.nonImputed.filter((f) => f !== "VDJRegion").map((f) => `nSeq${f}`),
+      "bestVGene",
+      "bestJGene",
+    ];
   } else {
     // VDJRegion is the assembling feature itself only when it's NOT in the imputed list
     const vdjIsAssemblingFeature = imputedFeaturesMap["VDJRegion"] === undefined;
@@ -220,7 +197,9 @@ function computeClonotypeKeyAndExport(
 
   const isRangeFeature = assemblingFeature !== "CDR3" && assemblingFeature !== "VDJRegion";
   const vdjIsImputed = imputedFeaturesMap["VDJRegion"] === true;
-  const needsAssemblingFeatureExport = isRangeFeature && vdjIsImputed;
+  // Disjoint features never export a combined column (composite has no predictable name).
+  const needsAssemblingFeatureExport =
+    isRangeFeature && vdjIsImputed && !assemblingFeature.includes(",");
 
   let assemblingFeatureColumn: string | undefined;
   if (needsAssemblingFeatureExport) {
@@ -434,13 +413,10 @@ describe("export-report flag column naming (productiveFeature)", () => {
 // germline on export. The two pieces reach into FR3 via offsets, so FR3 is only partially
 // covered and must be germline-imputed (never exported as a real, non-imputed column).
 describe("disjoint assembling feature (FR3-gap germline imputation)", () => {
-  // Valerio's real feature (excludes all of FR3). MiXCR's exported column for it was
-  // {CDR1Begin:CDR2End}+{CDR3Begin:FR4End} — FR3Begin canonicalized to CDR2End as a range end.
+  // Valerio's real feature (excludes all of FR3). The composite covered sequence is NOT exported
+  // as a single column (MiXCR renames such headers unpredictably); instead the block keys on the
+  // covered regions and drives productivity off CDR3 — all predictable, verbatim column names.
   const DISJOINT = "CDR1Begin:FR3Begin,CDR3Begin:FR4End";
-
-  test("formatAssemblingFeature emits a canonicalized +-concatenated composite gene feature", () => {
-    expect(formatAssemblingFeature(DISJOINT)).toBe("{CDR1Begin:CDR2End}+{CDR3Begin:FR4End}");
-  });
 
   test("covered regions are non-imputed; FR3 gap, flanks and VDJRegion are imputed", () => {
     const r = parseAssemblingFeature(DISJOINT);
@@ -453,20 +429,23 @@ describe("disjoint assembling feature (FR3-gap germline imputation)", () => {
     expect(r.nonImputed).not.toContain("FR3");
   });
 
-  test("clonotype key is the composite assembling-feature sequence, canonically named", () => {
-    // The composite (covered) sequence uniquely defines the clone; its predicted column name must
-    // match the canonical name MiXCR exports, else the downstream key hash can't find the column.
+  test("clonotype key is the covered whole regions plus V and J (predictable names)", () => {
     const r = computeClonotypeKeyAndExport(DISJOINT, true);
-    expect(r.clonotypeKeyColumns[0]).toBe("nSeq{CDR1Begin:CDR2End}+{CDR3Begin:FR4End}");
-    expect(r.clonotypeKeyColumns).toContain("bestVGene");
-    expect(r.clonotypeKeyColumns).toContain("bestJGene");
-    expect(r.needsAssemblingFeatureExport).toBe(true);
+    expect(r.clonotypeKeyColumns).toEqual([
+      "nSeqCDR1",
+      "nSeqFR2",
+      "nSeqCDR2",
+      "nSeqCDR3",
+      "nSeqFR4",
+      "bestVGene",
+      "bestJGene",
+    ]);
+    // No composite assembling-feature column is exported for disjoint features.
+    expect(r.needsAssemblingFeatureExport).toBe(false);
   });
 
-  test("isProductive is computed over the (canonically named) composite feature", () => {
-    expect(`isProductive${outputProductiveFeature(DISJOINT)}`).toBe(
-      "isProductive{CDR1Begin:CDR2End}+{CDR3Begin:FR4End}",
-    );
+  test("productivity is driven off CDR3 (predictable column name)", () => {
+    expect(`isProductive${outputProductiveFeature(DISJOINT)}`).toBe("isProductiveCDR3");
   });
 
   test("a wider gap leaves the same whole regions covered", () => {
