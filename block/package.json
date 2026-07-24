@@ -1,6 +1,6 @@
 {
   "name": "@platforma-open/milaboratories.mixcr-amplicon-alignment",
-  "version": "1.8.33",
+  "version": "1.9.0",
   "files": [
     "dist",
     "block-pack"
