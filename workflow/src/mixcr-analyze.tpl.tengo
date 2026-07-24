@@ -76,9 +76,9 @@ self.body(func(inputs) {
 	//     "FR1Begin:FR3Begin(+40),FR3Begin(+46):FR4End"
 	//     -> "[{FR1Begin:FR3Begin(+40)},{FR3Begin(+46):FR4End}]"
 	// NOTE: --assemble-clonotypes-by takes this LIST form. The export side
-	// (calculate-export-specs.lib.tengo) instead "+"-concatenates the pieces
-	// ("{p1}+{p2}") because exportClones -nFeature parses a single composite
-	// GeneFeature, not the list form.
+	// (calculate-export-specs.lib.tengo) does NOT reference the composite feature at all — it keys
+	// the clonotype on the individual covered regions instead, because MiXCR renames a composite
+	// export column unpredictably.
 	formatAssemblingFeature := func(fstr) {
 		if fstr == "VDJRegion" || fstr == "CDR3" {
 			return fstr

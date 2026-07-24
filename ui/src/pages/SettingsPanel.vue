@@ -482,6 +482,9 @@ ATCGATCGATCG..."
     label="Custom assembling feature"
     placeholder="e.g. FR1Begin:FR3Begin(+40),FR3Begin(+46):FR4End"
     clearable
+    :error-message="
+      (assemblingFeature ?? '').trim() === '' ? 'Enter a MiXCR gene feature' : undefined
+    "
   >
     <template #tooltip>
       A MiXCR gene feature: a single region (VDJRegion, CDR3), a range (e.g. CDR1:FR4), or a

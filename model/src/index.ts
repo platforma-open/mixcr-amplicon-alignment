@@ -260,6 +260,11 @@ export const platforma = BlockModel.create("Heavy")
   })
 
   .argsValid((ctx) => {
+    // A "Custom (advanced)" assembling feature left empty would reach parseAssemblingFeature and
+    // panic; block the run until it is filled.
+    if (ctx.args.assemblingFeature !== undefined && ctx.args.assemblingFeature.trim() === "") {
+      return false;
+    }
     const mode = ctx.uiState.referenceInputMode ?? "fastaSequence";
     const hasDataset = ctx.args.datasetRef !== undefined;
     if (mode === "libraryFile") {
