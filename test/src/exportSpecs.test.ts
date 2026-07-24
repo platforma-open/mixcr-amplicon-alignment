@@ -14,6 +14,10 @@ import { test, expect, describe } from "vitest";
 // Mirrors formatAssemblingFeature in calculate-export-specs.lib.tengo
 function formatAssemblingFeature(fstr: string): string {
   if (fstr === "VDJRegion" || fstr === "CDR3") return fstr;
+  // Disjoint feature (comma-separated): the composite is NOT exported as a single column (MiXCR
+  // renames such headers unpredictably); productiveFeature is overridden to CDR3, so this value is
+  // unused for disjoint.
+  if (fstr.includes(",")) return fstr;
   const parts = fstr.split(":");
   if (parts.length === 1) return `{${parts[0]}Begin:${parts[0]}End}`;
   return `{${parts[0]}Begin:${parts[1]}End}`;
@@ -23,6 +27,8 @@ function formatAssemblingFeature(fstr: string): string {
 // MiXCR export args (-isProductive/-isOOF/-hasStops/-nFeature). FR1:FR4 is the full
 // VDJRegion, so it is normalized to "VDJRegion" to match MiXCR's column naming.
 function productiveFeature(assemblingFeature: string): string {
+  // Disjoint feature: productivity is driven off CDR3 (predictable, covered), not the composite.
+  if (assemblingFeature.includes(",")) return "CDR3";
   if (assemblingFeature === "FR1:FR4") return "VDJRegion";
   return formatAssemblingFeature(assemblingFeature);
 }
@@ -30,6 +36,7 @@ function productiveFeature(assemblingFeature: string): string {
 // Mirrors outputProductiveFeature logic
 // MiXCR has named aliases for ranges ending at FR4; other ranges use {XBegin:YEnd}
 function outputProductiveFeature(assemblingFeature: string): string {
+  if (assemblingFeature.includes(",")) return "CDR3";
   const productive = formatAssemblingFeature(assemblingFeature);
   if (assemblingFeature !== "VDJRegion" && assemblingFeature !== "CDR3") {
     const parts = assemblingFeature.split(":");
@@ -40,6 +47,59 @@ function outputProductiveFeature(assemblingFeature: string): string {
     }
   }
   return productive;
+}
+
+// Region features in 5'->3' order, used to classify a disjoint assembling feature.
+const FEATURE_ORDER = ["FR1", "CDR1", "FR2", "CDR2", "FR3", "CDR3", "FR4"];
+
+// Mirrors parseRefPoint: "FR3Begin", "FR3Begin(+40)", "FR4End", "FR3End(-20)" -> parts
+function parseRefPoint(rp: string): { region: string; edge: string; offset: number } {
+  const [base, offsetPart] = rp.split("(");
+  let offset = 0;
+  if (offsetPart !== undefined) {
+    const n = parseInt(offsetPart.replace(")", ""), 10);
+    if (!Number.isNaN(n)) offset = n;
+  }
+  let region = "";
+  let edge = "";
+  if (base.endsWith("Begin")) {
+    edge = "Begin";
+    region = base.slice(0, -5);
+  } else if (base.endsWith("End")) {
+    edge = "End";
+    region = base.slice(0, -3);
+  }
+  return { region, edge, offset };
+}
+
+// Mirrors coveredRegions: whole regions fully spanned by some piece of a disjoint feature.
+function coveredRegions(disjointStr: string): Set<string> {
+  const covered = new Set<string>();
+  for (const p of disjointStr.split(",")) {
+    const be = p.split(":");
+    if (be.length !== 2) continue;
+    const s = parseRefPoint(be[0]);
+    const e = parseRefPoint(be[1]);
+    const si = FEATURE_ORDER.indexOf(s.region);
+    const ei = FEATURE_ORDER.indexOf(e.region);
+    if (si === -1 || ei === -1) continue;
+    let first = si;
+    if (s.edge === "Begin") {
+      if (s.offset > 0) first = si + 1;
+    } else {
+      first = si + 1;
+    }
+    let last = ei;
+    if (e.edge === "End") {
+      if (e.offset < 0) last = ei - 1;
+    } else {
+      last = ei - 1;
+    }
+    for (let i = first; i <= last; i++) {
+      if (i >= 0 && i < FEATURE_ORDER.length) covered.add(FEATURE_ORDER[i]);
+    }
+  }
+  return covered;
 }
 
 // Mirrors parseAssemblingFeature
@@ -57,6 +117,20 @@ function parseAssemblingFeature(assemblingFeature: string) {
           ? ["CDR3"]
           : ["CDR1", "FR1", "FR2", "CDR2", "FR3", "CDR3", "FR4", "VDJRegion"],
     };
+  }
+
+  // Disjoint feature (comma-separated pieces): fully-covered regions are exported as-is,
+  // the partially-covered gap region + flanks + VDJRegion are germline-imputed.
+  if (assemblingFeature.includes(",")) {
+    const covered = coveredRegions(assemblingFeature);
+    const imputed: string[] = [];
+    const nonImputed: string[] = [];
+    for (const f of FEATURE_ORDER) {
+      if (covered.has(f)) nonImputed.push(f);
+      else imputed.push(f);
+    }
+    imputed.push("VDJRegion");
+    return { imputed, nonImputed };
   }
 
   const features = ["FR1", "CDR1", "FR2", "CDR2", "FR3", "CDR3", "FR4"];
@@ -100,6 +174,13 @@ function computeClonotypeKeyAndExport(
 
   if (assemblingFeature === "CDR3") {
     clonotypeKeyColumns = ["nSeqCDR3", "bestVGene", "bestJGene"];
+  } else if (assemblingFeature.includes(",")) {
+    // Disjoint feature: key on the covered whole regions (predictable names) + V + J.
+    clonotypeKeyColumns = [
+      ...parsed.nonImputed.filter((f) => f !== "VDJRegion").map((f) => `nSeq${f}`),
+      "bestVGene",
+      "bestJGene",
+    ];
   } else {
     // VDJRegion is the assembling feature itself only when it's NOT in the imputed list
     const vdjIsAssemblingFeature = imputedFeaturesMap["VDJRegion"] === undefined;
@@ -116,7 +197,9 @@ function computeClonotypeKeyAndExport(
 
   const isRangeFeature = assemblingFeature !== "CDR3" && assemblingFeature !== "VDJRegion";
   const vdjIsImputed = imputedFeaturesMap["VDJRegion"] === true;
-  const needsAssemblingFeatureExport = isRangeFeature && vdjIsImputed;
+  // Disjoint features never export a combined column (composite has no predictable name).
+  const needsAssemblingFeatureExport =
+    isRangeFeature && vdjIsImputed && !assemblingFeature.includes(",");
 
   let assemblingFeatureColumn: string | undefined;
   if (needsAssemblingFeatureExport) {
@@ -321,5 +404,65 @@ describe("export-report flag column naming (productiveFeature)", () => {
 
   test("CDR1:CDR3 keeps {XBegin:YEnd} form", () => {
     expect(productiveFeature("CDR1:CDR3")).toBe("{CDR1Begin:CDR3End}");
+  });
+});
+
+// Disjoint assembling feature — recovers long-CDR3 clones whose 2x150 reads leave a ~6 nt
+// FR3 gap (Valerio "germline-imputation-fr3-gap"). The feature brackets the uncovered window;
+// each mate fully covers one piece, the clone survives assembly, and the gap is imputed from
+// germline on export. The two pieces reach into FR3 via offsets, so FR3 is only partially
+// covered and must be germline-imputed (never exported as a real, non-imputed column).
+describe("disjoint assembling feature (FR3-gap germline imputation)", () => {
+  // Valerio's real feature (excludes all of FR3). The composite covered sequence is NOT exported
+  // as a single column (MiXCR renames such headers unpredictably); instead the block keys on the
+  // covered regions and drives productivity off CDR3 — all predictable, verbatim column names.
+  const DISJOINT = "CDR1Begin:FR3Begin,CDR3Begin:FR4End";
+
+  test("covered regions are non-imputed; FR3 gap, flanks and VDJRegion are imputed", () => {
+    const r = parseAssemblingFeature(DISJOINT);
+    expect(r.nonImputed).toEqual(["CDR1", "FR2", "CDR2", "CDR3", "FR4"]);
+    expect(r.imputed).toContain("FR1");
+    expect(r.imputed).toContain("FR3");
+    expect(r.imputed).toContain("VDJRegion");
+    // FR3 is not covered — it must NOT be exported as a real (non-imputed) column, otherwise the
+    // "region_not_covered" placeholder would shadow the germline-imputed one.
+    expect(r.nonImputed).not.toContain("FR3");
+  });
+
+  test("clonotype key is the covered whole regions plus V and J (predictable names)", () => {
+    const r = computeClonotypeKeyAndExport(DISJOINT, true);
+    expect(r.clonotypeKeyColumns).toEqual([
+      "nSeqCDR1",
+      "nSeqFR2",
+      "nSeqCDR2",
+      "nSeqCDR3",
+      "nSeqFR4",
+      "bestVGene",
+      "bestJGene",
+    ]);
+    // No composite assembling-feature column is exported for disjoint features.
+    expect(r.needsAssemblingFeatureExport).toBe(false);
+  });
+
+  test("productivity is driven off CDR3 (predictable column name)", () => {
+    expect(`isProductive${outputProductiveFeature(DISJOINT)}`).toBe("isProductiveCDR3");
+  });
+
+  test("a wider gap leaves the same whole regions covered", () => {
+    // Offsets only change the imputed FR3 window width; whole-region coverage is unchanged.
+    const r = parseAssemblingFeature("FR1Begin:FR3Begin(+30),FR3Begin(+60):FR4End");
+    expect(r.nonImputed).toEqual(["FR1", "CDR1", "FR2", "CDR2", "CDR3", "FR4"]);
+    expect(r.imputed).toContain("FR3");
+  });
+
+  test("a 3-piece disjoint feature (two internal gaps) is classified by coverage", () => {
+    // Gaps in both FR2 and FR3: FR2 and FR3 are partial -> imputed; the rest stays covered.
+    const r = parseAssemblingFeature(
+      "FR1Begin:FR2Begin(+10),FR2Begin(+16):FR3Begin(+40),FR3Begin(+46):FR4End",
+    );
+    expect(r.nonImputed).toEqual(["FR1", "CDR1", "CDR2", "CDR3", "FR4"]);
+    expect(r.imputed).toContain("FR2");
+    expect(r.imputed).toContain("FR3");
+    expect(r.imputed).toContain("VDJRegion");
   });
 });

@@ -40,9 +40,9 @@ toCombinedDomainValue := func(spec) {
 
 // sometimes we need to format assembling feature to be used in column ids
 formatId := func(input) {
-    noNums := text.re_replace(`\(\s*-?\d+(\s*,\s*-?\d+)*\s*\)`, input, "")
-    noBraces := text.re_replace(`[{}\(\)]`, noNums, "")
-    result   := text.re_replace(`:`, noBraces, "-")
+    noNums := text.re_replace(`\(\s*[-+]?\d+(\s*,\s*[-+]?\d+)*\s*\)`, input, "")
+    noBraces := text.re_replace(`[\[\](){}]`, noNums, "")
+    result   := text.re_replace(`[:,]`, noBraces, "-")
     return result
 }
 
@@ -50,6 +50,106 @@ addSpec := func(columns, additionalSpec) {
 	return slices.map(columns, func(columnSpec) {
 		return maps.deepMerge(columnSpec, additionalSpec)
 	})
+}
+
+// Region features in 5'->3' order, used to classify a disjoint assembling feature.
+featureOrder := ["FR1", "CDR1", "FR2", "CDR2", "FR3", "CDR3", "FR4"]
+
+featureIndex := func(r) {
+	for i, f in featureOrder {
+		if f == r {
+			return i
+		}
+	}
+	return -1
+}
+
+// Parse a MiXCR reference point ("FR3Begin", "FR3Begin(+40)", "FR4End", "FR3End(-20)")
+// into { region, edge ("Begin"/"End"), offset }.
+parseRefPoint := func(rp) {
+	parts := text.split(rp, "(")
+	base := parts[0]
+	offset := 0
+	if len(parts) >= 2 {
+		inner := parts[1]
+		if text.has_suffix(inner, ")") {
+			inner = inner[0:len(inner) - 1]
+		}
+		neg := false
+		if len(inner) > 0 {
+			if inner[0] == '+' {
+				inner = inner[1:]
+			} else if inner[0] == '-' {
+				neg = true
+				inner = inner[1:]
+			}
+		}
+		o := int(inner)
+		if !is_undefined(o) {
+			offset = o
+		}
+		if neg {
+			offset = -offset
+		}
+	}
+	region := ""
+	edge := ""
+	if text.has_suffix(base, "Begin") {
+		edge = "Begin"
+		region = base[0:len(base) - 5]
+	} else if text.has_suffix(base, "End") {
+		edge = "End"
+		region = base[0:len(base) - 3]
+	}
+	return {
+		region: region,
+		edge: edge,
+		offset: offset
+	}
+}
+
+// Given a disjoint assembling feature (comma-separated "begin:end" pieces with explicit
+// reference points), return the set of whole region features fully covered by some piece.
+// A region is fully covered only when a piece spans it edge-to-edge; a region a piece only
+// reaches into via an offset (e.g. FR3 in "...:FR3Begin(+40)") is left uncovered so it gets
+// germline-imputed on export.
+coveredRegions := func(disjointStr) {
+	covered := {}
+	for p in text.split(disjointStr, ",") {
+		be := text.split(p, ":")
+		if len(be) != 2 {
+			continue
+		}
+		s := parseRefPoint(be[0])
+		e := parseRefPoint(be[1])
+		si := featureIndex(s.region)
+		ei := featureIndex(e.region)
+		if si == -1 || ei == -1 {
+			continue
+		}
+		first := si
+		if s.edge == "Begin" {
+			if s.offset > 0 {
+				first = si + 1
+			}
+		} else {
+			first = si + 1
+		}
+		last := ei
+		if e.edge == "End" {
+			if e.offset < 0 {
+				last = ei - 1
+			}
+		} else {
+			last = ei - 1
+		}
+		for i := first; i <= last; i++ {
+			if i >= 0 && i < len(featureOrder) {
+				covered[featureOrder[i]] = true
+			}
+		}
+	}
+	return covered
 }
 
 parseAssemblingFeature := func(assemblingFeature) {
@@ -63,6 +163,37 @@ parseAssemblingFeature := func(assemblingFeature) {
 			coreGeneFeatures: {
 				V: "{FR1Begin:FR3End}",
 				J: "FR4"
+			}
+		}
+	}
+
+	// Disjoint assembling feature: comma-separated pieces bracketing an uncovered mid-region
+	// window, e.g. "FR1Begin:FR3Begin(+40),FR3Begin(+46):FR4End" for the ~6 nt FR3 gap left by
+	// non-overlapping 2x150 reads on long-CDR3 clones. Each mate fully covers one piece, so the
+	// clone survives assembly; fully-covered whole regions are exported as-is (nonImputed), while
+	// the partially-covered gap region, any flanks, and the full VDJRegion are germline-imputed on
+	// export (MiXCR fills interior uncovered positions from the assigned V/J germline).
+	if text.contains(assemblingFeature, ",") {
+		covered := coveredRegions(assemblingFeature)
+		imputed := []
+		nonImputed := []
+		for f in featureOrder {
+			if !is_undefined(covered[f]) {
+				nonImputed = append(nonImputed, f)
+			} else {
+				imputed = append(imputed, f)
+			}
+		}
+		// The full VDJRegion always spans the gap, so it is never fully covered here.
+		imputed = append(imputed, "VDJRegion")
+		return {
+			imputed: imputed,
+			nonImputed: nonImputed,
+			// V/J mutation cores would span the imputed gap, so mutation columns are skipped for
+			// disjoint features (undefined core => the mutation loops no-op).
+			coreGeneFeatures: {
+				V: undefined,
+				J: undefined
 			}
 		}
 	}
@@ -159,6 +290,15 @@ calculateExportSpecs := func(presetSpecForBack, blockId) {
 		if fstr == "VDJRegion" || fstr == "CDR3" {
 			return fstr
 		}
+		// Disjoint feature (comma-separated pieces): the composite covered sequence is NOT exported
+		// as a single column — MiXCR's GeneFeature.encode rewrites such a column header
+		// unpredictably (ref-point duals like FR3Begin->CDR2End, and whole-region ranges collapse to
+		// their name, e.g. {CDR3Begin:CDR3End}->CDR3). Instead we key on the individual covered
+		// regions and drive productivity off CDR3 (see the disjoint override + key branch below), so
+		// this return value is unused for disjoint features (productiveFeature is overridden).
+		if text.contains(fstr, ",") {
+			return fstr
+		}
 		parts := text.split(fstr, ":")
 		if len(parts) == 1 {
 			return "{" + parts[0] + "Begin:" + parts[0] + "End}"
@@ -206,6 +346,16 @@ calculateExportSpecs := func(presetSpecForBack, blockId) {
 		anchorFeature = outputProductiveFeature
 	}
 
+	// Disjoint feature: MiXCR can't export the composite covered sequence as a predictably-named
+	// single column, so drive productivity off CDR3 (always covered, predictable name) and make the
+	// full-length imputed VDJRegion the main sequence; the clonotype key is the covered regions
+	// (see the key branch below).
+	if text.contains(assemblingFeature, ",") {
+		productiveFeature = "CDR3"
+		outputProductiveFeature = "CDR3"
+		anchorFeature = "VDJRegion"
+	}
+
 	features := parsedFeature.nonImputed
 	if imputeGermline {
 		features = features + parsedFeature.imputed
@@ -220,6 +370,20 @@ calculateExportSpecs := func(presetSpecForBack, blockId) {
 			[ "-vGene" ],
 			[ "-jGene" ]
 		]
+	} else if text.contains(assemblingFeature, ",") {
+		// Disjoint feature: key on the covered whole regions (predictable, verbatim column names,
+		// already exported in the feature loop) plus V and J. The composite covered sequence can't
+		// be a single predictably-named column; the covered regions together identify the clone
+		// (for synthetic fixed-framework libraries CDR1/CDR2 are independently diversified, so all
+		// covered regions are needed to distinguish members — CDR3 alone would collapse them).
+		for f in parsedFeature.nonImputed {
+			if f != "VDJRegion" {
+				clonotypeKeyColumns = append(clonotypeKeyColumns, "nSeq" + f)
+				clonotypeKeyArgs = append(clonotypeKeyArgs, [ "-nFeature", f ])
+			}
+		}
+		clonotypeKeyColumns = append(clonotypeKeyColumns, "bestVGene", "bestJGene")
+		clonotypeKeyArgs = append(clonotypeKeyArgs, [ "-vGene" ], [ "-jGene" ])
 	} else {
 		// VDJRegion is the assembling feature itself only when it's NOT in the imputed list
 		// (e.g. VDJRegion or FR1:FR4 as the assembling feature)
@@ -261,7 +425,9 @@ calculateExportSpecs := func(presetSpecForBack, blockId) {
 	// For range features where VDJRegion is not the assembling feature, we need to export
 	// the combined assembling feature sequence column explicitly (individual features are
 	// exported in the loop below, but the combined feature like {CDR1Begin:CDR3End} is not)
-	needsAssemblingFeatureExport := assemblingFeature != "CDR3" && assemblingFeature != "VDJRegion" && !is_undefined(imputedFeaturesMap["VDJRegion"])
+	// Disjoint features are excluded: their composite sequence has no predictably-named MiXCR
+	// column, so we key on covered regions instead and never export a combined column.
+	needsAssemblingFeatureExport := assemblingFeature != "CDR3" && assemblingFeature != "VDJRegion" && !text.contains(assemblingFeature, ",") && !is_undefined(imputedFeaturesMap["VDJRegion"])
 	if needsAssemblingFeatureExport {
 		featureIdL := text.to_lower(formatId(assemblingFeature))
 		keyColName := "nSeq" + outputProductiveFeature
