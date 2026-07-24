@@ -486,10 +486,10 @@ ATCGATCGATCG..."
     <template #tooltip>
       A MiXCR gene feature: a single region (VDJRegion, CDR3), a range (e.g. CDR1:FR4), or a
       disjoint, comma-separated list of pieces with explicit reference points — e.g.
-      FR1Begin:FR3Begin(+40),FR3Begin(+46):FR4End — which brackets an uncovered mid-region window
-      so long-CDR3 clones whose paired reads don't overlap there still assemble (each mate covers
-      one piece). Enable "Impute non-covered parts from germline" to reconstruct the skipped window
-      and the full VDJRegion from the assigned V/J germline.
+      FR1Begin:FR3Begin(+40),FR3Begin(+46):FR4End — which brackets an uncovered mid-region window so
+      long-CDR3 clones whose paired reads don't overlap there still assemble (each mate covers one
+      piece). Enable "Impute non-covered parts from germline" to reconstruct the skipped window and
+      the full VDJRegion from the assigned V/J germline.
     </template>
   </PlTextField>
 
