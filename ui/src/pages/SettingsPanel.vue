@@ -241,12 +241,54 @@ const assemblingFeatureOptions = [
   { value: "FR2:CDR3", label: "FR2:CDR3" },
   { value: "CDR2:CDR3", label: "CDR2:CDR3" },
   { value: "FR3:CDR3", label: "FR3:CDR3" },
+  { value: "custom", label: "Custom (advanced)" },
 ];
+
+// Real MiXCR feature values (everything except the "custom" sentinel used to reveal free text).
+const presetAssemblingFeatures = assemblingFeatureOptions
+  .map((o) => o.value)
+  .filter((v) => v !== "custom");
 
 const assemblingFeature = computed<AssemblingFeature>({
   get: () => app.model.args.assemblingFeature as AssemblingFeature,
   set: (value: AssemblingFeature) => {
     app.model.args.assemblingFeature = value;
+  },
+});
+
+// "Custom (advanced)" mode: reveals a free-text field so an arbitrary MiXCR gene feature can be
+// entered — including a disjoint one (e.g. "FR1Begin:FR3Begin(+40),FR3Begin(+46):FR4End") that
+// brackets an uncovered window. Tracked as its own ref so an empty custom field doesn't snap the
+// dropdown back to a preset; the watch turns it on when a project loads with a non-preset value.
+const isCustomAssemblingFeature = ref(false);
+watch(
+  () => app.model.args.assemblingFeature,
+  (v) => {
+    if (v !== undefined && v !== "" && !presetAssemblingFeatures.includes(v)) {
+      isCustomAssemblingFeature.value = true;
+    }
+  },
+  { immediate: true },
+);
+
+const assemblingFeatureSelection = computed<string>({
+  get: () => {
+    if (isCustomAssemblingFeature.value) return "custom";
+    const v = app.model.args.assemblingFeature;
+    if (v === undefined || v === "") return "VDJRegion";
+    return presetAssemblingFeatures.includes(v) ? v : "custom";
+  },
+  set: (value: string) => {
+    if (value === "custom") {
+      isCustomAssemblingFeature.value = true;
+      // Don't carry a preset value into the custom text field.
+      if (presetAssemblingFeatures.includes(app.model.args.assemblingFeature ?? "")) {
+        app.model.args.assemblingFeature = "";
+      }
+    } else {
+      isCustomAssemblingFeature.value = false;
+      app.model.args.assemblingFeature = value;
+    }
   },
 });
 
@@ -424,12 +466,32 @@ ATCGATCGATCG..."
   <PlDropdown v-model="chains" :options="chainOptions" label="Chain selection" :required="true" />
 
   <PlDropdown
-    v-model="assemblingFeature"
+    v-model="assemblingFeatureSelection"
     :options="assemblingFeatureOptions"
     label="Assembling feature"
   >
-    <template #tooltip> Select the region used to assemble clonotypes. </template>
+    <template #tooltip>
+      Select the region used to assemble clonotypes. Choose "Custom (advanced)" to enter an
+      arbitrary MiXCR gene feature, including a disjoint one that brackets an uncovered window.
+    </template>
   </PlDropdown>
+
+  <PlTextField
+    v-if="isCustomAssemblingFeature"
+    v-model="assemblingFeature"
+    label="Custom assembling feature"
+    placeholder="e.g. FR1Begin:FR3Begin(+40),FR3Begin(+46):FR4End"
+    clearable
+  >
+    <template #tooltip>
+      A MiXCR gene feature: a single region (VDJRegion, CDR3), a range (e.g. CDR1:FR4), or a
+      disjoint, comma-separated list of pieces with explicit reference points — e.g.
+      FR1Begin:FR3Begin(+40),FR3Begin(+46):FR4End — which brackets an uncovered mid-region window
+      so long-CDR3 clones whose paired reads don't overlap there still assemble (each mate covers
+      one piece). Enable "Impute non-covered parts from germline" to reconstruct the skipped window
+      and the full VDJRegion from the assigned V/J germline.
+    </template>
+  </PlTextField>
 
   <PlCheckbox v-model="imputeGermline"> Impute non-covered parts from germline </PlCheckbox>
 
