@@ -14,16 +14,17 @@ import { test, expect, describe } from "vitest";
 // Mirrors formatAssemblingFeature in calculate-export-specs.lib.tengo
 function formatAssemblingFeature(fstr: string): string {
   if (fstr === "VDJRegion" || fstr === "CDR3") return fstr;
-  // Disjoint feature: comma-separated pieces with explicit reference points, e.g.
-  // "FR1Begin:FR3Begin(+40),FR3Begin(+46):FR4End" -> "[{FR1Begin:FR3Begin(+40)},{FR3Begin(+46):FR4End}]"
+  // Disjoint feature: comma-separated pieces -> a single composite gene feature joined with "+",
+  // e.g. "FR1Begin:FR3Begin(+40),FR3Begin(+46):FR4End" -> "{FR1Begin:FR3Begin(+40)}+{FR3Begin(+46):FR4End}"
+  // (--assemble-clonotypes-by uses the list form "[{..},{..}]"; export -nFeature uses this "+" form.)
   if (fstr.includes(",")) {
-    return `[${fstr
+    return fstr
       .split(",")
       .map((p) => {
         const [b, e] = p.split(":");
         return `{${b}:${e}}`;
       })
-      .join(",")}]`;
+      .join("+");
   }
   const parts = fstr.split(":");
   if (parts.length === 1) return `{${parts[0]}Begin:${parts[0]}End}`;
@@ -410,9 +411,9 @@ describe("export-report flag column naming (productiveFeature)", () => {
 describe("disjoint assembling feature (FR3-gap germline imputation)", () => {
   const DISJOINT = "FR1Begin:FR3Begin(+40),FR3Begin(+46):FR4End";
 
-  test("formatAssemblingFeature emits a MiXCR disjoint gene feature", () => {
+  test("formatAssemblingFeature emits a +-concatenated composite gene feature", () => {
     expect(formatAssemblingFeature(DISJOINT)).toBe(
-      "[{FR1Begin:FR3Begin(+40)},{FR3Begin(+46):FR4End}]",
+      "{FR1Begin:FR3Begin(+40)}+{FR3Begin(+46):FR4End}",
     );
   });
 
@@ -429,7 +430,7 @@ describe("disjoint assembling feature (FR3-gap germline imputation)", () => {
   test("clonotype key is the disjoint assembling-feature sequence (not imputed VDJRegion)", () => {
     // Imputed VDJRegion is not unique per clone; the disjoint assembling-feature sequence is.
     const r = computeClonotypeKeyAndExport(DISJOINT, true);
-    expect(r.clonotypeKeyColumns[0]).toBe("nSeq[{FR1Begin:FR3Begin(+40)},{FR3Begin(+46):FR4End}]");
+    expect(r.clonotypeKeyColumns[0]).toBe("nSeq{FR1Begin:FR3Begin(+40)}+{FR3Begin(+46):FR4End}");
     expect(r.clonotypeKeyColumns).toContain("bestVGene");
     expect(r.clonotypeKeyColumns).toContain("bestJGene");
     expect(r.needsAssemblingFeatureExport).toBe(true);
@@ -437,7 +438,7 @@ describe("disjoint assembling feature (FR3-gap germline imputation)", () => {
 
   test("isProductive is computed over the disjoint assembling feature", () => {
     expect(`isProductive${outputProductiveFeature(DISJOINT)}`).toBe(
-      "isProductive[{FR1Begin:FR3Begin(+40)},{FR3Begin(+46):FR4End}]",
+      "isProductive{FR1Begin:FR3Begin(+40)}+{FR3Begin(+46):FR4End}",
     );
   });
 

@@ -290,18 +290,22 @@ calculateExportSpecs := func(presetSpecForBack, blockId) {
 		if fstr == "VDJRegion" || fstr == "CDR3" {
 			return fstr
 		}
-		// Disjoint feature: comma-separated pieces with explicit reference points, e.g.
-		// "FR1Begin:FR3Begin(+40),FR3Begin(+46):FR4End" -> "[{FR1Begin:FR3Begin(+40)},{FR3Begin(+46):FR4End}]"
+		// Disjoint feature: comma-separated pieces -> a single composite MiXCR gene feature joined
+		// with "+", e.g. "FR1Begin:FR3Begin(+40),FR3Begin(+46):FR4End"
+		//   -> "{FR1Begin:FR3Begin(+40)}+{FR3Begin(+46):FR4End}".
+		// This is the form GeneFeature.parse accepts for exportClones -nFeature/-aaFeature/
+		// -isProductive (it splits on "+" respecting {} brackets). NOTE: --assemble-clonotypes-by
+		// takes the LIST form "[{..},{..}]" instead — see mixcr-analyze.tpl.tengo.
 		if text.contains(fstr, ",") {
-			res := "["
+			res := ""
 			for i, p in text.split(fstr, ",") {
 				pbe := text.split(p, ":")
 				if i > 0 {
-					res += ","
+					res += "+"
 				}
 				res += "{" + pbe[0] + ":" + pbe[1] + "}"
 			}
-			return res + "]"
+			return res
 		}
 		parts := text.split(fstr, ":")
 		if len(parts) == 1 {
