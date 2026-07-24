@@ -69,9 +69,30 @@ self.body(func(inputs) {
 		mixcrCmdBuilder.arg("generic-amplicon")
 	}
 
+	// Format the assembling feature into MiXCR --assemble-clonotypes-by syntax.
+	//   VDJRegion, CDR3      -> unchanged
+	//   "X" / "X:Y"          -> {XBegin:XEnd} / {XBegin:YEnd}
+	//   disjoint (has ",")   -> [{p1},{p2},...] with explicit reference points, e.g.
+	//     "FR1Begin:FR3Begin(+40),FR3Begin(+46):FR4End"
+	//     -> "[{FR1Begin:FR3Begin(+40)},{FR3Begin(+46):FR4End}]"
+	// NOTE: --assemble-clonotypes-by takes this LIST form. The export side
+	// (calculate-export-specs.lib.tengo) does NOT reference the composite feature at all — it keys
+	// the clonotype on the individual covered regions instead, because MiXCR renames a composite
+	// export column unpredictably.
 	formatAssemblingFeature := func(fstr) {
 		if fstr == "VDJRegion" || fstr == "CDR3" {
 			return fstr
+		}
+		if text.contains(fstr, ",") {
+			res := "["
+			for i, p in text.split(fstr, ",") {
+				pbe := text.split(p, ":")
+				if i > 0 {
+					res += ","
+				}
+				res += "{" + pbe[0] + ":" + pbe[1] + "}"
+			}
+			return res + "]"
 		}
 		parts := text.split(fstr, ":")
 		if len(parts) == 1 {
