@@ -1,11 +1,11 @@
 // This file is intentionally left empty.
 // The results logic was removed as the table was removed from the UI.
 
-import type { AlignReport as ModelAlignReport } from '@platforma-open/milaboratories.mixcr-amplicon-alignment.model';
-import type { AnyLogHandle } from '@platforma-sdk/model';
-import { ReactiveFileContent } from '@platforma-sdk/ui-vue';
-import { computed } from 'vue';
-import { useApp } from './app';
+import type { AlignReport as ModelAlignReport } from "@platforma-open/milaboratories.mixcr-amplicon-alignment.model";
+import type { AnyLogHandle } from "@platforma-sdk/model";
+import { ReactiveFileContent } from "@platforma-sdk/ui-vue";
+import { computed } from "vue";
+import { useApp } from "./app";
 
 export type AlignReport = ModelAlignReport;
 export type AssembleReport = Record<string, unknown>;
@@ -34,7 +34,7 @@ export const AmpliconAlignmentResultsMap = computed(() => {
   for (const sampleId in sampleLabels) {
     const result: AmpliconAlignmentResult = {
       sampleId: sampleId,
-      progress: 'Queued',
+      progress: "Queued",
       label: sampleLabels[sampleId] ?? `<no label / ${sampleId}>`,
     };
     resultMap.set(sampleId, result);
@@ -44,8 +44,7 @@ export const AmpliconAlignmentResultsMap = computed(() => {
   if (logs)
     for (const logData of logs.data) {
       const sampleId = logData.key[0] as string;
-      if (resultMap.get(sampleId))
-        resultMap.get(sampleId)!.logHandle = logData.value;
+      if (resultMap.get(sampleId)) resultMap.get(sampleId)!.logHandle = logData.value;
     }
 
   const reports = app.model.outputs.reports;
@@ -53,22 +52,20 @@ export const AmpliconAlignmentResultsMap = computed(() => {
     for (const report of reports.data) {
       const sampleId = report.key[0] as string;
       const reportId = report.key[1] as string;
-      if (report.key[2] !== 'json' || report.value === undefined) continue;
+      if (report.key[2] !== "json" || report.value === undefined) continue;
       if (resultMap.get(sampleId))
         switch (reportId) {
-          case 'align':
+          case "align":
             // globally cached
-            resultMap.get(sampleId)!.alignReport
-            = reactiveFileContent.getContentJson(report.value.handle)?.value as
-            | AlignReport
-            | undefined;
+            resultMap.get(sampleId)!.alignReport = reactiveFileContent.getContentJson(
+              report.value.handle,
+            )?.value as AlignReport | undefined;
             break;
-          case 'assemble':
+          case "assemble":
             // globally cached
-            resultMap.get(sampleId)!.assembleReport
-            = reactiveFileContent.getContentJson(report.value.handle)?.value as
-            | AssembleReport
-            | undefined;
+            resultMap.get(sampleId)!.assembleReport = reactiveFileContent.getContentJson(
+              report.value.handle,
+            )?.value as AssembleReport | undefined;
             break;
         }
     }
@@ -77,9 +74,7 @@ export const AmpliconAlignmentResultsMap = computed(() => {
 });
 
 /** Results augmented with execution progress */
-export const resultMap = computed<
-  Map<string, AmpliconAlignmentResult> | undefined
->(() => {
+export const resultMap = computed<Map<string, AmpliconAlignmentResult> | undefined>(() => {
   const app = useApp();
 
   const rawMap = AmpliconAlignmentResultsMap.value;
@@ -99,8 +94,8 @@ export const resultMap = computed<
       if (resultMap.get(sampleId))
         if (p?.value)
           resultMap.get(sampleId)!.progress = done.has(sampleId)
-            ? 'Done'
-            : p.value?.replace('[==PROGRESS==]', '') ?? 'Not started';
+            ? "Done"
+            : (p.value?.replace("[==PROGRESS==]", "") ?? "Not started");
     }
   }
 

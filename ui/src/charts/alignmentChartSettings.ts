@@ -1,12 +1,10 @@
-import type { AlignReport } from '../results';
-import type { Color } from '@platforma-sdk/ui-vue';
-import { Gradient } from '@platforma-sdk/ui-vue';
-import type { Ref } from 'vue';
-import { computed, unref } from 'vue';
+import type { AlignReport } from "../results";
+import type { Color } from "@platforma-sdk/ui-vue";
+import { Gradient } from "@platforma-sdk/ui-vue";
+import type { Ref } from "vue";
+import { computed, unref } from "vue";
 
-export function getAlignmentChartSettings(
-  alignReport: AlignReport | undefined,
-) {
+export function getAlignmentChartSettings(alignReport: AlignReport | undefined) {
   const data = (() => {
     if (alignReport === undefined) return [];
 
@@ -14,7 +12,7 @@ export function getAlignmentChartSettings(
     const aligned = alignReport.aligned || 0;
     const notAlignedReasons = alignReport.notAlignedReasons || {};
 
-    const result = [{ category: 'Success', value: aligned }];
+    const result = [{ category: "Success", value: aligned }];
 
     // Add not aligned reasons
     for (const [reason, count] of Object.entries(notAlignedReasons)) {
@@ -28,8 +26,8 @@ export function getAlignmentChartSettings(
 
   const total = data.reduce((x, y) => x + y.value, 0);
 
-  const viridis = Gradient('viridis');
-  const magma = Gradient('magma');
+  const viridis = Gradient("viridis");
+  const magma = Gradient("magma");
 
   const categoryColors = {
     Success: viridis.getNthOf(2, 5),
@@ -45,20 +43,20 @@ export function getAlignmentChartSettings(
   } as Record<string, Color>;
 
   const categoryLabels: Record<string, string> = {
-    Success: 'Successful Alignments',
-    NoHits: 'No Gene Hits',
-    NoCDR3Parts: 'No CDR3 Parts',
-    NoVHits: 'No V Gene Hits',
-    NoJHits: 'No J Gene Hits',
-    VAndJOnDifferentTargets: 'V and J on Different Targets',
-    LowTotalScore: 'Low Total Score',
-    NoBarcode: 'No Barcode',
-    SampleNotMatched: 'Sample Not Matched',
-    FailedAfterAOverlap: 'Failed After A Overlap',
+    Success: "Successful Alignments",
+    NoHits: "No Gene Hits",
+    NoCDR3Parts: "No CDR3 Parts",
+    NoVHits: "No V Gene Hits",
+    NoJHits: "No J Gene Hits",
+    VAndJOnDifferentTargets: "V and J on Different Targets",
+    LowTotalScore: "Low Total Score",
+    NoBarcode: "No Barcode",
+    SampleNotMatched: "Sample Not Matched",
+    FailedAfterAOverlap: "Failed After A Overlap",
   };
 
   return {
-    title: 'Alignments',
+    title: "Alignments",
     data: data.map(({ category, value }) => {
       const color = categoryColors[category] || viridis.getNthOf(1, 5);
       return {
@@ -67,16 +65,14 @@ export function getAlignmentChartSettings(
         color,
         description: [
           categoryLabels[category] || category,
-          'Fraction:' + Math.round((value * 100) / total) + '%',
-        ].join('\n'),
+          "Fraction:" + Math.round((value * 100) / total) + "%",
+        ].join("\n"),
       };
     }),
   };
 }
 
-export function useAlignmentChartSettings(
-  alignReportRef: Ref<AlignReport | undefined>,
-) {
+export function useAlignmentChartSettings(alignReportRef: Ref<AlignReport | undefined>) {
   return computed(() => {
     const alignReport = unref(alignReportRef);
     return getAlignmentChartSettings(alignReport);
