@@ -15,6 +15,8 @@ text := import("text")
 
 json := import("json")
 
+memf := import(":mem-formula")
+
 mixcrSw := assets.importSoftware("@platforma-open/milaboratories.software-mixcr:memory-from-limits")
 
 self.defineOutputs("qc", "reports", "log", "clns")
@@ -167,15 +169,12 @@ self.body(func(inputs) {
 	// resolves on backends without getBlobSize too: the formula falls back to the 64 GiB floor,
 	// and constant/static values are used as-is.
 	//     mem = clamp(64 GiB + 4 bytes/byte * size, 64 GiB, 256 GiB)
-	f := exec.formula
 	ram := undefined
 	if !is_undefined(perProcessMemGB) {
 		ram = string(perProcessMemGB) + "GiB"
 	} else {
 		baseMemGiB := 64
-		ram = f.size("reads").times(4).plus(f.gib(baseMemGiB)).
-			between(f.gib(baseMemGiB), f.gib(256)).
-			staticFallback(string(baseMemGiB) + "GiB")
+		ram = memf.memFormula(baseMemGiB)
 	}
 	mixcrCmdBuilder.resources({
 		onCPU: {
