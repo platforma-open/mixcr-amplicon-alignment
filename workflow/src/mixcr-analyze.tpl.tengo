@@ -1,4 +1,4 @@
-//tengo:hash_override D70EDB25-6FF6-4615-966D-B79B04B5751C
+//tengo:hash_override BE6EBF10-B660-4B96-AAA5-B73959F6BFD0
 
 // mixcr analyze
 
@@ -168,7 +168,8 @@ self.body(func(inputs) {
 	// decompressing. cpu is a constant and the ram formula carries a .staticFallback, so this
 	// resolves on backends without getBlobSize too: the formula falls back to the 64 GiB floor,
 	// and constant/static values are used as-is.
-	//     mem = clamp(64 GiB + 4 bytes/byte * size, 64 GiB, 256 GiB)
+	//     mem = clamp(4 bytes/byte * size, 64 GiB, 256 GiB)
+	// The 64 GiB floor is a TOTAL-memory value, not a base to add data on top of.
 	ram := undefined
 	if !is_undefined(perProcessMemGB) {
 		ram = string(perProcessMemGB) + "GiB"

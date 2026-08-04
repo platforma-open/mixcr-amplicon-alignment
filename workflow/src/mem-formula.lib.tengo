@@ -4,7 +4,7 @@
 // pre-exec pass — so the formula resolves where blob size is available and falls
 // back to the bare floor where it is not.
 //
-//     mem = clamp(baseMemGiB + 4 bytes/byte x size, baseMemGiB, 256 GiB)
+//     mem = clamp(4 bytes/byte x size, baseMemGiB, 256 GiB)
 
 exec := import("@platforma-sdk/workflow-tengo:exec")
 
@@ -13,7 +13,7 @@ f := exec.formula
 // memFormula builds the fluent exec.formula node for `.resources({onCPU:{ram}})`.
 // The static fallback is a string quota, matching this block's existing behaviour.
 memFormula := func(base) {
-	return f.size("reads").times(4).plus(f.gib(base)).
+	return f.size("reads").times(4).
 		between(f.gib(base), f.gib(256)).
 		staticFallback(string(base) + "GiB")
 }

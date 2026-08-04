@@ -19,16 +19,14 @@ _eval := func(node, sizeBytes) {
 // 31.75 GiB of reads, so the data term 4 x size is exactly 127 GiB.
 _READS_31_75_GIB := 34091302912
 
-TestMemFormulaToday := func() {
-	// CHARACTERIZATION: today's additive form,
-	//   mem = clamp(64 GiB + 4 x size, 64 GiB, 256 GiB)
-	// Task 4 changes these deliberately.
+TestMemFormula := func() {
+	// mem = clamp(4 x size, 64 GiB, 256 GiB)
 
-	test.isEqual(_gib(191), _eval(mf.memFormula(64), _READS_31_75_GIB))  // 64 + 127
-	test.isEqual(_gib(64),  _eval(mf.memFormula(64), 0))                 // floor
-	test.isEqual(_gib(192), _eval(mf.memFormula(64), _gib(32)))          // 64 + 128
-	test.isEqual(_gib(256), _eval(mf.memFormula(64), _gib(64)))          // 64 + 256 -> ceiling
+	test.isEqual(_gib(127), _eval(mf.memFormula(64), _READS_31_75_GIB))  // was 191
+	test.isEqual(_gib(64),  _eval(mf.memFormula(64), 0))                 // floor, unchanged
+	test.isEqual(_gib(128), _eval(mf.memFormula(64), _gib(32)))          // was 192
+	test.isEqual(_gib(256), _eval(mf.memFormula(64), _gib(64)))          // ceiling still binds
+	test.isEqual(_gib(64),  _eval(mf.memFormula(64), _gib(8)))           // 4 x 8 = 32 -> floor binds
 
-	// The fallback is a STRING in this block, unlike mixcr-clonotyping.
 	test.isEqual("64GiB", f.fallbackOf(mf.memFormula(64)))
 }
