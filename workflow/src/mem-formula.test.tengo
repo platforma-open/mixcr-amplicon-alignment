@@ -22,10 +22,10 @@ _READS_31_75_GIB := 34091302912
 TestMemFormula := func() {
 	// mem = clamp(4 x size, 64 GiB, 256 GiB)
 
-	test.isEqual(_gib(127), _eval(mf.memFormula(64), _READS_31_75_GIB))  // was 191
-	test.isEqual(_gib(64),  _eval(mf.memFormula(64), 0))                 // floor, unchanged
-	test.isEqual(_gib(128), _eval(mf.memFormula(64), _gib(32)))          // was 192
-	test.isEqual(_gib(256), _eval(mf.memFormula(64), _gib(64)))          // ceiling still binds
+	test.isEqual(_gib(127), _eval(mf.memFormula(64), _READS_31_75_GIB))  // linear region
+	test.isEqual(_gib(64),  _eval(mf.memFormula(64), 0))                 // floor binds
+	test.isEqual(_gib(128), _eval(mf.memFormula(64), _gib(32)))          // linear region
+	test.isEqual(_gib(256), _eval(mf.memFormula(64), _gib(64)))          // ceiling binds
 	test.isEqual(_gib(64),  _eval(mf.memFormula(64), _gib(8)))           // 4 x 8 = 32 -> floor binds
 
 	test.isEqual("64GiB", f.fallbackOf(mf.memFormula(64)))

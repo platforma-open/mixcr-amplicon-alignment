@@ -163,13 +163,15 @@ self.body(func(inputs) {
 		// }
 
 	// RAM per process: an explicit "Advanced Settings" override (a static request), or sized
-	// from the input reads' file size. size("reads") sums the stored (compressed) blob size of
-	// R1+R2 via getBlobSize (a metadata read, no pre-exec), so it tracks input volume without
-	// decompressing. cpu is a constant and the ram formula carries a .staticFallback, so this
-	// resolves on backends without getBlobSize too: the formula falls back to the 64 GiB floor,
-	// and constant/static values are used as-is.
-	//     mem = clamp(4 bytes/byte * size, 64 GiB, 256 GiB)
-	// The 64 GiB floor is a TOTAL-memory value, not a base to add data on top of.
+	// from the input reads' file size.
+	//     mem = clamp(4 * size("reads"), 64 GiB, 256 GiB)
+	// size("reads") sums the stored (compressed) blob size of R1+R2 via getBlobSize — a
+	// metadata read, no pre-exec — so it tracks input volume without decompressing. The
+	// 64 GiB floor is a TOTAL-memory value, so it acts as the lower bound rather than a
+	// base to add data on top of.
+	// cpu is a constant and the ram formula carries a .staticFallback, so this resolves on
+	// backends without getBlobSize too: the formula falls back to the 64 GiB floor, and
+	// constant/static values are used as-is.
 	ram := undefined
 	if !is_undefined(perProcessMemGB) {
 		ram = string(perProcessMemGB) + "GiB"
