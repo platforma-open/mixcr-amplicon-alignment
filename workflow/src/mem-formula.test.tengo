@@ -1,0 +1,34 @@
+test := import("@platforma-sdk/workflow-tengo:test")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+mf := import(":mem-formula")
+
+f := exec.formula
+
+_gib := func(n) { return n * 1073741824 }
+
+_eval := func(node, sizeBytes) {
+	fileName := "input.fastq.gz"
+	resolved := f.resolveAst(node, { "reads": [fileName] }, [fileName])
+	resolver := {
+		size:      func(files) { return sizeBytes },
+		lineCount: func(files) { return 0 }
+	}
+	return f.evaluateResource(resolved, resolver, "test")
+}
+
+// 31.75 GiB of reads, so the data term 4 x size is exactly 127 GiB.
+_READS_31_75_GIB := 34091302912
+
+TestMemFormulaToday := func() {
+	// CHARACTERIZATION: today's additive form,
+	//   mem = clamp(64 GiB + 4 x size, 64 GiB, 256 GiB)
+	// Task 4 changes these deliberately.
+
+	test.isEqual(_gib(191), _eval(mf.memFormula(64), _READS_31_75_GIB))  // 64 + 127
+	test.isEqual(_gib(64),  _eval(mf.memFormula(64), 0))                 // floor
+	test.isEqual(_gib(192), _eval(mf.memFormula(64), _gib(32)))          // 64 + 128
+	test.isEqual(_gib(256), _eval(mf.memFormula(64), _gib(64)))          // 64 + 256 -> ceiling
+
+	// The fallback is a STRING in this block, unlike mixcr-clonotyping.
+	test.isEqual("64GiB", f.fallbackOf(mf.memFormula(64)))
+}
