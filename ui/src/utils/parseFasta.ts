@@ -121,6 +121,7 @@ export function parseFasta(
   const vGeneParts: string[] = [];
   const jGeneParts: string[] = [];
   const headers: string[] = [];
+  const usedGeneNames = new Set<string>();
 
   // Validate each record
   for (const [i, record] of records.entries()) {
@@ -133,7 +134,7 @@ export function parseFasta(
     }
 
     const recordIdentifier = header ? `Record "${header}"` : `Record ${i + 1}`;
-    const headerRoot = header ? header.split("|")[0]?.trim() : "";
+    const headerRoot = header ? uniqueGeneNameToken(header, usedGeneNames) : "";
 
     // Clean the sequence (remove whitespace, convert to uppercase, and normalize IUPAC wildcards to N)
     const cleanSequence = sequence
@@ -318,6 +319,31 @@ const codonTable: Record<string, string> = {
  * @param dnaSequence - The DNA sequence to translate
  * @returns The translated protein sequence
  */
+/**
+ * Reduce a FASTA header to a token usable as a repseqio gene name.
+ *
+ * repseqio addresses each gene as the fragment of a `file://<file>#<geneName>` URI, so a
+ * gene name may only contain characters that are legal in a URI fragment. FASTA headers
+ * routinely carry a descriptive tail after the identifier, which — appended verbatim —
+ * makes repseqio fail with `URISyntaxException: Illegal character in fragment`, several
+ * layers below the UI and long after this validation has reported success.
+ *
+ * Keeps the first whitespace-delimited field ahead of any `|`, drops characters outside
+ * `[A-Za-z0-9_.-]`, and appends a counter when two headers reduce to the same token.
+ * Returns an empty string when nothing usable remains, so the caller falls back to its
+ * own default gene name.
+ */
+function uniqueGeneNameToken(header: string, used: Set<string>): string {
+  const firstField = header.split("|")[0]?.trim().split(/\s+/)[0] ?? "";
+  const token = firstField.replace(/[^A-Za-z0-9_.-]/g, "");
+  if (!token) return "";
+
+  let candidate = token;
+  for (let n = 2; used.has(candidate); n++) candidate = `${token}_${n}`;
+  used.add(candidate);
+  return candidate;
+}
+
 function translateDNAToProtein(dnaSequence: string): string {
   const cleanSequence = dnaSequence.toUpperCase().replace(/\s/g, "");
   let proteinSequence = "";
