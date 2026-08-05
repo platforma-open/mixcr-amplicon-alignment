@@ -1,3 +1,6 @@
+/** Gene-name stem used when a record has no header, or none that survives sanitizing. */
+const DEFAULT_GENE_NAME_BASE = "ref";
+
 export interface FastaParseResult {
   isValid: boolean;
   error?: string;
@@ -194,8 +197,8 @@ export function parseFasta(
       const splitPoint = Math.floor((cleanSequence.length * 2) / 3);
       const vGeneSequence = sequenceWithoutN.substring(0, splitPoint);
       const jGeneSequence = sequenceWithoutN.substring(splitPoint);
-      const vGeneHeader = headerRoot ? `${headerRoot}_Vgene` : "ref_Vgene";
-      const jGeneHeader = headerRoot ? `${headerRoot}_Jgene` : "ref_Jgene";
+      const vGeneHeader = `${headerRoot || DEFAULT_GENE_NAME_BASE}_Vgene`;
+      const jGeneHeader = `${headerRoot || DEFAULT_GENE_NAME_BASE}_Jgene`;
       vGeneParts.push(`>${vGeneHeader}\n${vGeneSequence}`);
       jGeneParts.push(`>${jGeneHeader}\n${jGeneSequence}`);
       if (header) headers.push(header);
@@ -220,14 +223,14 @@ export function parseFasta(
     // Use sequenceWithoutN (N→A) since repseqio fromFasta rejects wildcard nucleotides
     const vGeneEndNucleotides = cdr3StartNucleotides + cdr3HalfLengthNucleotides;
     const vGeneSequence = sequenceWithoutN.substring(0, vGeneEndNucleotides);
-    const vGeneHeader = headerRoot ? `${headerRoot}_Vgene` : "ref_Vgene";
+    const vGeneHeader = `${headerRoot || DEFAULT_GENE_NAME_BASE}_Vgene`;
     const vGene = `>${vGeneHeader}\n${vGeneSequence}`;
 
     // J gene: from second half of CDR3 to sequence end
     // Use sequenceWithoutN (N→A) since repseqio fromFasta rejects wildcard nucleotides
     const jGeneStartNucleotides = cdr3StartNucleotides + cdr3HalfLengthNucleotides;
     const jGeneSequence = sequenceWithoutN.substring(jGeneStartNucleotides);
-    const jGeneHeader = headerRoot ? `${headerRoot}_Jgene` : "ref_Jgene";
+    const jGeneHeader = `${headerRoot || DEFAULT_GENE_NAME_BASE}_Jgene`;
     const jGene = `>${jGeneHeader}\n${jGeneSequence}`;
 
     vGeneParts.push(vGene);
@@ -329,14 +332,17 @@ const codonTable: Record<string, string> = {
  * layers below the UI and long after this validation has reported success.
  *
  * Keeps the first whitespace-delimited field ahead of any `|`, drops characters outside
- * `[A-Za-z0-9_.-]`, and appends a counter when two headers reduce to the same token.
- * Returns an empty string when nothing usable remains, so the caller falls back to its
- * own default gene name.
+ * `[A-Za-z0-9_.-]`, and appends a counter when two headers reduce to the same token, so
+ * distinct records can never collapse onto one gene name.
+ *
+ * A header can sanitize away entirely — punctuation only, or a non-Latin script. Those
+ * fall back to `DEFAULT_GENE_NAME_BASE` and go through the same counter, because two
+ * unusable headers are exactly as capable of colliding as two similar ones.
  */
 function uniqueGeneNameToken(header: string, used: Set<string>): string {
   const firstField = header.split("|")[0]?.trim().split(/\s+/)[0] ?? "";
-  const token = firstField.replace(/[^A-Za-z0-9_.-]/g, "");
-  if (!token) return "";
+  const sanitized = firstField.replace(/[^A-Za-z0-9_.-]/g, "");
+  const token = sanitized || DEFAULT_GENE_NAME_BASE;
 
   let candidate = token;
   for (let n = 2; used.has(candidate); n++) candidate = `${token}_${n}`;

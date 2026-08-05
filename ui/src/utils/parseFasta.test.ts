@@ -103,6 +103,34 @@ describe("parseFasta gene naming", () => {
     expect(geneName(result.vGenes)).toBe("ref_Vgene");
     expect(geneName(result.jGenes)).toBe("ref_Jgene");
   });
+
+  // The fallback has to share the counter too. A multi-record FASTA only requires
+  // headers to be non-empty, not usable, so several records can sanitize away — and
+  // two records both named `ref_Vgene` would let repseqio index one over the other.
+  it("disambiguates records whose headers all sanitize away", () => {
+    const result = parseFasta(
+      fasta(["(((", VH_375NT], [";;;", VH_375NT], ["!!!", VH_375NT]),
+    );
+
+    expect(result.isValid).toBe(true);
+    expect(geneNames(result.vGenes)).toEqual(["ref_Vgene", "ref_2_Vgene", "ref_3_Vgene"]);
+    expect(geneNames(result.jGenes)).toEqual(["ref_Jgene", "ref_2_Jgene", "ref_3_Jgene"]);
+  });
+
+  it("keeps every gene name distinct across a mixed batch", () => {
+    const result = parseFasta(
+      fasta(
+        ["ref other words", VH_375NT],
+        ["(((", VH_375NT],
+        ["ref", VH_375NT],
+        ["real_name", VH_375NT],
+      ),
+    );
+
+    const names = geneNames(result.vGenes);
+    expect(names).toHaveLength(4);
+    expect(new Set(names).size).toBe(4);
+  });
 });
 
 describe("parseFasta validation", () => {
