@@ -108,9 +108,7 @@ describe("parseFasta gene naming", () => {
   // headers to be non-empty, not usable, so several records can sanitize away — and
   // two records both named `ref_Vgene` would let repseqio index one over the other.
   it("disambiguates records whose headers all sanitize away", () => {
-    const result = parseFasta(
-      fasta(["(((", VH_375NT], [";;;", VH_375NT], ["!!!", VH_375NT]),
-    );
+    const result = parseFasta(fasta(["(((", VH_375NT], [";;;", VH_375NT], ["!!!", VH_375NT]));
 
     expect(result.isValid).toBe(true);
     expect(geneNames(result.vGenes)).toEqual(["ref_Vgene", "ref_2_Vgene", "ref_3_Vgene"]);
