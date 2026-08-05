@@ -51,6 +51,11 @@ describe("parseFasta gene naming", () => {
   // The invariant behind the bug: repseqio addresses a gene as the fragment of a
   // `file://<file>#<geneName>` URI, so an illegal fragment character fails the whole
   // library build — far from here, and only after validation has reported success.
+  //
+  // Asserted as a character-set constraint rather than by constructing a URL: repseqio
+  // parses with Java's `java.net.URI`, which follows RFC 2396 and throws on an illegal
+  // fragment, whereas JS `new URL()` is WHATWG and percent-encodes instead of throwing —
+  // it accepts every header below, including the 275-character one that caused the bug.
   it("derives gene names that are legal URI fragments", () => {
     const headers = [
       DESCRIPTIVE_HEADER,
@@ -65,7 +70,6 @@ describe("parseFasta gene naming", () => {
 
       for (const name of [geneName(result.vGenes), geneName(result.jGenes)]) {
         expect(name).not.toMatch(/[^A-Za-z0-9_.-]/);
-        expect(() => new URL(`file://vGene.fasta#${name}`)).not.toThrow();
       }
     }
   });
