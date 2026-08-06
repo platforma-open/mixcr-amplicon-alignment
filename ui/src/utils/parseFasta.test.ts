@@ -16,6 +16,42 @@ const VH_375NT = [
   "GTGACCGTGAGCTCT",
 ].join("\n");
 
+/**
+ * The synthetic nanobody parental clone from `2026-07-synthetic-nanobody-abaumannii`,
+ * 303 nt. This is the amplified region, so it begins mid-FR1 at `…RLSCAAS` rather than
+ * at the domain N-terminus: 101 aa with the conserved CDR3 cysteine at residue 78, ahead
+ * of the search offset. `N` marks a randomized CDR position (CDR1/CDR2/CDR3 = 7/7/9 aa).
+ */
+const VHH_303NT = [
+  "CGTTTGTCTTGTGCTGCGTCCGGCNNNNNNNNNNNNNNNNNNNNNATGGGGTGGTTTCGC",
+  "CAGGCACCTGGCAAAGAACGTGAATTTGTTGCAGCAATTAGTNNNNNNNNNNNNNNNNNN",
+  "NNNTACTACGCAGATTCCGTTAAGGGACGCTTCACAATTTCGCGCGACAATGCAAAAAAT",
+  "ACCGTGTATTTACAAATGAATTCGTTGAAGCCGGAAGACACTGCGACTTATTATTGTGCG",
+  "NNNNNNNNNNNNNNNNNNNNNNNNNNNTATTGGGGACAAGGCACACAAGTCACGGTCTCC",
+  "GTG",
+].join("\n");
+
+/**
+ * `KU641040.1` from the macaque anti-SIV gp140 panel, 738 nt. A single-chain Fv, so one
+ * record carries two variable domains and therefore two CDR3s — the VL's at residue 88
+ * and the VH's at 212. The block resolves this to the first CDR3 past the offset.
+ */
+const SCFV_738NT = [
+  "ATGCTGACTCAGCCCCACTCTGTGTCGGGGTCTCCGGGGCAGACGGTCACCATCTCCTGC",
+  "ACCCGCAGCAGTGGCTACATTGGCAGCAACTCTGTGTACTGGTACCAGCAGCGGCCGGGC",
+  "AGCGCCCCCACCACTGTGATTTACAAAGATAATCAAAGACCCTCTGGGATCCCTGATCGG",
+  "TTCTCTGGCTCCATCGACAGCTCCTCCAACTCTGCCTCCCTCACCATCTCTGGACTGAAG",
+  "TCTGAGGACGAGGCTGACTACTACTGTCAGTCTTATGACAGCACTTATGATGTGTTTTTC",
+  "GGAGGAGGCACCAAGCTGACCGTCCTAGGCGGTGGTTCCTCTAGATCTTCCGAGGTGCAG",
+  "CTGGTGCAGTCTGGGACTGAGGTGAGGAAGCCTGGGGCCTCAGTGAAGGTTTCCTGCCAG",
+  "GCTTCTGGCATCAGCTTCGACAGATATGCTCTCACCTGGGTGCGACAGGTCCCTGGACAA",
+  "GGGCTTGAGTGGATGGGATCGATCATCCCTCTTGCTAGCATGACAAAGTACGCAGAGAAG",
+  "TTCCAGGGCAGAGTCACGATAACCGCGGATACGTCCAGAGGGACAGCCTACATGGAGCTG",
+  "AGTAGCCTGACATCTGAGGACACGGCCGTTTATTATTGTGCGAGACCCGGGGACGACAGT",
+  "GGGGCCTTTGACCTCTGGGGCCAGGGAGCCCTGGTCACCGTCTCCTCAGCCTCCACCAAG",
+  "GGCCCATCGGTCACTAGT",
+].join("\n");
+
 /** The header of that reference as the studies library actually ships it. */
 const DESCRIPTIVE_HEADER =
   "S1-F4_VH parental anti-CD98hc heavy variable domain, nucleotide (recovered by " +
@@ -30,6 +66,11 @@ function fasta(...records: [header: string, sequence: string][]): string {
 /** First line of a single-record FASTA string, without the leading ">". */
 function geneName(fastaString: string | undefined): string {
   return (fastaString ?? "").split("\n")[0]?.replace(/^>/, "") ?? "";
+}
+
+/** Sequence body of a single-record V or J FASTA string, without the header line. */
+function geneSequence(fastaString: string | undefined): string {
+  return (fastaString ?? "").split("\n").slice(1).join("");
 }
 
 function geneNames(fastaString: string | undefined): string[] {
@@ -163,6 +204,56 @@ describe("parseFasta validation", () => {
   it("reports an empty FASTA", () => {
     expect(parseFasta("").isValid).toBe(false);
     expect(parseFasta("   ").error).toBe("FASTA content is empty");
+  });
+});
+
+describe("parseFasta CDR3 location", () => {
+  // The two tests below pin behaviour that already holds. They exist because the search
+  // offset looks arbitrary and invites removal: across the 137 nucleotide references in
+  // platforma-studies-library, searching the whole translated sequence instead anchors on
+  // the FR1 cysteine in roughly half of them, and anchoring on the last match moves the
+  // boundary in about ninety. Whatever finds the CDR3 has to keep these two intact.
+
+  it("anchors on the CDR3 cysteine rather than the FR1 cysteine", () => {
+    const result = parseFasta(fasta(["s1f4", VH_375NT]));
+
+    expect(result.isValid).toBe(true);
+    // S1-F4 carries cysteines at residues 21 (FR1) and 95 (CDR3). Anchoring on 21 would
+    // cut V at 85 nt and hand the remaining 290 nt — nearly the whole domain — to J.
+    expect(geneSequence(result.vGenes)).toHaveLength(315);
+    expect(geneSequence(result.jGenes)).toHaveLength(60);
+  });
+
+  it("anchors on the first CDR3 when one record carries two variable domains", () => {
+    const result = parseFasta(fasta(["scfv", SCFV_738NT]));
+
+    expect(result.isValid).toBe(true);
+    // An scFv has a CDR3 per domain — here at residues 88 and 212, the light chain first.
+    // The boundary belongs to the first; taking the last would move V by 372 nt.
+    expect(geneSequence(result.vGenes)).toHaveLength(295);
+    expect(geneSequence(result.jGenes)).toHaveLength(443);
+  });
+
+  // A reference covering only the amplified region starts mid-FR1, which pulls its CDR3
+  // cysteine ahead of the offset. The offset then hides the one cysteine that matters.
+  it("locates a CDR3 that sits ahead of the search offset", () => {
+    const result = parseFasta(fasta(["nanobody", VHH_303NT]));
+
+    expect(result.isValid).toBe(true);
+    expect(geneSequence(result.vGenes)).toHaveLength(253);
+    expect(geneSequence(result.jGenes)).toHaveLength(50);
+  });
+
+  // The lenient path is the one that reaches a user: BuildLibraryPanel parses with
+  // `lenient: true`, and on a miss it splits at two-thirds of the sequence and reports
+  // success. For this reference that guess puts the boundary at 202 nt instead of 253 —
+  // 51 nt of V handed to the J gene, with nothing shown in the UI to say so.
+  it("splits a mid-FR1 reference at its real boundary in lenient mode", () => {
+    const result = parseFasta(fasta(["nanobody", VHH_303NT]), undefined, true);
+
+    expect(result.isValid).toBe(true);
+    expect(geneSequence(result.vGenes)).toHaveLength(253);
+    expect(geneSequence(result.jGenes)).toHaveLength(50);
   });
 });
 
