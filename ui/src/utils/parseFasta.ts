@@ -183,14 +183,24 @@ export function parseFasta(
     const validationRegex =
       /C([ACDEFGHIKLMNPQRSTVWYX]{4,50}[FWYLIX])[ACDEFGHIKLMNPQRSTVWYX]{0,5}G[ACDEFGHIKLMNPQRSTVWYX]G/;
 
-    // Only search from position 80 onwards (240 nucleotides)
-    const searchStartPosition = 80; // 240 nucleotides / 3 = 80 amino acids
-    const sequenceToSearch = translatedSequence.substring(searchStartPosition);
+    // The offset exists to skip the conserved FR1 cysteine, which sits near residue 20 and
+    // would otherwise anchor the split at the start of the domain. That holds for a
+    // reference beginning at the domain N-terminus; one covering only the amplified region
+    // begins mid-FR1, which pulls its CDR3 cysteine ahead of the offset and hides it.
+    //
+    // So escalate rather than derive: keep the offset as the primary search — it resolves
+    // the FR1 cysteine correctly for all but one of the nucleotide references we have —
+    // and widen to the whole translation only when it finds nothing.
+    let searchStartPosition = 80; // 240 nucleotides / 3 = 80 amino acids
+    let match = validationRegex.exec(translatedSequence.substring(searchStartPosition));
+    if (!match) {
+      searchStartPosition = 0;
+      match = validationRegex.exec(translatedSequence);
+    }
 
-    const match = validationRegex.exec(sequenceToSearch);
     if (!match) {
       if (!lenient) {
-        const error = `${recordIdentifier}: Translated sequence does not contain CDR3 after position ${searchStartPosition}`;
+        const error = `${recordIdentifier}: Translated sequence does not contain a CDR3`;
         return { isValid: false, error };
       }
       // In lenient mode, split at 2/3 of the sequence as a rough V/J boundary estimate
