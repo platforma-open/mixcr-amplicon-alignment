@@ -1,3 +1,5 @@
+//tengo:hash_override D26E7099-3166-44C4-B80D-6AD1535E8258
+
 self := import("@platforma-sdk/workflow-tengo:tpl")
 smart := import("@platforma-sdk/workflow-tengo:smart")
 ll := import("@platforma-sdk/workflow-tengo:ll")
@@ -7,16 +9,14 @@ pcolumn := import("@platforma-sdk/workflow-tengo:pframes.pcolumn")
 times := import("times")
 text := import("text")
 pframes := import("@platforma-sdk/workflow-tengo:pframes")
-xsv := import("@platforma-sdk/workflow-tengo:pframes.xsv")
 slices := import("@platforma-sdk/workflow-tengo:slices")
 pConstants := import("@platforma-sdk/workflow-tengo:pframes.constants")
 pt := import("@platforma-sdk/workflow-tengo:pt")
-qcReportColumns := import(":qc-report-columns")
 
 math := import("math")
 json := import("json")
 
-self.defineOutputs("qcReportTable")
+self.defineOutputs("rawTsv")
 
 mixcrSw := assets.importSoftware("@platforma-open/milaboratories.software-mixcr:main")
 ptablerSw := assets.importSoftware("@platforma-open/milaboratories.software-ptabler:main")
@@ -335,18 +335,7 @@ self.body(func(inputs) {
     
     tsvFile := wfResult.getFile("qc-report-processed.tsv")
 
-    qcReportColumns := qcReportColumns(hasUmi, sampleIdAxisSpec, chains, umiTags)
-    reportColumnsSpec := qcReportColumns.reportColumnsSpec
-
-    qcReportTable := xsv.importFile(
-		tsvFile,
-		"tsv",
-		reportColumnsSpec,
-		{ cpu: 1, mem: "16GiB" }
-	)
-
-    
     return {
-        qcReportTable: qcReportTable
+        rawTsv: tsvFile
     }
 })
