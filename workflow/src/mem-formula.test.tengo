@@ -1,0 +1,32 @@
+test := import("@platforma-sdk/workflow-tengo:test")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+mf := import(":mem-formula")
+
+f := exec.formula
+
+_gib := func(n) { return n * 1073741824 }
+
+_eval := func(node, sizeBytes) {
+	fileName := "input.fastq.gz"
+	resolved := f.resolveAst(node, { "reads": [fileName] }, [fileName])
+	resolver := {
+		size:      func(files) { return sizeBytes },
+		lineCount: func(files) { return 0 }
+	}
+	return f.evaluateResource(resolved, resolver, "test")
+}
+
+// 31.75 GiB of reads, so the data term 4 x size is exactly 127 GiB.
+_READS_31_75_GIB := 34091302912
+
+TestMemFormula := func() {
+	// mem = clamp(4 x size, 64 GiB, 256 GiB)
+
+	test.isEqual(_gib(127), _eval(mf.memFormula(64), _READS_31_75_GIB))  // linear region
+	test.isEqual(_gib(64),  _eval(mf.memFormula(64), 0))                 // floor binds
+	test.isEqual(_gib(128), _eval(mf.memFormula(64), _gib(32)))          // linear region
+	test.isEqual(_gib(256), _eval(mf.memFormula(64), _gib(64)))          // ceiling binds
+	test.isEqual(_gib(64),  _eval(mf.memFormula(64), _gib(8)))           // 4 x 8 = 32 -> floor binds
+
+	test.isEqual("64GiB", f.fallbackOf(mf.memFormula(64)))
+}
