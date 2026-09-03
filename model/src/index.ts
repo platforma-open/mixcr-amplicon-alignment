@@ -1,110 +1,151 @@
-import type {
-  ImportFileHandle,
-  InferHrefType,
-  PlDataTableStateV2,
-  PlRef,
-} from "@platforma-sdk/model";
+import { kind } from "@platforma-open/milaboratories.mixcr-amplicon-alignment.kind";
+import type { InferHrefType, InferOutputsType } from "@platforma-sdk/model";
+import type { ImportFileHandle } from "@platforma-sdk/model";
 import {
-  BlockModel,
+  BlockModelV3,
   createPlDataTableStateV2,
   createPlDataTableV2,
+  DataModelBuilder,
+  isImportFileHandleIndex,
   isPColumnSpec,
   parseResourceMap,
-  type InferOutputsType,
 } from "@platforma-sdk/model";
 import { ProgressPrefix } from "./progress";
+import type { BlockArgs, BlockData, LegacyBlockArgs, LegacyBlockUiState } from "./types";
 
-export type CloneClusteringMode = "relaxed" | "default" | "off";
-export type AssemblingFeature = string;
-export type StopCodonType = "amber" | "ochre" | "opal";
-export type ReferenceInputMode = "fastaFile" | "fastaSequence" | "libraryFile" | "buildLibrary";
+export * from "./types";
 
-export interface VAnchorPoints {
-  fr1Begin: number;
-  cdr1Begin: number;
-  fr2Begin: number;
-  cdr2Begin: number;
-  fr3Begin: number;
-  cdr3Begin: number;
-  vEnd: number;
-}
-
-export interface JAnchorPoints {
-  jBegin: number;
-  fr4Begin: number;
-  fr4End: number;
-}
-
-export interface LibraryEntryDefinition {
-  name: string;
-  vSequence: string;
-  jSequence: string;
-  vAnchorPoints: VAnchorPoints;
-  jAnchorPoints: JAnchorPoints;
-}
-
-export interface StopCodonReplacements {
-  amber?: string;
-  ochre?: string;
-  opal?: string;
-}
-
-export interface BlockArgs {
-  defaultBlockLabel?: string;
-  customBlockLabel?: string;
-  datasetRef?: PlRef;
-  chains?: string; // default: 'IGHeavy'
-  title?: string;
-  tagPattern: string;
-  vGenes?: string; // now a single FASTA string
-  jGenes?: string; // now a single FASTA string
-  limitInput?: number;
-  perProcessMemGB?: number; // 1GB or more required
-  perProcessCPUs?: number; // 1 or more required
-  cloneClusteringMode?: CloneClusteringMode; // default: 'off'
-  assemblingFeature?: AssemblingFeature; // default: 'VDJRegion'
-  badQualityThreshold?: number; // default: 15 (MiXCR default)
-  disableLowQualityMapping?: boolean; // default: false; when true, passes maxBadPointsPercent=0 to MiXCR to skip the deferred-reads mapping phase
-  stopCodonTypes?: StopCodonType[];
-  stopCodonReplacements?: StopCodonReplacements;
-  referenceFileHandle?: ImportFileHandle;
-  libraryFile?: ImportFileHandle;
-  isLibraryFileGzipped?: boolean;
-  imputeGermline?: boolean;
-  libraryEntries?: LibraryEntryDefinition[];
-  buildLibraryVGenes?: string;
-  buildLibraryJGenes?: string;
-  referenceInputMode?: ReferenceInputMode;
-}
-
-export interface UiState {
-  referenceInputMode?: ReferenceInputMode;
-  librarySequence?: string;
-  selectedRecordHeaders?: string[];
-  buildLibraryFastaFile?: ImportFileHandle;
-  tableState: PlDataTableStateV2;
-}
-
-export interface BlockArgsValid extends BlockArgs {
-  dataset: PlRef;
-  chains: string;
-  librarySequence: string;
-}
-
-export const platforma = BlockModel.create("Heavy")
-
-  .withArgs<BlockArgs>({
+const blockDataModel = new DataModelBuilder({ kind })
+  .from<BlockData>("V20260903")
+  .upgradeLegacy<LegacyBlockArgs, LegacyBlockUiState>(({ args, uiState }) => ({
+    customBlockLabel: args?.customBlockLabel ?? "",
+    defaultBlockLabel: args?.defaultBlockLabel ?? "",
+    datasetRef: args?.datasetRef,
+    title: args?.title,
+    chains: args?.chains ?? "IGHeavy",
+    tagPattern: args?.tagPattern ?? "",
+    // Pre-V3 this lived in both args and uiState, kept in step by a watcher.
+    // The UI copy is the one the user edited, so it wins where they disagree.
+    referenceInputMode: uiState?.referenceInputMode ?? args?.referenceInputMode ?? "fastaSequence",
+    librarySequence: uiState?.librarySequence,
+    referenceFileHandle: args?.referenceFileHandle,
+    selectedRecordHeaders: uiState?.selectedRecordHeaders,
+    vGenes: args?.vGenes,
+    jGenes: args?.jGenes,
+    libraryFile: args?.libraryFile,
+    isLibraryFileGzipped: args?.isLibraryFileGzipped,
+    libraryEntries: args?.libraryEntries,
+    buildLibraryFastaFile: uiState?.buildLibraryFastaFile,
+    buildLibraryVGenes: args?.buildLibraryVGenes,
+    buildLibraryJGenes: args?.buildLibraryJGenes,
+    cloneClusteringMode: args?.cloneClusteringMode ?? "off",
+    assemblingFeature: args?.assemblingFeature ?? "VDJRegion",
+    badQualityThreshold: args?.badQualityThreshold,
+    disableLowQualityMapping: args?.disableLowQualityMapping,
+    imputeGermline: args?.imputeGermline ?? false,
+    stopCodonTypes: args?.stopCodonTypes,
+    stopCodonReplacements: args?.stopCodonReplacements,
+    limitInput: args?.limitInput,
+    perProcessMemGB: args?.perProcessMemGB,
+    perProcessCPUs: args?.perProcessCPUs,
+    tableState: uiState?.tableState ?? createPlDataTableStateV2(),
+  }))
+  // A block created from a template starts on the params its kind accepted; one
+  // created by hand gets the same defaults `withArgs`/`withUiState` used to set.
+  // The fields the contract leaves out are all either derived by the UI from
+  // what is here (`title`, `defaultBlockLabel`, `selectedRecordHeaders`) or
+  // machine-local (`perProcessMemGB`, `perProcessCPUs`, `tableState`).
+  .init(({ params }) => ({
+    customBlockLabel: params?.customBlockLabel ?? "",
     defaultBlockLabel: "",
-    customBlockLabel: "",
-    chains: "IGHeavy",
-    cloneClusteringMode: "off",
-    tagPattern: "",
-    assemblingFeature: "VDJRegion",
-    imputeGermline: false,
-  })
-  .withUiState<UiState>({
-    referenceInputMode: "fastaSequence",
+    datasetRef: params?.datasetRef,
+    title: undefined,
+    chains: params?.chains ?? "IGHeavy",
+    tagPattern: params?.tagPattern ?? "",
+    referenceInputMode: params?.referenceInputMode ?? "fastaSequence",
+    librarySequence: params?.librarySequence,
+    referenceFileHandle: undefined,
+    selectedRecordHeaders: undefined,
+    vGenes: params?.vGenes,
+    jGenes: params?.jGenes,
+    libraryFile: params?.libraryFile,
+    isLibraryFileGzipped: params?.isLibraryFileGzipped,
+    libraryEntries: params?.libraryEntries,
+    buildLibraryFastaFile: undefined,
+    buildLibraryVGenes: params?.buildLibraryVGenes,
+    buildLibraryJGenes: params?.buildLibraryJGenes,
+    cloneClusteringMode: params?.cloneClusteringMode ?? "off",
+    assemblingFeature: params?.assemblingFeature ?? "VDJRegion",
+    badQualityThreshold: params?.badQualityThreshold,
+    disableLowQualityMapping: params?.disableLowQualityMapping,
+    imputeGermline: params?.imputeGermline ?? false,
+    stopCodonTypes: params?.stopCodonTypes,
+    stopCodonReplacements: params?.stopCodonReplacements,
+    limitInput: params?.limitInput,
+    perProcessMemGB: undefined,
+    perProcessCPUs: undefined,
     tableState: createPlDataTableStateV2(),
+  }));
+
+export const platforma = BlockModelV3.create({ dataModel: blockDataModel, kind })
+
+  .args<BlockArgs>((data) => {
+    // Was `.argsValid` before V3: the same conditions, now stated as the reason
+    // the block cannot run rather than a bare false.
+    if (data.datasetRef === undefined) throw new Error("Input dataset is required");
+    // A "Custom (advanced)" assembling feature left empty would reach
+    // parseAssemblingFeature and panic.
+    if (data.assemblingFeature !== undefined && data.assemblingFeature.trim() === "")
+      throw new Error("Assembling feature is required");
+    if (data.referenceInputMode === "libraryFile" && data.libraryFile === undefined)
+      throw new Error("Library file is required");
+    if (data.referenceInputMode === "buildLibrary" && (data.libraryEntries?.length ?? 0) === 0)
+      throw new Error("At least one library entry is required");
+    if (
+      data.referenceInputMode !== "libraryFile" &&
+      data.referenceInputMode !== "buildLibrary" &&
+      data.librarySequence === undefined &&
+      data.vGenes === undefined
+    )
+      throw new Error("A V/J reference is required");
+
+    return toArgs(data);
+  })
+
+  // Prerun renders the library preview in `buildLibrary` mode, and must keep
+  // doing so while the main args are still incomplete — so it takes the same
+  // projection without the checks above.
+  .prerunArgs((data) => toArgs(data))
+
+  // Inverse of the kind's init-params contract.
+  .templateParams((data) => {
+    // An `upload://` handle is signed by the desktop that opened the file
+    // dialog and resolves nowhere else, so only an `index://` one travels —
+    // and `isLibraryFileGzipped`, read off that file's name, travels with it.
+    const libraryFile = shareableFileHandle(data.libraryFile);
+    return {
+      customBlockLabel: data.customBlockLabel,
+      datasetRef: data.datasetRef,
+      chains: data.chains,
+      tagPattern: data.tagPattern,
+      referenceInputMode: data.referenceInputMode,
+      librarySequence: data.librarySequence,
+      vGenes: data.vGenes,
+      jGenes: data.jGenes,
+      libraryFile,
+      isLibraryFileGzipped: libraryFile === undefined ? undefined : data.isLibraryFileGzipped,
+      libraryEntries: data.libraryEntries,
+      buildLibraryVGenes: data.buildLibraryVGenes,
+      buildLibraryJGenes: data.buildLibraryJGenes,
+      cloneClusteringMode: data.cloneClusteringMode,
+      assemblingFeature: data.assemblingFeature,
+      badQualityThreshold: data.badQualityThreshold,
+      disableLowQualityMapping: data.disableLowQualityMapping,
+      imputeGermline: data.imputeGermline,
+      stopCodonTypes: data.stopCodonTypes,
+      stopCodonReplacements: data.stopCodonReplacements,
+      limitInput: data.limitInput,
+    };
   })
 
   .output("qc", (ctx) => {
@@ -210,7 +251,7 @@ export const platforma = BlockModel.create("Heavy")
   })
 
   .output("sampleLabels", (ctx): Record<string, string> | undefined => {
-    const inputRef = ctx.args.datasetRef;
+    const inputRef = ctx.data.datasetRef;
     if (inputRef === undefined) return undefined;
 
     const spec = ctx.resultPool.getPColumnSpecByRef(inputRef);
@@ -249,7 +290,7 @@ export const platforma = BlockModel.create("Heavy")
     if (pCols === undefined) {
       return undefined;
     }
-    return createPlDataTableV2(ctx, pCols, ctx.uiState.tableState);
+    return createPlDataTableV2(ctx, pCols, ctx.data.tableState);
   })
 
   .sections((_ctx) => {
@@ -257,25 +298,6 @@ export const platforma = BlockModel.create("Heavy")
       { type: "link", href: "/", label: "Main" },
       { type: "link", href: "/qc-report-table", label: "QC Report Table" },
     ];
-  })
-
-  .argsValid((ctx) => {
-    // A "Custom (advanced)" assembling feature left empty would reach parseAssemblingFeature and
-    // panic; block the run until it is filled.
-    if (ctx.args.assemblingFeature !== undefined && ctx.args.assemblingFeature.trim() === "") {
-      return false;
-    }
-    const mode = ctx.uiState.referenceInputMode ?? "fastaSequence";
-    const hasDataset = ctx.args.datasetRef !== undefined;
-    if (mode === "libraryFile") {
-      return hasDataset && ctx.args.libraryFile !== undefined;
-    }
-    if (mode === "buildLibrary") {
-      return hasDataset && (ctx.args.libraryEntries?.length ?? 0) > 0;
-    }
-    return (
-      hasDataset && (ctx.uiState.librarySequence !== undefined || ctx.args.vGenes !== undefined)
-    );
   })
 
   .output("isRunning", (ctx) => ctx.outputs?.getIsReadyOrError() === false)
@@ -291,12 +313,53 @@ export const platforma = BlockModel.create("Heavy")
 
   .title(() => "MiXCR Amplicon Alignment")
 
-  .subtitle((ctx) => ctx.args.customBlockLabel || ctx.args.defaultBlockLabel || "")
+  .subtitle((ctx) => ctx.data.customBlockLabel || ctx.data.defaultBlockLabel || "")
 
-  .done(2);
+  .done();
 
 export type BlockOutputs = InferOutputsType<typeof platforma>;
 export type Href = InferHrefType<typeof platforma>;
 export * from "./progress";
 export * from "./qc";
 export * from "./reports";
+
+// Internals
+
+/**
+ * Everything the workflow reads, projected without validation so `prerunArgs`
+ * can share it.
+ */
+function toArgs(data: BlockData): BlockArgs {
+  return {
+    defaultBlockLabel: data.defaultBlockLabel,
+    customBlockLabel: data.customBlockLabel,
+    datasetRef: data.datasetRef,
+    chains: data.chains,
+    title: data.title,
+    tagPattern: data.tagPattern,
+    vGenes: data.vGenes,
+    jGenes: data.jGenes,
+    limitInput: data.limitInput,
+    perProcessMemGB: data.perProcessMemGB,
+    perProcessCPUs: data.perProcessCPUs,
+    cloneClusteringMode: data.cloneClusteringMode,
+    assemblingFeature: data.assemblingFeature,
+    badQualityThreshold: data.badQualityThreshold,
+    disableLowQualityMapping: data.disableLowQualityMapping,
+    stopCodonTypes: data.stopCodonTypes,
+    stopCodonReplacements: data.stopCodonReplacements,
+    referenceFileHandle: data.referenceFileHandle,
+    libraryFile: data.libraryFile,
+    isLibraryFileGzipped: data.isLibraryFileGzipped,
+    imputeGermline: data.imputeGermline,
+    libraryEntries: data.libraryEntries,
+    buildLibraryVGenes: data.buildLibraryVGenes,
+    buildLibraryJGenes: data.buildLibraryJGenes,
+    referenceInputMode: data.referenceInputMode,
+  };
+}
+
+/** The handle when it can resolve on another machine, else undefined. */
+function shareableFileHandle(handle: ImportFileHandle | undefined): ImportFileHandle | undefined {
+  return handle !== undefined && isImportFileHandleIndex(handle) ? handle : undefined;
+}
