@@ -1,19 +1,39 @@
 import type {
-  BlockArgs,
+  BlockData,
   BlockOutputs,
   platforma,
 } from "@platforma-open/milaboratories.mixcr-amplicon-alignment.model";
 import { AlignReport, Qc } from "@platforma-open/milaboratories.mixcr-amplicon-alignment.model";
+import { createPlDataTableStateV2, uniquePlId } from "@platforma-sdk/model";
 import { awaitStableState, blockTest } from "@platforma-sdk/test";
-import { blockSpec as samplesAndDataBlockSpec } from "@platforma-open/milaboratories.samples-and-data";
-import type { BlockArgs as SamplesAndDataBlockArgs } from "@platforma-open/milaboratories.samples-and-data.model";
-import { uniquePlId } from "@platforma-open/milaboratories.samples-and-data.model";
+import type { SamplesAndDataBlockData } from "@platforma-open/milaboratories.samples-and-data";
+import { SamplesAndDataBlockPointer as samplesAndDataBlockSpec } from "@platforma-open/milaboratories.samples-and-data";
 import { MixcrAmpliconAlignmentBlockPointer as myBlockSpec } from "this-block";
 import type { InferBlockState } from "@platforma-sdk/model";
 import { wrapOutputs } from "@platforma-sdk/model";
 
 // prettier-ignore
 const referenceSequence = 'GAGGTGCAGCTCGTGGAGTCTGGGGGAGGCTTGGTCCAGCCTGGGGGGTCCCTGACACTTTCCTGTGCAGCCTCTGGATTCACCTTTAACACCTATTGGATGACCTGGGTCCGCCAGGCTCCAGGGAAGGGGCTGGAGTGGGTGGCCAATATAAATGAAGATGGAAGTGAAAACTACTATGCGGACTCTGTGAGGGGCCGATTCACCATTTTCAGAGACAACGCCAAGAACTCACTGTATCTGCAACTGAGCAGCCTGAGAGCCGAGGACACGTCTGTGTATTACTGTGCGAGATTCCGCGGGGGCCTTTGGGGCCAGGGAACCCTGGTCATTGTCTCCTCA';
+
+/**
+ * A whole `BlockData` from the handful of fields a case actually sets. V3
+ * replaces the block's data outright rather than merging into it, so every
+ * required field has to be present on each call.
+ */
+function alignData(overrides: Partial<BlockData>): BlockData {
+  return {
+    customBlockLabel: "",
+    defaultBlockLabel: "",
+    chains: "IGHeavy",
+    tagPattern: "",
+    referenceInputMode: "fastaSequence",
+    cloneClusteringMode: "off",
+    assemblingFeature: "VDJRegion",
+    imputeGermline: false,
+    tableState: createPlDataTableStateV2(),
+    ...overrides,
+  };
+}
 
 blockTest("empty inputs", { timeout: 20000 }, async ({ rawPrj: project, expect }) => {
   const blockId = await project.addBlock("Block", myBlockSpec);
@@ -39,29 +59,35 @@ blockTest(
     const r1Handle = await helpers.getLocalFileHandle("./assets/s1_R1.fastq.gz");
     const r2Handle = await helpers.getLocalFileHandle("./assets/s1_R2.fastq.gz");
 
-    await project.setBlockArgs(sndBlockId, {
-      metadata: [],
-      sampleIds: [sample1Id],
-      sampleLabelColumnLabel: "Sample Name",
-      sampleLabels: { [sample1Id]: "Sample 1" },
-      datasets: [
-        {
-          id: dataset1Id,
-          label: "Dataset 1",
-          content: {
-            type: "Fastq",
-            readIndices: ["R1", "R2"],
-            gzipped: true,
-            data: {
-              [sample1Id]: {
-                R1: r1Handle,
-                R2: r2Handle,
+    await project.mutateBlockStorage(sndBlockId, {
+      operation: "update-block-data",
+      value: {
+        metadata: [],
+        sampleIds: [sample1Id],
+        sampleLabelColumnLabel: "Sample Name",
+        sampleLabels: { [sample1Id]: "Sample 1" },
+        datasets: [
+          {
+            id: dataset1Id,
+            label: "Dataset 1",
+            content: {
+              type: "Fastq",
+              readIndices: ["R1", "R2"],
+              gzipped: true,
+              data: {
+                [sample1Id]: {
+                  R1: r1Handle,
+                  R2: r2Handle,
+                },
               },
             },
           },
-        },
-      ],
-    } satisfies SamplesAndDataBlockArgs);
+        ],
+        h5adFilesToPreprocess: [],
+        seuratFilesToPreprocess: [],
+        suggestedImport: false,
+      } satisfies SamplesAndDataBlockData,
+    });
     await project.runBlock(sndBlockId);
     await helpers.awaitBlockDone(sndBlockId, 8000);
 
@@ -96,15 +122,18 @@ blockTest(
     const vGenesFasta = `>ref_heavy\n${referenceSequence}`;
     const jGenesFasta = `>ref_heavy_j\n${referenceSequence.slice(-80)}`;
 
-    await project.setBlockArgs(alignBlockId, {
-      datasetRef: alignOutputs1.inputOptions[0].ref,
-      chains: "IGHeavy",
-      tagPattern: "",
-      vGenes: vGenesFasta,
-      jGenes: jGenesFasta,
-      assemblingFeature: "VDJRegion",
-      cloneClusteringMode: "relaxed",
-    } satisfies BlockArgs);
+    await project.mutateBlockStorage(alignBlockId, {
+      operation: "update-block-data",
+      value: alignData({
+        datasetRef: alignOutputs1.inputOptions[0].ref,
+        chains: "IGHeavy",
+        tagPattern: "",
+        vGenes: vGenesFasta,
+        jGenes: jGenesFasta,
+        assemblingFeature: "VDJRegion",
+        cloneClusteringMode: "relaxed",
+      }),
+    });
 
     const alignStableState2 = (await awaitStableState(
       project.getBlockState(alignBlockId),
@@ -177,29 +206,35 @@ blockTest(
     const r1Handle = await helpers.getLocalFileHandle("./assets/s1_R1.fastq.gz");
     const r2Handle = await helpers.getLocalFileHandle("./assets/s1_R2.fastq.gz");
 
-    await project.setBlockArgs(sndBlockId, {
-      metadata: [],
-      sampleIds: [sample1Id],
-      sampleLabelColumnLabel: "Sample Name",
-      sampleLabels: { [sample1Id]: "Sample 1" },
-      datasets: [
-        {
-          id: dataset1Id,
-          label: "Dataset 1",
-          content: {
-            type: "Fastq",
-            readIndices: ["R1", "R2"],
-            gzipped: true,
-            data: {
-              [sample1Id]: {
-                R1: r1Handle,
-                R2: r2Handle,
+    await project.mutateBlockStorage(sndBlockId, {
+      operation: "update-block-data",
+      value: {
+        metadata: [],
+        sampleIds: [sample1Id],
+        sampleLabelColumnLabel: "Sample Name",
+        sampleLabels: { [sample1Id]: "Sample 1" },
+        datasets: [
+          {
+            id: dataset1Id,
+            label: "Dataset 1",
+            content: {
+              type: "Fastq",
+              readIndices: ["R1", "R2"],
+              gzipped: true,
+              data: {
+                [sample1Id]: {
+                  R1: r1Handle,
+                  R2: r2Handle,
+                },
               },
             },
           },
-        },
-      ],
-    } satisfies SamplesAndDataBlockArgs);
+        ],
+        h5adFilesToPreprocess: [],
+        seuratFilesToPreprocess: [],
+        suggestedImport: false,
+      } satisfies SamplesAndDataBlockData,
+    });
     await project.runBlock(sndBlockId);
 
     await helpers.awaitBlockDoneAndGetStableBlockState(sndBlockId, 8000);
@@ -216,16 +251,19 @@ blockTest(
     const vGenesFasta = `>ref_heavy\n${referenceSequence}`;
     const jGenesFasta = `>ref_heavy_j\n${referenceSequence.slice(-80)}`;
 
-    await project.setBlockArgs(alignBlockId, {
-      datasetRef: alignOutputs1.inputOptions[0].ref,
-      chains: "IGHeavy",
-      tagPattern: "",
-      vGenes: vGenesFasta,
-      jGenes: jGenesFasta,
-      assemblingFeature: "FR2:FR4",
-      imputeGermline: true,
-      cloneClusteringMode: "relaxed",
-    } satisfies BlockArgs);
+    await project.mutateBlockStorage(alignBlockId, {
+      operation: "update-block-data",
+      value: alignData({
+        datasetRef: alignOutputs1.inputOptions[0].ref,
+        chains: "IGHeavy",
+        tagPattern: "",
+        vGenes: vGenesFasta,
+        jGenes: jGenesFasta,
+        assemblingFeature: "FR2:FR4",
+        imputeGermline: true,
+        cloneClusteringMode: "relaxed",
+      }),
+    });
 
     await project.runBlock(alignBlockId);
     const alignStableState3 = await helpers.awaitBlockDoneAndGetStableBlockState(
@@ -277,29 +315,35 @@ blockTest(
     const r1Handle = await helpers.getLocalFileHandle("./assets/s1_R1.fastq.gz");
     const r2Handle = await helpers.getLocalFileHandle("./assets/s1_R2.fastq.gz");
 
-    await project.setBlockArgs(sndBlockId, {
-      metadata: [],
-      sampleIds: [sample1Id],
-      sampleLabelColumnLabel: "Sample Name",
-      sampleLabels: { [sample1Id]: "Sample 1" },
-      datasets: [
-        {
-          id: dataset1Id,
-          label: "Dataset 1",
-          content: {
-            type: "Fastq",
-            readIndices: ["R1", "R2"],
-            gzipped: true,
-            data: {
-              [sample1Id]: {
-                R1: r1Handle,
-                R2: r2Handle,
+    await project.mutateBlockStorage(sndBlockId, {
+      operation: "update-block-data",
+      value: {
+        metadata: [],
+        sampleIds: [sample1Id],
+        sampleLabelColumnLabel: "Sample Name",
+        sampleLabels: { [sample1Id]: "Sample 1" },
+        datasets: [
+          {
+            id: dataset1Id,
+            label: "Dataset 1",
+            content: {
+              type: "Fastq",
+              readIndices: ["R1", "R2"],
+              gzipped: true,
+              data: {
+                [sample1Id]: {
+                  R1: r1Handle,
+                  R2: r2Handle,
+                },
               },
             },
           },
-        },
-      ],
-    } satisfies SamplesAndDataBlockArgs);
+        ],
+        h5adFilesToPreprocess: [],
+        seuratFilesToPreprocess: [],
+        suggestedImport: false,
+      } satisfies SamplesAndDataBlockData,
+    });
     await project.runBlock(sndBlockId);
 
     await helpers.awaitBlockDoneAndGetStableBlockState(sndBlockId, 8000);
@@ -320,16 +364,19 @@ blockTest(
     const vGenesFasta = `>ref_heavy\n${referenceSequence}`;
     const jGenesFasta = `>ref_heavy_j\n${referenceSequence.slice(-80)}`;
 
-    await project.setBlockArgs(alignBlockId, {
-      datasetRef: alignOutputs1.inputOptions[0].ref,
-      chains: "IGHeavy",
-      tagPattern: "",
-      vGenes: vGenesFasta,
-      jGenes: jGenesFasta,
-      assemblingFeature: "FR1Begin:FR3Begin(+30),FR3Begin(+36):FR4End",
-      imputeGermline: true,
-      cloneClusteringMode: "relaxed",
-    } satisfies BlockArgs);
+    await project.mutateBlockStorage(alignBlockId, {
+      operation: "update-block-data",
+      value: alignData({
+        datasetRef: alignOutputs1.inputOptions[0].ref,
+        chains: "IGHeavy",
+        tagPattern: "",
+        vGenes: vGenesFasta,
+        jGenes: jGenesFasta,
+        assemblingFeature: "FR1Begin:FR3Begin(+30),FR3Begin(+36):FR4End",
+        imputeGermline: true,
+        cloneClusteringMode: "relaxed",
+      }),
+    });
 
     await project.runBlock(alignBlockId);
     const alignStableState3 = await helpers.awaitBlockDoneAndGetStableBlockState(
@@ -383,29 +430,35 @@ blockTest(
     const r1Handle = await helpers.getLocalFileHandle("./assets/s1_R1.fastq.gz");
     const r2Handle = await helpers.getLocalFileHandle("./assets/s1_R2.fastq.gz");
 
-    await project.setBlockArgs(sndBlockId, {
-      metadata: [],
-      sampleIds: [sample1Id],
-      sampleLabelColumnLabel: "Sample Name",
-      sampleLabels: { [sample1Id]: "Sample 1" },
-      datasets: [
-        {
-          id: dataset1Id,
-          label: "Dataset 1",
-          content: {
-            type: "Fastq",
-            readIndices: ["R1", "R2"],
-            gzipped: true,
-            data: {
-              [sample1Id]: {
-                R1: r1Handle,
-                R2: r2Handle,
+    await project.mutateBlockStorage(sndBlockId, {
+      operation: "update-block-data",
+      value: {
+        metadata: [],
+        sampleIds: [sample1Id],
+        sampleLabelColumnLabel: "Sample Name",
+        sampleLabels: { [sample1Id]: "Sample 1" },
+        datasets: [
+          {
+            id: dataset1Id,
+            label: "Dataset 1",
+            content: {
+              type: "Fastq",
+              readIndices: ["R1", "R2"],
+              gzipped: true,
+              data: {
+                [sample1Id]: {
+                  R1: r1Handle,
+                  R2: r2Handle,
+                },
               },
             },
           },
-        },
-      ],
-    } satisfies SamplesAndDataBlockArgs);
+        ],
+        h5adFilesToPreprocess: [],
+        seuratFilesToPreprocess: [],
+        suggestedImport: false,
+      } satisfies SamplesAndDataBlockData,
+    });
     await project.runBlock(sndBlockId);
 
     await helpers.awaitBlockDoneAndGetStableBlockState(sndBlockId, 8000);
@@ -422,16 +475,19 @@ blockTest(
     const vGenesFasta = `>ref_heavy\n${referenceSequence}`;
     const jGenesFasta = `>ref_heavy_j\n${referenceSequence.slice(-80)}`;
 
-    await project.setBlockArgs(alignBlockId, {
-      datasetRef: alignOutputs1.inputOptions[0].ref,
-      chains: "IGHeavy",
-      tagPattern: "",
-      vGenes: vGenesFasta,
-      jGenes: jGenesFasta,
-      assemblingFeature: "CDR1:CDR3",
-      imputeGermline: false,
-      cloneClusteringMode: "relaxed",
-    } satisfies BlockArgs);
+    await project.mutateBlockStorage(alignBlockId, {
+      operation: "update-block-data",
+      value: alignData({
+        datasetRef: alignOutputs1.inputOptions[0].ref,
+        chains: "IGHeavy",
+        tagPattern: "",
+        vGenes: vGenesFasta,
+        jGenes: jGenesFasta,
+        assemblingFeature: "CDR1:CDR3",
+        imputeGermline: false,
+        cloneClusteringMode: "relaxed",
+      }),
+    });
 
     await project.runBlock(alignBlockId);
     const alignStableState3 = await helpers.awaitBlockDoneAndGetStableBlockState(
