@@ -1,3 +1,6 @@
+/** Gene-name stem used when a record has no header, or none that survives sanitizing. */
+const DEFAULT_GENE_NAME_BASE = "ref";
+
 export interface FastaParseResult {
   isValid: boolean;
   error?: string;
@@ -121,6 +124,7 @@ export function parseFasta(
   const vGeneParts: string[] = [];
   const jGeneParts: string[] = [];
   const headers: string[] = [];
+  const usedGeneNames = new Set<string>();
 
   // Validate each record
   for (const [i, record] of records.entries()) {
@@ -133,7 +137,7 @@ export function parseFasta(
     }
 
     const recordIdentifier = header ? `Record "${header}"` : `Record ${i + 1}`;
-    const headerRoot = header ? header.split("|")[0]?.trim() : "";
+    const headerRoot = header ? uniqueGeneNameToken(header, usedGeneNames) : "";
 
     // Clean the sequence (remove whitespace, convert to uppercase, and normalize IUPAC wildcards to N)
     const cleanSequence = sequence
@@ -179,22 +183,32 @@ export function parseFasta(
     const validationRegex =
       /C([ACDEFGHIKLMNPQRSTVWYX]{4,50}[FWYLIX])[ACDEFGHIKLMNPQRSTVWYX]{0,5}G[ACDEFGHIKLMNPQRSTVWYX]G/;
 
-    // Only search from position 80 onwards (240 nucleotides)
-    const searchStartPosition = 80; // 240 nucleotides / 3 = 80 amino acids
-    const sequenceToSearch = translatedSequence.substring(searchStartPosition);
+    // The offset exists to skip the conserved FR1 cysteine, which sits near residue 20 and
+    // would otherwise anchor the split at the start of the domain. That holds for a
+    // reference beginning at the domain N-terminus; one covering only the amplified region
+    // begins mid-FR1, which pulls its CDR3 cysteine ahead of the offset and hides it.
+    //
+    // So escalate rather than derive: keep the offset as the primary search — it resolves
+    // the FR1 cysteine correctly for all but one of the nucleotide references we have —
+    // and widen to the whole translation only when it finds nothing.
+    let searchStartPosition = 80; // 240 nucleotides / 3 = 80 amino acids
+    let match = validationRegex.exec(translatedSequence.substring(searchStartPosition));
+    if (!match) {
+      searchStartPosition = 0;
+      match = validationRegex.exec(translatedSequence);
+    }
 
-    const match = validationRegex.exec(sequenceToSearch);
     if (!match) {
       if (!lenient) {
-        const error = `${recordIdentifier}: Translated sequence does not contain CDR3 after position ${searchStartPosition}`;
+        const error = `${recordIdentifier}: Translated sequence does not contain a CDR3`;
         return { isValid: false, error };
       }
       // In lenient mode, split at 2/3 of the sequence as a rough V/J boundary estimate
       const splitPoint = Math.floor((cleanSequence.length * 2) / 3);
       const vGeneSequence = sequenceWithoutN.substring(0, splitPoint);
       const jGeneSequence = sequenceWithoutN.substring(splitPoint);
-      const vGeneHeader = headerRoot ? `${headerRoot}_Vgene` : "ref_Vgene";
-      const jGeneHeader = headerRoot ? `${headerRoot}_Jgene` : "ref_Jgene";
+      const vGeneHeader = `${headerRoot || DEFAULT_GENE_NAME_BASE}_Vgene`;
+      const jGeneHeader = `${headerRoot || DEFAULT_GENE_NAME_BASE}_Jgene`;
       vGeneParts.push(`>${vGeneHeader}\n${vGeneSequence}`);
       jGeneParts.push(`>${jGeneHeader}\n${jGeneSequence}`);
       if (header) headers.push(header);
@@ -219,14 +233,14 @@ export function parseFasta(
     // Use sequenceWithoutN (N→A) since repseqio fromFasta rejects wildcard nucleotides
     const vGeneEndNucleotides = cdr3StartNucleotides + cdr3HalfLengthNucleotides;
     const vGeneSequence = sequenceWithoutN.substring(0, vGeneEndNucleotides);
-    const vGeneHeader = headerRoot ? `${headerRoot}_Vgene` : "ref_Vgene";
+    const vGeneHeader = `${headerRoot || DEFAULT_GENE_NAME_BASE}_Vgene`;
     const vGene = `>${vGeneHeader}\n${vGeneSequence}`;
 
     // J gene: from second half of CDR3 to sequence end
     // Use sequenceWithoutN (N→A) since repseqio fromFasta rejects wildcard nucleotides
     const jGeneStartNucleotides = cdr3StartNucleotides + cdr3HalfLengthNucleotides;
     const jGeneSequence = sequenceWithoutN.substring(jGeneStartNucleotides);
-    const jGeneHeader = headerRoot ? `${headerRoot}_Jgene` : "ref_Jgene";
+    const jGeneHeader = `${headerRoot || DEFAULT_GENE_NAME_BASE}_Jgene`;
     const jGene = `>${jGeneHeader}\n${jGeneSequence}`;
 
     vGeneParts.push(vGene);
@@ -243,6 +257,34 @@ export function parseFasta(
     vGenes,
     jGenes,
   };
+}
+
+/**
+ * Reduce a FASTA header to a token usable as a repseqio gene name.
+ *
+ * repseqio addresses each gene as the fragment of a `file://<file>#<geneName>` URI, so a
+ * gene name may only contain characters that are legal in a URI fragment. FASTA headers
+ * routinely carry a descriptive tail after the identifier, which — appended verbatim —
+ * makes repseqio fail with `URISyntaxException: Illegal character in fragment`, several
+ * layers below the UI and long after this validation has reported success.
+ *
+ * Keeps the first whitespace-delimited field ahead of any `|`, drops characters outside
+ * `[A-Za-z0-9_.-]`, and appends a counter when two headers reduce to the same token, so
+ * distinct records can never collapse onto one gene name.
+ *
+ * A header can sanitize away entirely — punctuation only, or a non-Latin script. Those
+ * fall back to `DEFAULT_GENE_NAME_BASE` and go through the same counter, because two
+ * unusable headers are exactly as capable of colliding as two similar ones.
+ */
+function uniqueGeneNameToken(header: string, used: Set<string>): string {
+  const firstField = header.split("|")[0]?.trim().split(/\s+/)[0] ?? "";
+  const sanitized = firstField.replace(/[^A-Za-z0-9_.-]/g, "");
+  const token = sanitized || DEFAULT_GENE_NAME_BASE;
+
+  let candidate = token;
+  for (let n = 2; used.has(candidate); n++) candidate = `${token}_${n}`;
+  used.add(candidate);
+  return candidate;
 }
 
 // DNA to protein translation table
