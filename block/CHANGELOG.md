@@ -1,5 +1,11 @@
 ## 1.0.0
 
+## 1.9.1
+
+### Patch Changes
+
+- bacc8e1: Bump `@platforma-sdk/block-tools` to 2.14.3.
+
 ## 1.9.0
 
 ### Minor Changes
