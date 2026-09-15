@@ -89,7 +89,7 @@ const exportRawTsvs = async () => {
         },
       },
     ],
-    suggestedName: `${new Date().toISOString().split("T")[0]}_AmpliconAlignmentResultsRaw_${app.model.args.title ?? "Untitled"}.zip`,
+    suggestedName: `${new Date().toISOString().split("T")[0]}_AmpliconAlignmentResultsRaw_${app.model.data.title ?? "Untitled"}.zip`,
   });
 
   data.loading = true;
