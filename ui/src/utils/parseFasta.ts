@@ -1,4 +1,4 @@
-/** Gene-name stem used when a record has no header, or none that survives sanitizing. */
+/** Gene-name base for a header that sanitizes to nothing. */
 const DEFAULT_GENE_NAME_BASE = "ref";
 
 export interface FastaParseResult {
@@ -137,7 +137,7 @@ export function parseFasta(
     }
 
     const recordIdentifier = header ? `Record "${header}"` : `Record ${i + 1}`;
-    const headerRoot = header ? uniqueGeneNameToken(header, usedGeneNames) : "";
+    const geneNameBase = uniqueGeneNameToken(header, usedGeneNames);
 
     // Clean the sequence (remove whitespace, convert to uppercase, and normalize IUPAC wildcards to N)
     const cleanSequence = sequence
@@ -197,8 +197,8 @@ export function parseFasta(
       const splitPoint = Math.floor((cleanSequence.length * 2) / 3);
       const vGeneSequence = sequenceWithoutN.substring(0, splitPoint);
       const jGeneSequence = sequenceWithoutN.substring(splitPoint);
-      const vGeneHeader = `${headerRoot || DEFAULT_GENE_NAME_BASE}_Vgene`;
-      const jGeneHeader = `${headerRoot || DEFAULT_GENE_NAME_BASE}_Jgene`;
+      const vGeneHeader = `${geneNameBase}_Vgene`;
+      const jGeneHeader = `${geneNameBase}_Jgene`;
       vGeneParts.push(`>${vGeneHeader}\n${vGeneSequence}`);
       jGeneParts.push(`>${jGeneHeader}\n${jGeneSequence}`);
       if (header) headers.push(header);
@@ -223,14 +223,14 @@ export function parseFasta(
     // Use sequenceWithoutN (N→A) since repseqio fromFasta rejects wildcard nucleotides
     const vGeneEndNucleotides = cdr3StartNucleotides + cdr3HalfLengthNucleotides;
     const vGeneSequence = sequenceWithoutN.substring(0, vGeneEndNucleotides);
-    const vGeneHeader = `${headerRoot || DEFAULT_GENE_NAME_BASE}_Vgene`;
+    const vGeneHeader = `${geneNameBase}_Vgene`;
     const vGene = `>${vGeneHeader}\n${vGeneSequence}`;
 
     // J gene: from second half of CDR3 to sequence end
     // Use sequenceWithoutN (N→A) since repseqio fromFasta rejects wildcard nucleotides
     const jGeneStartNucleotides = cdr3StartNucleotides + cdr3HalfLengthNucleotides;
     const jGeneSequence = sequenceWithoutN.substring(jGeneStartNucleotides);
-    const jGeneHeader = `${headerRoot || DEFAULT_GENE_NAME_BASE}_Jgene`;
+    const jGeneHeader = `${geneNameBase}_Jgene`;
     const jGene = `>${jGeneHeader}\n${jGeneSequence}`;
 
     vGeneParts.push(vGene);
@@ -250,21 +250,14 @@ export function parseFasta(
 }
 
 /**
- * Reduce a FASTA header to a token usable as a repseqio gene name.
+ * Derive a repseqio gene name from a FASTA header.
  *
- * repseqio addresses each gene as the fragment of a `file://<file>#<geneName>` URI, so a
- * gene name may only contain characters that are legal in a URI fragment. FASTA headers
- * routinely carry a descriptive tail after the identifier, which — appended verbatim —
- * makes repseqio fail with `URISyntaxException: Illegal character in fragment`, several
- * layers below the UI and long after this validation has reported success.
+ * repseqio addresses a gene as the fragment of a `file://<file>#<geneName>` URI. The name
+ * must contain only `[A-Za-z0-9_.-]`.
  *
- * Keeps the first whitespace-delimited field ahead of any `|`, drops characters outside
- * `[A-Za-z0-9_.-]`, and appends a counter when two headers reduce to the same token, so
- * distinct records can never collapse onto one gene name.
- *
- * A header can sanitize away entirely — punctuation only, or a non-Latin script. Those
- * fall back to `DEFAULT_GENE_NAME_BASE` and go through the same counter, because two
- * unusable headers are exactly as capable of colliding as two similar ones.
+ * Takes the first whitespace-delimited field before any `|` and removes illegal characters.
+ * An empty result becomes `DEFAULT_GENE_NAME_BASE`. A name already in `used` gets a `_2`,
+ * `_3`, ... suffix, so two records never share a gene name.
  */
 function uniqueGeneNameToken(header: string, used: Set<string>): string {
   const firstField = header.split("|")[0]?.trim().split(/\s+/)[0] ?? "";
