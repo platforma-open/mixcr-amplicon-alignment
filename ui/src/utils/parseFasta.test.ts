@@ -2,9 +2,8 @@ import { describe, expect, it } from "vitest";
 import { parseFasta, parseFastaRecords } from "./parseFasta";
 
 /**
- * The S1-F4 parental anti-CD98hc VH domain, 375 nt. A real reference: full-length,
- * a multiple of three, and its conserved cysteine sits past the CDR3 search offset,
- * so it reaches the gene-derivation code rather than failing validation first.
+ * The S1-F4 parental anti-CD98hc VH domain, 375 nt. A real reference that passes
+ * validation, so each test reaches the gene-name code.
  */
 const VH_375NT = [
   "CAGGTGCAGCTGGTGCAGAGCGGGGCAGAGGTGAAGAAGCCCGGAGCCAGCGTGAAAGTG",
@@ -16,7 +15,7 @@ const VH_375NT = [
   "GTGACCGTGAGCTCT",
 ].join("\n");
 
-/** The header of that reference as the studies library actually ships it. */
+/** The header of that reference as the studies library ships it. */
 const DESCRIPTIVE_HEADER =
   "S1-F4_VH parental anti-CD98hc heavy variable domain, nucleotide (recovered by " +
   "base-consensus from the input-pool reads SRR37934230; framework matches the " +
@@ -48,14 +47,10 @@ describe("parseFasta gene naming", () => {
     expect(geneName(result.jGenes)).toBe("S1-F4_VH_Jgene");
   });
 
-  // The invariant behind the bug: repseqio addresses a gene as the fragment of a
-  // `file://<file>#<geneName>` URI, so an illegal fragment character fails the whole
-  // library build — far from here, and only after validation has reported success.
-  //
-  // Asserted as a character-set constraint rather than by constructing a URL: repseqio
-  // parses with Java's `java.net.URI`, which follows RFC 2396 and throws on an illegal
-  // fragment, whereas JS `new URL()` is WHATWG and percent-encodes instead of throwing —
-  // it accepts every header below, including the 275-character one that caused the bug.
+  // repseqio reads a gene name as the fragment of a `file://<file>#<geneName>` URI and
+  // parses it with Java `java.net.URI` (RFC 2396). Asserted as a character set, not with
+  // JS `new URL()`: WHATWG URL percent-encodes illegal fragment characters and accepts
+  // every header below.
   it("derives gene names that are legal URI fragments", () => {
     const headers = [
       DESCRIPTIVE_HEADER,
@@ -88,8 +83,7 @@ describe("parseFasta gene naming", () => {
     expect(geneName(result.vGenes)).toBe("emibetuzumab_VH_WT_nt_Vgene");
   });
 
-  // Truncation alone would collapse these into one gene name, trading a loud failure
-  // for a silent wrong answer.
+  // Without the counter, both records get the gene name `shared_prefix`.
   it("disambiguates headers that reduce to the same token", () => {
     const result = parseFasta(
       fasta(["shared_prefix first variant", VH_375NT], ["shared_prefix second variant", VH_375NT]),
@@ -108,9 +102,7 @@ describe("parseFasta gene naming", () => {
     expect(geneName(result.jGenes)).toBe("ref_Jgene");
   });
 
-  // The fallback has to share the counter too. A multi-record FASTA only requires
-  // headers to be non-empty, not usable, so several records can sanitize away — and
-  // two records both named `ref_Vgene` would let repseqio index one over the other.
+  // The fallback name shares the counter. Without it, every record here is `ref`.
   it("disambiguates records whose headers all sanitize away", () => {
     const result = parseFasta(fasta(["(((", VH_375NT], [";;;", VH_375NT], ["!!!", VH_375NT]));
 
@@ -140,7 +132,7 @@ describe("parseFasta validation", () => {
     const result = parseFasta(fasta(["ref", VH_375NT]));
 
     expect(result.isValid).toBe(true);
-    // The split is a partition of the sequence: V ends where J begins.
+    // V and J partition the sequence.
     const v = (result.vGenes ?? "").split("\n").slice(1).join("");
     const j = (result.jGenes ?? "").split("\n").slice(1).join("");
     expect(v.length + j.length).toBe(375);

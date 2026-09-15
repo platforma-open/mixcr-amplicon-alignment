@@ -5,7 +5,5 @@
 "@platforma-open/milaboratories.mixcr-amplicon-alignment.workflow": patch
 ---
 
-Bump SDK dependencies: `@platforma-sdk/model` 1.83.9, `@platforma-sdk/ui-vue` 1.83.13,
-`@platforma-sdk/workflow-tengo` 6.10.0, `@platforma-sdk/tengo-builder` 4.0.26,
-`@platforma-sdk/package-builder` 3.16.0, `@platforma-sdk/block-tools` 2.15.1,
-`@platforma-sdk/test` 1.83.16.
+Bump SDK dependencies: model 1.83.9, ui-vue 1.83.13, workflow-tengo 6.10.0,
+tengo-builder 4.0.26, package-builder 3.16.0, block-tools 2.15.1, test 1.83.16.
