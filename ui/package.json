@@ -10,7 +10,8 @@
     "type-check": "ts-builder type-check --target block-ui",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
     "fmt": "ts-builder format",
-    "check": "ts-builder check --target block-ui"
+    "check": "ts-builder check --target block-ui",
+    "test": "vitest run"
   },
   "dependencies": {
     "@milaboratories/helpers": "catalog:",
@@ -27,7 +28,8 @@
     "@milaboratories/ts-builder": "catalog:",
     "@milaboratories/ts-configs": "catalog:",
     "@types/wicg-file-system-access": "catalog:",
-    "eslint": "catalog:"
+    "eslint": "catalog:",
+    "vitest": "catalog:"
   },
   "peerDependencies": {
     "@types/node": "*",
