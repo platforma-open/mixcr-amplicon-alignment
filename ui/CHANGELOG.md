@@ -1,5 +1,25 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment.ui
 
+## 1.21.1
+
+### Patch Changes
+
+- 487157f: Bump SDK dependencies: model 1.83.9, ui-vue 1.83.13, workflow-tengo 6.10.0,
+  tengo-builder 4.0.26, package-builder 3.16.0, block-tools 2.15.1, test 1.83.16.
+- 49ee373: A reference FASTA header with a description no longer breaks the reference library.
+
+  repseqio reads each gene name as the fragment of a `file://<file>#<geneName>` URI, so
+  spaces and most punctuation are illegal. The UI passed the whole header through as the
+  gene name, reported the input as valid, and repseqio then failed with
+  `URISyntaxException: Illegal character in fragment`.
+
+  The gene name is now the first whitespace-delimited field of the header, with characters
+  outside `[A-Za-z0-9_.-]` removed. Two headers that reduce to the same name get a counter
+  suffix, so distinct references never merge into one gene.
+
+- Updated dependencies [487157f]
+  - @platforma-open/milaboratories.mixcr-amplicon-alignment.model@1.21.1
+
 ## 1.21.0
 
 ### Minor Changes

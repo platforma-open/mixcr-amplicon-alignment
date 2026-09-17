@@ -1,5 +1,12 @@
 ## 1.0.0
 
+## 1.10.1
+
+### Patch Changes
+
+- 487157f: Bump SDK dependencies: model 1.83.9, ui-vue 1.83.13, workflow-tengo 6.10.0,
+  tengo-builder 4.0.26, package-builder 3.16.0, block-tools 2.15.1, test 1.83.16.
+
 ## 1.10.0
 
 ### Minor Changes
