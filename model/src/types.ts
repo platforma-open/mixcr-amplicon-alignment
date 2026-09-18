@@ -104,11 +104,13 @@ export type BlockArgs = {
   libraryEntries?: LibraryEntryDefinition[];
   buildLibraryVGenes?: string;
   buildLibraryJGenes?: string;
+  /** Carried only so the prerun can import it for the UI; the main workflow ignores it. */
+  buildLibraryFastaFile?: ImportFileHandle;
   referenceInputMode?: ReferenceInputMode;
 };
 
 /** Pre-V3 args shape, frozen snapshot for `upgradeLegacy`. */
-export type LegacyBlockArgs = BlockArgs;
+export type LegacyBlockArgs = Omit<BlockArgs, "buildLibraryFastaFile">;
 
 /** Pre-V3 UI state shape, frozen snapshot for `upgradeLegacy`. */
 export type LegacyBlockUiState = {
