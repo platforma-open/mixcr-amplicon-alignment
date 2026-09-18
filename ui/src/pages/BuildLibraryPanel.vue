@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { ImportFileHandle, LocalImportFileHandle } from "@platforma-sdk/model";
-import { getRawPlatformaInstance } from "@platforma-sdk/model";
+import { getRawPlatformaInstance, isImportFileHandleUpload } from "@platforma-sdk/model";
 import type { LibraryEntryDefinition } from "@platforma-open/milaboratories.mixcr-amplicon-alignment.model";
 import { PlFileInput, PlTextField, ReactiveFileContent } from "@platforma-sdk/ui-vue";
 import { computed, reactive, ref, watch } from "vue";
@@ -154,15 +154,49 @@ const buildLibraryFastaError = ref<string | undefined>();
 type PrerunWaitState = "idle" | "waitForClear" | "waitForResult";
 const prerunWait = ref<PrerunWaitState>("idle");
 
+// True between picking a file the desktop cannot read off disk and its bytes
+// arriving from the prerun.
+const awaitingRemoteFasta = ref(false);
+
+function clearBuildLibraryFasta() {
+  app.model.data.buildLibraryVGenes = undefined;
+  app.model.data.buildLibraryJGenes = undefined;
+  prerunWait.value = "idle";
+  libraryEntries.value = [];
+}
+
+function applyBuildLibraryContent(content: string) {
+  const result = parseFasta(content, undefined, true);
+
+  if (!result.isValid) {
+    buildLibraryFastaError.value = result.error;
+    clearBuildLibraryFasta();
+    return;
+  }
+
+  buildLibraryFastaError.value = undefined;
+  libraryEntries.value = [];
+  prerunWait.value = app.model.outputs.prerunLibrary ? "waitForClear" : "waitForResult";
+  app.model.data.buildLibraryVGenes = result.vGenes;
+  app.model.data.buildLibraryJGenes = result.jGenes;
+}
+
 async function onBuildLibraryFastaUpload(file: ImportFileHandle | undefined) {
   app.model.data.buildLibraryFastaFile = file;
+  buildLibraryFastaError.value = undefined;
+  awaitingRemoteFasta.value = false;
 
   if (!file) {
-    buildLibraryFastaError.value = undefined;
-    app.model.data.buildLibraryVGenes = undefined;
-    app.model.data.buildLibraryJGenes = undefined;
-    prerunWait.value = "idle";
-    libraryEntries.value = [];
+    clearBuildLibraryFasta();
+    return;
+  }
+
+  // An `index://` handle points into a pl-side storage. The desktop can read that
+  // storage only when it is mounted locally, which an S3 data library never is, so
+  // those bytes come back through the prerun instead — see the watch below.
+  if (!isImportFileHandleUpload(file)) {
+    awaitingRemoteFasta.value = true;
+    clearBuildLibraryFasta();
     return;
   }
 
@@ -170,32 +204,31 @@ async function onBuildLibraryFastaUpload(file: ImportFileHandle | undefined) {
     const data = await getRawPlatformaInstance().lsDriver.getLocalFileContent(
       file as LocalImportFileHandle,
     );
-    const content = new TextDecoder().decode(data);
-    const result = parseFasta(content, undefined, true);
-
-    if (result.isValid) {
-      buildLibraryFastaError.value = undefined;
-      libraryEntries.value = [];
-      prerunWait.value = app.model.outputs.prerunLibrary ? "waitForClear" : "waitForResult";
-      app.model.data.buildLibraryVGenes = result.vGenes;
-      app.model.data.buildLibraryJGenes = result.jGenes;
-    } else {
-      buildLibraryFastaError.value = result.error;
-      app.model.data.buildLibraryVGenes = undefined;
-      app.model.data.buildLibraryJGenes = undefined;
-      prerunWait.value = "idle";
-      libraryEntries.value = [];
-    }
+    applyBuildLibraryContent(new TextDecoder().decode(data));
   } catch (e) {
     buildLibraryFastaError.value = `Failed to read file: ${e instanceof Error ? e.message : "Unknown error"}`;
-    app.model.data.buildLibraryVGenes = undefined;
-    app.model.data.buildLibraryJGenes = undefined;
-    prerunWait.value = "idle";
-    libraryEntries.value = [];
+    clearBuildLibraryFasta();
   }
 }
 
 const reactiveFileContent = ReactiveFileContent.useGlobal();
+
+// Bytes of an `index://` upload, re-exported by the prerun.
+const remoteFastaContent = computed(() => {
+  const handle = app.model.outputs.buildLibraryFastaHandle;
+  if (!handle) return undefined;
+  return reactiveFileContent.getContentString(handle.handle)?.value;
+});
+
+// An `outputs -> data` write. It cannot loop: the watched output derives from
+// `buildLibraryFastaFile` alone, which this never writes. Two clients with the
+// project open both derive identical genes from identical bytes, so the racing
+// writes are idempotent.
+watch(remoteFastaContent, (content) => {
+  if (content === undefined || app.model.data.buildLibraryFastaFile === undefined) return;
+  awaitingRemoteFasta.value = false;
+  applyBuildLibraryContent(content);
+});
 const prerunLibraryLoading = computed(() => prerunWait.value !== "idle");
 
 // Phase 1: waitForClear → waitForResult when output goes undefined
@@ -234,6 +267,7 @@ watch(
     label="Upload VDJ FASTA to auto-fill entries (optional)"
     :extensions="['fasta', 'fa']"
     :error="buildLibraryFastaError"
+    :helper="awaitingRemoteFasta ? 'Reading file from storage…' : undefined"
     clearable
     @update:model-value="onBuildLibraryFastaUpload"
   >
