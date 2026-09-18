@@ -204,6 +204,30 @@ export const platforma = BlockModelV3.create({ dataModel: blockDataModel, kind }
       : undefined;
   })
 
+  // The FASTA the user picked, re-exported by the prerun. Only present for an
+  // `index://` handle: a storage the desktop cannot read off disk is the one case
+  // where the UI has no other route to the bytes. See `SettingsPanel.vue`.
+  .output("referenceFastaHandle", (ctx) =>
+    ctx.prerun
+      ?.resolve({
+        field: "referenceFasta",
+        assertFieldType: "Input",
+        allowPermanentAbsence: true,
+      })
+      ?.getFileHandle(),
+  )
+
+  // Same, for the Build Library tab's FASTA upload.
+  .output("buildLibraryFastaHandle", (ctx) =>
+    ctx.prerun
+      ?.resolve({
+        field: "buildLibraryFasta",
+        assertFieldType: "Input",
+        allowPermanentAbsence: true,
+      })
+      ?.getFileHandle(),
+  )
+
   .output("prerunLibrary", (ctx) =>
     ctx.prerun
       ?.resolve({
@@ -355,6 +379,7 @@ function toArgs(data: BlockData): BlockArgs {
     libraryEntries: data.libraryEntries,
     buildLibraryVGenes: data.buildLibraryVGenes,
     buildLibraryJGenes: data.buildLibraryJGenes,
+    buildLibraryFastaFile: data.buildLibraryFastaFile,
     referenceInputMode: data.referenceInputMode,
   };
 }

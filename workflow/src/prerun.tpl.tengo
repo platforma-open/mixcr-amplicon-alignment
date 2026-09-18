@@ -2,11 +2,33 @@ wf := import("@platforma-sdk/workflow-tengo:workflow")
 render := import("@platforma-sdk/workflow-tengo:render")
 assets := import("@platforma-sdk/workflow-tengo:assets")
 file := import("@platforma-sdk/workflow-tengo:file")
+text := import("text")
 
 repseqioLibraryTpl := assets.importTemplate(":repseqio-library")
 
+// The desktop reads an `upload://` handle straight off disk. An `index://` handle
+// points into a pl-side storage, which the desktop can read only when that storage
+// is mounted locally — an S3 data library never is. Importing and exporting the
+// file here is the only route its bytes have to the UI.
+exportIndexHandle := func(handle) {
+	if is_undefined(handle) || !text.has_prefix(handle, "index://") {
+		return undefined
+	}
+	return file.exportFile(file.importFile(handle).file)
+}
+
 wf.body(func(args) {
 	outputs := {}
+
+	referenceFasta := exportIndexHandle(args.referenceFileHandle)
+	if !is_undefined(referenceFasta) {
+		outputs.referenceFasta = referenceFasta
+	}
+
+	buildLibraryFasta := exportIndexHandle(args.buildLibraryFastaFile)
+	if !is_undefined(buildLibraryFasta) {
+		outputs.buildLibraryFasta = buildLibraryFasta
+	}
 
 	if args.referenceInputMode == "buildLibrary" && !is_undefined(args.buildLibraryVGenes) && !is_undefined(args.buildLibraryJGenes) {
 		chainInfos := {

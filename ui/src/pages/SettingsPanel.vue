@@ -1,7 +1,11 @@
 <script setup lang="ts">
 import type { ReferenceInputMode } from "@platforma-open/milaboratories.mixcr-amplicon-alignment.model";
 import type { ImportFileHandle, LocalImportFileHandle, PlRef } from "@platforma-sdk/model";
-import { getFilePathFromHandle, getRawPlatformaInstance } from "@platforma-sdk/model";
+import {
+  getFilePathFromHandle,
+  getRawPlatformaInstance,
+  isImportFileHandleUpload,
+} from "@platforma-sdk/model";
 import {
   PlAccordionSection,
   PlAlert,
@@ -16,6 +20,7 @@ import {
   PlTextArea,
   PlTextField,
   PlTooltip,
+  ReactiveFileContent,
   type ListOption,
 } from "@platforma-sdk/ui-vue";
 import { computed, ref, watch } from "vue";
@@ -129,13 +134,44 @@ function setInput(inputRef: PlRef | undefined) {
 }
 
 const fileError = ref<string | undefined>();
+const reactiveFileContent = ReactiveFileContent.useGlobal();
+
+// True between picking a file the desktop cannot read off disk and its bytes
+// arriving from the prerun.
+const awaitingRemoteFasta = ref(false);
+
+function applyReferenceContent(content: string) {
+  fileContent.value = content;
+  const result = processContent(content);
+
+  if (result.isValid) {
+    // Clear paste input when file is set
+    app.model.data.librarySequence = undefined;
+  } else {
+    fileError.value = result.error;
+  }
+}
 
 async function setReferenceFile(file: ImportFileHandle | undefined) {
+  fileError.value = undefined;
+  awaitingRemoteFasta.value = false;
+
   if (!file) {
-    fileError.value = undefined;
     app.model.data.vGenes = undefined;
     app.model.data.jGenes = undefined;
     clearRecordSelection();
+    return;
+  }
+
+  clearRecordSelection();
+
+  // An `index://` handle points into a pl-side storage. The desktop can read that
+  // storage only when it is mounted locally, which an S3 data library never is, so
+  // those bytes come back through the prerun instead — see the watch below.
+  if (!isImportFileHandleUpload(file)) {
+    awaitingRemoteFasta.value = true;
+    app.model.data.vGenes = undefined;
+    app.model.data.jGenes = undefined;
     return;
   }
 
@@ -143,17 +179,7 @@ async function setReferenceFile(file: ImportFileHandle | undefined) {
     const data = await getRawPlatformaInstance().lsDriver.getLocalFileContent(
       file as LocalImportFileHandle,
     );
-    const content = new TextDecoder().decode(data);
-    fileContent.value = content;
-    app.model.data.selectedRecordHeaders = undefined;
-    const result = processContent(content);
-
-    if (result.isValid) {
-      // Clear paste input when file is set
-      app.model.data.librarySequence = undefined;
-    } else {
-      fileError.value = result.error;
-    }
+    applyReferenceContent(new TextDecoder().decode(data));
   } catch (e) {
     fileError.value = `Failed to read file: ${e instanceof Error ? e.message : "Unknown error"}`;
     app.model.data.vGenes = undefined;
@@ -161,6 +187,26 @@ async function setReferenceFile(file: ImportFileHandle | undefined) {
     clearRecordSelection();
   }
 }
+
+// Bytes of an `index://` reference file, re-exported by the prerun. Gated on the
+// mode so a handle left behind by a mode switch cannot write over a pasted
+// sequence's genes.
+const remoteFastaContent = computed(() => {
+  if (refMode.value !== "fastaFile") return undefined;
+  const handle = app.model.outputs.referenceFastaHandle;
+  if (!handle) return undefined;
+  return reactiveFileContent.getContentString(handle.handle)?.value;
+});
+
+// An `outputs -> data` write. It cannot loop: the watched output derives from
+// `referenceFileHandle` alone, which this never writes. Two clients with the
+// project open both derive identical genes from identical bytes, so the racing
+// writes are idempotent.
+watch(remoteFastaContent, (content) => {
+  if (content === undefined || app.model.data.referenceFileHandle === undefined) return;
+  awaitingRemoteFasta.value = false;
+  applyReferenceContent(content);
+});
 
 // Watch for sequence changes and validate (only in fastaSequence mode)
 watch(
@@ -391,6 +437,7 @@ watch(stopCodonSelection, (selected) => {
       label="Reference sequence file (FASTA)"
       :extensions="['fasta', 'fa']"
       :error="fileError"
+      :helper="awaitingRemoteFasta ? 'Reading file from storage…' : undefined"
       clearable
       @update:model-value="setReferenceFile"
     >
