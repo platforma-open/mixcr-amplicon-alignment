@@ -214,10 +214,15 @@ async function onBuildLibraryFastaUpload(file: ImportFileHandle | undefined) {
 const reactiveFileContent = ReactiveFileContent.useGlobal();
 
 // Bytes of an `index://` upload, re-exported by the prerun.
+//
+// The source gate drops bytes belonging to a pick the user has already replaced:
+// the prerun output still names the previous file until staging re-renders, so
+// without it a slow fetch can land after the next pick — and if that next pick
+// is a local file, nothing ever arrives to correct it.
 const remoteFastaContent = computed(() => {
-  const handle = app.model.outputs.buildLibraryFastaHandle;
-  if (!handle) return undefined;
-  return reactiveFileContent.getContentString(handle.handle)?.value;
+  const exported = app.model.outputs.buildLibraryFasta;
+  if (!exported || exported.source !== app.model.data.buildLibraryFastaFile) return undefined;
+  return reactiveFileContent.getContentString(exported.blob.handle)?.value;
 });
 
 // An `outputs -> data` write. It cannot loop: the watched output derives from

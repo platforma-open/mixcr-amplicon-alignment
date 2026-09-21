@@ -188,14 +188,19 @@ async function setReferenceFile(file: ImportFileHandle | undefined) {
   }
 }
 
-// Bytes of an `index://` reference file, re-exported by the prerun. Gated on the
-// mode so a handle left behind by a mode switch cannot write over a pasted
-// sequence's genes.
+// Bytes of an `index://` reference file, re-exported by the prerun.
+//
+// Two gates, both load-bearing. The mode gate stops a handle left behind by a
+// mode switch writing over a pasted sequence's genes. The source gate drops
+// bytes belonging to a pick the user has already replaced: the prerun output
+// still names the previous file until staging re-renders, so without it a
+// slow fetch can land after the next pick — and if that next pick is a local
+// file, nothing ever arrives to correct it.
 const remoteFastaContent = computed(() => {
   if (refMode.value !== "fastaFile") return undefined;
-  const handle = app.model.outputs.referenceFastaHandle;
-  if (!handle) return undefined;
-  return reactiveFileContent.getContentString(handle.handle)?.value;
+  const exported = app.model.outputs.referenceFasta;
+  if (!exported || exported.source !== app.model.data.referenceFileHandle) return undefined;
+  return reactiveFileContent.getContentString(exported.blob.handle)?.value;
 });
 
 // An `outputs -> data` write. It cannot loop: the watched output derives from
