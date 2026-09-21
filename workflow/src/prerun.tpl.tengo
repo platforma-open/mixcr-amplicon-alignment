@@ -2,6 +2,7 @@ wf := import("@platforma-sdk/workflow-tengo:workflow")
 render := import("@platforma-sdk/workflow-tengo:render")
 assets := import("@platforma-sdk/workflow-tengo:assets")
 file := import("@platforma-sdk/workflow-tengo:file")
+smart := import("@platforma-sdk/workflow-tengo:smart")
 text := import("text")
 
 repseqioLibraryTpl := assets.importTemplate(":repseqio-library")
@@ -10,11 +11,18 @@ repseqioLibraryTpl := assets.importTemplate(":repseqio-library")
 // points into a pl-side storage, which the desktop can read only when that storage
 // is mounted locally — an S3 data library never is. Importing and exporting the
 // file here is the only route its bytes have to the UI.
+//
+// `source` stamps which pick the bytes are. Nothing exposes the args a staging
+// context was built with, so without it the UI cannot tell bytes still in flight
+// from an earlier pick apart from the current file's.
 exportIndexHandle := func(handle) {
 	if is_undefined(handle) || !text.has_prefix(handle, "index://") {
 		return undefined
 	}
-	return file.exportFile(file.importFile(handle).file)
+	return {
+		file: file.exportFile(file.importFile(handle).file),
+		source: smart.createJsonResource(handle)
+	}
 }
 
 wf.body(func(args) {
@@ -22,12 +30,14 @@ wf.body(func(args) {
 
 	referenceFasta := exportIndexHandle(args.referenceFileHandle)
 	if !is_undefined(referenceFasta) {
-		outputs.referenceFasta = referenceFasta
+		outputs.referenceFasta = referenceFasta.file
+		outputs.referenceFastaSource = referenceFasta.source
 	}
 
 	buildLibraryFasta := exportIndexHandle(args.buildLibraryFastaFile)
 	if !is_undefined(buildLibraryFasta) {
-		outputs.buildLibraryFasta = buildLibraryFasta
+		outputs.buildLibraryFasta = buildLibraryFasta.file
+		outputs.buildLibraryFastaSource = buildLibraryFasta.source
 	}
 
 	if args.referenceInputMode == "buildLibrary" && !is_undefined(args.buildLibraryVGenes) && !is_undefined(args.buildLibraryJGenes) {

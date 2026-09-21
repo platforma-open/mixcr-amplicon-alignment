@@ -207,26 +207,37 @@ export const platforma = BlockModelV3.create({ dataModel: blockDataModel, kind }
   // The FASTA the user picked, re-exported by the prerun. Only present for an
   // `index://` handle: a storage the desktop cannot read off disk is the one case
   // where the UI has no other route to the bytes. See `SettingsPanel.vue`.
-  .output("referenceFastaHandle", (ctx) =>
-    ctx.prerun
-      ?.resolve({
-        field: "referenceFasta",
-        assertFieldType: "Input",
-        allowPermanentAbsence: true,
-      })
-      ?.getFileHandle(),
-  )
+  //
+  // `source` is the handle the prerun imported. It travels with the blob because
+  // the UI must be able to drop bytes belonging to a pick the user has already
+  // replaced — see the byte-source computeds in both panels.
+  // Both halves or nothing: bytes whose origin is unknown cannot be matched
+  // against the current pick, and applying them unmatched is what loses a
+  // user's reference.
+  .output("referenceFasta", (ctx) => {
+    const blob = ctx.prerun
+      ?.resolve({ field: "referenceFasta", assertFieldType: "Input", allowPermanentAbsence: true })
+      ?.getFileHandle();
+    const source = ctx.prerun
+      ?.resolve({ field: "referenceFastaSource", allowPermanentAbsence: true })
+      ?.getDataAsJsonOrUndefined<string>();
+    return blob === undefined || source === undefined ? undefined : { blob, source };
+  })
 
   // Same, for the Build Library tab's FASTA upload.
-  .output("buildLibraryFastaHandle", (ctx) =>
-    ctx.prerun
+  .output("buildLibraryFasta", (ctx) => {
+    const blob = ctx.prerun
       ?.resolve({
         field: "buildLibraryFasta",
         assertFieldType: "Input",
         allowPermanentAbsence: true,
       })
-      ?.getFileHandle(),
-  )
+      ?.getFileHandle();
+    const source = ctx.prerun
+      ?.resolve({ field: "buildLibraryFastaSource", allowPermanentAbsence: true })
+      ?.getDataAsJsonOrUndefined<string>();
+    return blob === undefined || source === undefined ? undefined : { blob, source };
+  })
 
   .output("prerunLibrary", (ctx) =>
     ctx.prerun
