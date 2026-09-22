@@ -240,24 +240,19 @@ const remoteFastaContent = computed(() => {
   return reactiveFileContent.getContentString(exported.blob.handle)?.value;
 });
 
-// An `outputs -> data` write, reconciling rather than edge-triggered: it fires
-// whenever either half of the pair moves, and applies bytes only when nothing is
-// derived from them yet.
+// An `outputs -> data` write. The watcher fires when the bytes or the derived
+// state change, and applies bytes only when nothing is derived from them yet.
 //
-// Both halves are load-bearing.
+// `derived` guards two cases. `ReactiveFileContent` keys its refs to the calling
+// component's effect scope, so every mount replays `undefined -> content`. A
+// second apply clears `libraryEntries` and discards entries the user edited.
+// `derived` also lets the user pick the same file twice. The bytes and the
+// `source` stamp do not change on a re-pick, so a watcher on the content alone
+// never fires again.
 //
-// `derived` guards a remount. `ReactiveFileContent` keys its refs to the calling
-// component's effect scope, so every mount replays `undefined -> content` and
-// re-runs this. Re-applying would clear `libraryEntries`, discarding entries the
-// user hand-edited.
-//
-// Re-reading `derived` is what lets the same file be picked twice. The bytes and
-// their `source` stamp are then unchanged, so a watcher on the content alone
-// would never fire again and the cleared genes would never come back.
-//
-// It settles rather than loops. Applying writes genes and entries, both in
-// `prerunArgs`, so staging re-renders and the same file can return under a fresh
-// blob handle — but the second pass reads `derived` as true and stops.
+// The watcher settles. An apply writes genes and entries, both in `prerunArgs`,
+// so staging re-renders and the same file returns under a new blob handle. The
+// next pass reads `derived` as true and stops.
 watch(
   () => ({
     content: remoteFastaContent.value,
