@@ -3,7 +3,7 @@ import type { ImportFileHandle, LocalImportFileHandle } from "@platforma-sdk/mod
 import { getRawPlatformaInstance, isImportFileHandleUpload } from "@platforma-sdk/model";
 import type { LibraryEntryDefinition } from "@platforma-open/milaboratories.mixcr-amplicon-alignment.model";
 import { PlFileInput, PlTextField, ReactiveFileContent } from "@platforma-sdk/ui-vue";
-import { computed, onScopeDispose, reactive, ref, watch } from "vue";
+import { computed, reactive, ref, watch } from "vue";
 import { useApp } from "../app";
 import { parseFasta } from "../utils/parseFasta";
 import {
@@ -158,43 +158,20 @@ const prerunWait = ref<PrerunWaitState>("idle");
 // arriving from the prerun.
 const awaitingRemoteFasta = ref(false);
 
-// A slow read and a failed one are indistinguishable from here: nothing surfaces
-// a prerun failure to the UI, and the wait also covers scheduling the prerun on
-// the server, not just the storage read. So a long wait earns a nudge, not an
-// error — reporting a cause this cannot establish would strand the user on a
-// diagnosis that is often wrong.
-const REMOTE_FASTA_SLOW_MS = 120_000;
-let remoteFastaTimer: ReturnType<typeof setTimeout> | undefined;
-const remoteFastaSlow = ref(false);
-
+// The remote route has no failure path, and cannot be given an honest one here.
+// Nothing surfaces a prerun error to the UI, and the wait covers scheduling the
+// prerun on the server as well as the storage read, so a slow read and a failed
+// one are indistinguishable from this side. A timer would therefore not detect
+// failure, only elapsed time, and any message it raised would assert a cause it
+// has not established. The picker waits instead, and says so. Closing this needs
+// an error channel on the prerun output, not a deadline in the UI.
 function stopRemoteFastaWait() {
-  if (remoteFastaTimer !== undefined) clearTimeout(remoteFastaTimer);
-  remoteFastaTimer = undefined;
-  remoteFastaSlow.value = false;
   awaitingRemoteFasta.value = false;
 }
 
 function startRemoteFastaWait() {
-  if (remoteFastaTimer !== undefined) clearTimeout(remoteFastaTimer);
-  remoteFastaSlow.value = false;
   awaitingRemoteFasta.value = true;
-  remoteFastaTimer = setTimeout(() => {
-    remoteFastaTimer = undefined;
-    remoteFastaSlow.value = true;
-  }, REMOTE_FASTA_SLOW_MS);
 }
-
-// The wait itself never ends on a timer: bytes that arrive late still land.
-const remoteFastaHelper = computed(() => {
-  if (!awaitingRemoteFasta.value) return undefined;
-  return remoteFastaSlow.value
-    ? "Still reading from storage. If it does not finish, pick the file again."
-    : "Reading file from storage…";
-});
-
-onScopeDispose(() => {
-  if (remoteFastaTimer !== undefined) clearTimeout(remoteFastaTimer);
-});
 
 function clearBuildLibraryFasta() {
   app.model.data.buildLibraryVGenes = undefined;
@@ -332,7 +309,7 @@ watch(
     label="Upload VDJ FASTA to auto-fill entries (optional)"
     :extensions="['fasta', 'fa']"
     :error="buildLibraryFastaError"
-    :helper="remoteFastaHelper"
+    :helper="awaitingRemoteFasta ? 'Reading file from storage…' : undefined"
     clearable
     @update:model-value="onBuildLibraryFastaUpload"
   >
