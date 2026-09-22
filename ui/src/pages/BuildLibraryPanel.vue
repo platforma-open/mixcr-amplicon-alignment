@@ -6,6 +6,7 @@ import { PlFileInput, PlTextField, ReactiveFileContent } from "@platforma-sdk/ui
 import { computed, reactive, ref, watch } from "vue";
 import { useApp } from "../app";
 import { parseFasta } from "../utils/parseFasta";
+import { useRemoteFileBytes } from "../useRemoteFileBytes";
 import {
   getVRegions,
   getJRegions,
@@ -154,24 +155,20 @@ const buildLibraryFastaError = ref<string | undefined>();
 type PrerunWaitState = "idle" | "waitForClear" | "waitForResult";
 const prerunWait = ref<PrerunWaitState>("idle");
 
-// True between picking a file the desktop cannot read off disk and its bytes
-// arriving from the prerun.
-const awaitingRemoteFasta = ref(false);
-
-// The remote route has no failure path, and cannot be given an honest one here.
-// Nothing surfaces a prerun error to the UI, and the wait covers scheduling the
-// prerun on the server as well as the storage read, so a slow read and a failed
-// one are indistinguishable from this side. A timer would therefore not detect
-// failure, only elapsed time, and any message it raised would assert a cause it
-// has not established. The picker waits instead, and says so. Closing this needs
-// an error channel on the prerun output, not a deadline in the UI.
-function stopRemoteFastaWait() {
-  awaitingRemoteFasta.value = false;
-}
-
-function startRemoteFastaWait() {
-  awaitingRemoteFasta.value = true;
-}
+// Bytes of an `index://` upload, re-exported by the prerun. Entries count toward
+// `isDerived`: the user edits them by hand, so a second derive would discard that
+// work.
+const {
+  awaiting: awaitingRemoteFasta,
+  start: startRemoteFastaWait,
+  stop: stopRemoteFastaWait,
+} = useRemoteFileBytes({
+  exported: () => app.model.outputs.buildLibraryFasta,
+  pick: () => app.model.data.buildLibraryFastaFile,
+  isDerived: () =>
+    app.model.data.buildLibraryVGenes !== undefined && libraryEntries.value.length > 0,
+  onDerive: (content) => applyBuildLibraryContent(content),
+});
 
 function clearBuildLibraryFasta() {
   app.model.data.buildLibraryVGenes = undefined;
@@ -227,45 +224,6 @@ async function onBuildLibraryFastaUpload(file: ImportFileHandle | undefined) {
 }
 
 const reactiveFileContent = ReactiveFileContent.useGlobal();
-
-// Bytes of an `index://` upload, re-exported by the prerun.
-//
-// The source gate drops bytes belonging to a pick the user has already replaced:
-// the prerun output still names the previous file until staging re-renders, so
-// without it a slow fetch can land after the next pick — and if that next pick
-// is a local file, nothing ever arrives to correct it.
-const remoteFastaContent = computed(() => {
-  const exported = app.model.outputs.buildLibraryFasta;
-  if (!exported || exported.source !== app.model.data.buildLibraryFastaFile) return undefined;
-  return reactiveFileContent.getContentString(exported.blob.handle)?.value;
-});
-
-// An `outputs -> data` write. The watcher fires when the bytes or the derived
-// state change, and applies bytes only when nothing is derived from them yet.
-//
-// `derived` guards two cases. `ReactiveFileContent` keys its refs to the calling
-// component's effect scope, so every mount replays `undefined -> content`. A
-// second apply clears `libraryEntries` and discards entries the user edited.
-// `derived` also lets the user pick the same file twice. The bytes and the
-// `source` stamp do not change on a re-pick, so a watcher on the content alone
-// never fires again.
-//
-// The watcher settles. An apply writes genes and entries, both in `prerunArgs`,
-// so staging re-renders and the same file returns under a new blob handle. The
-// next pass reads `derived` as true and stops.
-watch(
-  () => ({
-    content: remoteFastaContent.value,
-    derived: app.model.data.buildLibraryVGenes !== undefined && libraryEntries.value.length > 0,
-  }),
-  ({ content, derived }) => {
-    if (content === undefined || app.model.data.buildLibraryFastaFile === undefined) return;
-    stopRemoteFastaWait();
-    if (derived) return;
-    applyBuildLibraryContent(content);
-  },
-  { immediate: true },
-);
 const prerunLibraryLoading = computed(() => prerunWait.value !== "idle");
 
 // Phase 1: waitForClear → waitForResult when output goes undefined

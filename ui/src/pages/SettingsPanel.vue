@@ -20,13 +20,13 @@ import {
   PlTextArea,
   PlTextField,
   PlTooltip,
-  ReactiveFileContent,
   type ListOption,
 } from "@platforma-sdk/ui-vue";
 import { computed, ref, watch } from "vue";
 import { useApp } from "../app";
 import { retentive } from "../retentive";
 import { parseFasta, parseFastaRecords } from "../utils/parseFasta";
+import { useRemoteFileBytes } from "../useRemoteFileBytes";
 import BuildLibraryPanel from "./BuildLibraryPanel.vue";
 
 const app = useApp();
@@ -134,26 +134,26 @@ function setInput(inputRef: PlRef | undefined) {
 }
 
 const fileError = ref<string | undefined>();
-const reactiveFileContent = ReactiveFileContent.useGlobal();
 
-// True between picking a file the desktop cannot read off disk and its bytes
-// arriving from the prerun.
-const awaitingRemoteFasta = ref(false);
-
-// The remote route has no failure path, and cannot be given an honest one here.
-// Nothing surfaces a prerun error to the UI, and the wait covers scheduling the
-// prerun on the server as well as the storage read, so a slow read and a failed
-// one are indistinguishable from this side. A timer would therefore not detect
-// failure, only elapsed time, and any message it raised would assert a cause it
-// has not established. The picker waits instead, and says so. Closing this needs
-// an error channel on the prerun output, not a deadline in the UI.
-function stopRemoteFastaWait() {
-  awaitingRemoteFasta.value = false;
-}
-
-function startRemoteFastaWait() {
-  awaitingRemoteFasta.value = true;
-}
+// Bytes of an `index://` reference file, re-exported by the prerun. The mode gate
+// stops a handle left behind by a mode switch overwriting genes that were derived
+// from a pasted sequence.
+const {
+  awaiting: awaitingRemoteFasta,
+  start: startRemoteFastaWait,
+  stop: stopRemoteFastaWait,
+} = useRemoteFileBytes({
+  exported: () => app.model.outputs.referenceFasta,
+  pick: () => app.model.data.referenceFileHandle,
+  enabled: () => refMode.value === "fastaFile",
+  isDerived: () => app.model.data.vGenes !== undefined,
+  // The record list is local to this component, so a remount starts it empty even
+  // when the genes are already in `data`.
+  onContent: (content) => {
+    fileContent.value = content;
+  },
+  onDerive: (content) => applyReferenceContent(content),
+});
 
 function applyReferenceContent(content: string) {
   fileContent.value = content;
@@ -202,51 +202,6 @@ async function setReferenceFile(file: ImportFileHandle | undefined) {
     clearRecordSelection();
   }
 }
-
-// Bytes of an `index://` reference file, re-exported by the prerun.
-//
-// Two gates, both load-bearing. The mode gate stops a handle left behind by a
-// mode switch writing over a pasted sequence's genes. The source gate drops
-// bytes belonging to a pick the user has already replaced: the prerun output
-// still names the previous file until staging re-renders, so without it a
-// slow fetch can land after the next pick — and if that next pick is a local
-// file, nothing ever arrives to correct it.
-const remoteFastaContent = computed(() => {
-  if (refMode.value !== "fastaFile") return undefined;
-  const exported = app.model.outputs.referenceFasta;
-  if (!exported || exported.source !== app.model.data.referenceFileHandle) return undefined;
-  return reactiveFileContent.getContentString(exported.blob.handle)?.value;
-});
-
-// An `outputs -> data` write, reconciling rather than edge-triggered: it fires
-// whenever either half of the pair moves, and derives genes only when none are
-// derived yet.
-//
-// Re-reading `derived` is what lets the same file be picked twice. The bytes and
-// their `source` stamp are then unchanged, so a watcher on the content alone
-// would never fire again and the cleared genes would never come back.
-//
-// `fileContent` is restored on every pass, not only the deriving one. It holds
-// the record list the panel renders and is local to the component, so a remount
-// starts it empty even when the genes are already in `data`.
-//
-// It settles rather than loops. Deriving writes genes, which are in `prerunArgs`,
-// so staging re-renders and the same file can return under a fresh blob handle —
-// but the second pass reads `derived` as true and stops.
-watch(
-  () => ({
-    content: remoteFastaContent.value,
-    derived: app.model.data.vGenes !== undefined,
-  }),
-  ({ content, derived }) => {
-    if (content === undefined || app.model.data.referenceFileHandle === undefined) return;
-    stopRemoteFastaWait();
-    fileContent.value = content;
-    if (derived) return;
-    applyReferenceContent(content);
-  },
-  { immediate: true },
-);
 
 // Watch for sequence changes and validate (only in fastaSequence mode)
 watch(
