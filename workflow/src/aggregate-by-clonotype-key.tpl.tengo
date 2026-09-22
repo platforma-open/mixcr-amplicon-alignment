@@ -9,7 +9,6 @@ assets := import("@platforma-sdk/workflow-tengo:assets")
 exec := import("@platforma-sdk/workflow-tengo:exec")
 clonotypeLabel := import(":clonotype-label")
 
-math := import("math")
 json := import("json")
 
 self.defineOutputs("tsv")
@@ -29,21 +28,17 @@ self.body(func(inputs) {
 	schemaPerSample := params.schemaPerSample
 
 	inputMap := inputData.inputs()
-	numberOfSamples := len(inputMap)
 
-	baseMemGB := 32
-	if !is_undefined(inputs.perProcessMemGB) {
-		baseMemGB = inputs.perProcessMemGB / 2
-	}
-
-	perSampleMem := int(math.max(2, baseMemGB / 10))
-	effectiveSamples := int(math.max(numberOfSamples, 3))
-	memGB := int(math.min(312, math.max(baseMemGB * 3 / 2, effectiveSamples * perSampleMem)))
-
+	// The SDK sizes this run from the blob size of the input TSVs: 2 GiB + 6 per GiB.
+	// Measured need for this plan is 0.6 GiB + 3.2 per GiB of summed TSV at 32 threads.
+	// The need is lower at 8 threads. The thread count sets the slope.
+	// The sample count does not change the need.
 	wf := pt.workflow().
 		inMediumQueue().
-		mem(memGB * units.GiB).
-		cpu(int(math.max(numberOfSamples, 32)))
+		cpu(8)
+	if !is_undefined(inputs.perProcessMemGB) {
+		wf = wf.memFloor(inputs.perProcessMemGB * units.GiB)
+	}
 
 	dataFrames := []
 

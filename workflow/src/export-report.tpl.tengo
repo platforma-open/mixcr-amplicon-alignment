@@ -341,8 +341,7 @@ self.body(func(inputs) {
     qcReportTable := xsv.importFile(
 		tsvFile,
 		"tsv",
-		reportColumnsSpec,
-		{ cpu: 1, mem: "16GiB" }
+		reportColumnsSpec
 	)
 
     
