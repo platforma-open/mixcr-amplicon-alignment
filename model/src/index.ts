@@ -115,7 +115,16 @@ export const platforma = BlockModelV3.create({ dataModel: blockDataModel, kind }
   // Prerun renders the library preview in `buildLibrary` mode, and must keep
   // doing so while the main args are still incomplete — so it takes the same
   // projection without the checks above.
-  .prerunArgs((data) => toArgs(data))
+  //
+  // `buildLibraryFastaFile` rides along here and nowhere else. The main workflow
+  // never reads it, and production args are hashed to decide whether MiXCR
+  // re-runs — a picker the user swaps for a file with identical genes must not
+  // invalidate an alignment. Only the prerun needs the handle, to import a
+  // storage the desktop cannot read off disk.
+  .prerunArgs((data) => ({
+    ...toArgs(data),
+    buildLibraryFastaFile: data.buildLibraryFastaFile,
+  }))
 
   // Inverse of the kind's init-params contract.
   .templateParams((data) => {
@@ -390,7 +399,6 @@ function toArgs(data: BlockData): BlockArgs {
     libraryEntries: data.libraryEntries,
     buildLibraryVGenes: data.buildLibraryVGenes,
     buildLibraryJGenes: data.buildLibraryJGenes,
-    buildLibraryFastaFile: data.buildLibraryFastaFile,
     referenceInputMode: data.referenceInputMode,
   };
 }
