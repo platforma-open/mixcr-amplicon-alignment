@@ -1314,4 +1314,6 @@ inFrameFeatures := {
 	}
 }
 
-export calculateExportSpecs 
+export {
+	calculateExportSpecs: calculateExportSpecs
+} 

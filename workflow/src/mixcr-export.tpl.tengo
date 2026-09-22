@@ -1,7 +1,6 @@
 ll := import("@platforma-sdk/workflow-tengo:ll")
 self := import("@platforma-sdk/workflow-tengo:tpl.light")
 pConstants := import("@platforma-sdk/workflow-tengo:pframes.constants")
-smart := import("@platforma-sdk/workflow-tengo:smart")
 slices := import("@platforma-sdk/workflow-tengo:slices")
 assets := import("@platforma-sdk/workflow-tengo:assets")
 exec := import("@platforma-sdk/workflow-tengo:exec")
@@ -255,7 +254,6 @@ self.body(func(inputs) {
 	// Simplified PTabler processing for main TSV output
 	wfMain := pt.workflow().
 		inMediumQueue().
-		mem(memGB(8, 4)).
 		cpu(2)
 		
 	frameInputMap := {
