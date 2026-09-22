@@ -3,7 +3,7 @@ import type { ImportFileHandle, LocalImportFileHandle } from "@platforma-sdk/mod
 import { getRawPlatformaInstance, isImportFileHandleUpload } from "@platforma-sdk/model";
 import type { LibraryEntryDefinition } from "@platforma-open/milaboratories.mixcr-amplicon-alignment.model";
 import { PlFileInput, PlTextField, ReactiveFileContent } from "@platforma-sdk/ui-vue";
-import { computed, reactive, ref, watch } from "vue";
+import { computed, onScopeDispose, reactive, ref, watch } from "vue";
 import { useApp } from "../app";
 import { parseFasta } from "../utils/parseFasta";
 import {
@@ -158,6 +158,44 @@ const prerunWait = ref<PrerunWaitState>("idle");
 // arriving from the prerun.
 const awaitingRemoteFasta = ref(false);
 
+// A slow read and a failed one are indistinguishable from here: nothing surfaces
+// a prerun failure to the UI, and the wait also covers scheduling the prerun on
+// the server, not just the storage read. So a long wait earns a nudge, not an
+// error — reporting a cause this cannot establish would strand the user on a
+// diagnosis that is often wrong.
+const REMOTE_FASTA_SLOW_MS = 120_000;
+let remoteFastaTimer: ReturnType<typeof setTimeout> | undefined;
+const remoteFastaSlow = ref(false);
+
+function stopRemoteFastaWait() {
+  if (remoteFastaTimer !== undefined) clearTimeout(remoteFastaTimer);
+  remoteFastaTimer = undefined;
+  remoteFastaSlow.value = false;
+  awaitingRemoteFasta.value = false;
+}
+
+function startRemoteFastaWait() {
+  if (remoteFastaTimer !== undefined) clearTimeout(remoteFastaTimer);
+  remoteFastaSlow.value = false;
+  awaitingRemoteFasta.value = true;
+  remoteFastaTimer = setTimeout(() => {
+    remoteFastaTimer = undefined;
+    remoteFastaSlow.value = true;
+  }, REMOTE_FASTA_SLOW_MS);
+}
+
+// The wait itself never ends on a timer: bytes that arrive late still land.
+const remoteFastaHelper = computed(() => {
+  if (!awaitingRemoteFasta.value) return undefined;
+  return remoteFastaSlow.value
+    ? "Still reading from storage. If it does not finish, pick the file again."
+    : "Reading file from storage…";
+});
+
+onScopeDispose(() => {
+  if (remoteFastaTimer !== undefined) clearTimeout(remoteFastaTimer);
+});
+
 function clearBuildLibraryFasta() {
   app.model.data.buildLibraryVGenes = undefined;
   app.model.data.buildLibraryJGenes = undefined;
@@ -184,7 +222,7 @@ function applyBuildLibraryContent(content: string) {
 async function onBuildLibraryFastaUpload(file: ImportFileHandle | undefined) {
   app.model.data.buildLibraryFastaFile = file;
   buildLibraryFastaError.value = undefined;
-  awaitingRemoteFasta.value = false;
+  stopRemoteFastaWait();
 
   if (!file) {
     clearBuildLibraryFasta();
@@ -195,7 +233,7 @@ async function onBuildLibraryFastaUpload(file: ImportFileHandle | undefined) {
   // storage only when it is mounted locally, which an S3 data library never is, so
   // those bytes come back through the prerun instead — see the watch below.
   if (!isImportFileHandleUpload(file)) {
-    awaitingRemoteFasta.value = true;
+    startRemoteFastaWait();
     clearBuildLibraryFasta();
     return;
   }
@@ -225,15 +263,37 @@ const remoteFastaContent = computed(() => {
   return reactiveFileContent.getContentString(exported.blob.handle)?.value;
 });
 
-// An `outputs -> data` write. It cannot loop: the watched output derives from
-// `buildLibraryFastaFile` alone, which this never writes. Two clients with the
-// project open both derive identical genes from identical bytes, so the racing
-// writes are idempotent.
-watch(remoteFastaContent, (content) => {
-  if (content === undefined || app.model.data.buildLibraryFastaFile === undefined) return;
-  awaitingRemoteFasta.value = false;
-  applyBuildLibraryContent(content);
-});
+// An `outputs -> data` write, reconciling rather than edge-triggered: it fires
+// whenever either half of the pair moves, and applies bytes only when nothing is
+// derived from them yet.
+//
+// Both halves are load-bearing.
+//
+// `derived` guards a remount. `ReactiveFileContent` keys its refs to the calling
+// component's effect scope, so every mount replays `undefined -> content` and
+// re-runs this. Re-applying would clear `libraryEntries`, discarding entries the
+// user hand-edited.
+//
+// Re-reading `derived` is what lets the same file be picked twice. The bytes and
+// their `source` stamp are then unchanged, so a watcher on the content alone
+// would never fire again and the cleared genes would never come back.
+//
+// It settles rather than loops. Applying writes genes and entries, both in
+// `prerunArgs`, so staging re-renders and the same file can return under a fresh
+// blob handle — but the second pass reads `derived` as true and stops.
+watch(
+  () => ({
+    content: remoteFastaContent.value,
+    derived: app.model.data.buildLibraryVGenes !== undefined && libraryEntries.value.length > 0,
+  }),
+  ({ content, derived }) => {
+    if (content === undefined || app.model.data.buildLibraryFastaFile === undefined) return;
+    stopRemoteFastaWait();
+    if (derived) return;
+    applyBuildLibraryContent(content);
+  },
+  { immediate: true },
+);
 const prerunLibraryLoading = computed(() => prerunWait.value !== "idle");
 
 // Phase 1: waitForClear → waitForResult when output goes undefined
@@ -272,7 +332,7 @@ watch(
     label="Upload VDJ FASTA to auto-fill entries (optional)"
     :extensions="['fasta', 'fa']"
     :error="buildLibraryFastaError"
-    :helper="awaitingRemoteFasta ? 'Reading file from storage…' : undefined"
+    :helper="remoteFastaHelper"
     clearable
     @update:model-value="onBuildLibraryFastaUpload"
   >

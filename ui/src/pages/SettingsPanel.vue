@@ -23,7 +23,7 @@ import {
   ReactiveFileContent,
   type ListOption,
 } from "@platforma-sdk/ui-vue";
-import { computed, ref, watch } from "vue";
+import { computed, onScopeDispose, ref, watch } from "vue";
 import { useApp } from "../app";
 import { retentive } from "../retentive";
 import { parseFasta, parseFastaRecords } from "../utils/parseFasta";
@@ -140,6 +140,44 @@ const reactiveFileContent = ReactiveFileContent.useGlobal();
 // arriving from the prerun.
 const awaitingRemoteFasta = ref(false);
 
+// A slow read and a failed one are indistinguishable from here: nothing surfaces
+// a prerun failure to the UI, and the wait also covers scheduling the prerun on
+// the server, not just the storage read. So a long wait earns a nudge, not an
+// error — reporting a cause this cannot establish would strand the user on a
+// diagnosis that is often wrong.
+const REMOTE_FASTA_SLOW_MS = 120_000;
+let remoteFastaTimer: ReturnType<typeof setTimeout> | undefined;
+const remoteFastaSlow = ref(false);
+
+function stopRemoteFastaWait() {
+  if (remoteFastaTimer !== undefined) clearTimeout(remoteFastaTimer);
+  remoteFastaTimer = undefined;
+  remoteFastaSlow.value = false;
+  awaitingRemoteFasta.value = false;
+}
+
+function startRemoteFastaWait() {
+  if (remoteFastaTimer !== undefined) clearTimeout(remoteFastaTimer);
+  remoteFastaSlow.value = false;
+  awaitingRemoteFasta.value = true;
+  remoteFastaTimer = setTimeout(() => {
+    remoteFastaTimer = undefined;
+    remoteFastaSlow.value = true;
+  }, REMOTE_FASTA_SLOW_MS);
+}
+
+// The wait itself never ends on a timer: bytes that arrive late still land.
+const remoteFastaHelper = computed(() => {
+  if (!awaitingRemoteFasta.value) return undefined;
+  return remoteFastaSlow.value
+    ? "Still reading from storage. If it does not finish, pick the file again."
+    : "Reading file from storage…";
+});
+
+onScopeDispose(() => {
+  if (remoteFastaTimer !== undefined) clearTimeout(remoteFastaTimer);
+});
+
 function applyReferenceContent(content: string) {
   fileContent.value = content;
   const result = processContent(content);
@@ -154,7 +192,7 @@ function applyReferenceContent(content: string) {
 
 async function setReferenceFile(file: ImportFileHandle | undefined) {
   fileError.value = undefined;
-  awaitingRemoteFasta.value = false;
+  stopRemoteFastaWait();
 
   if (!file) {
     app.model.data.vGenes = undefined;
@@ -169,7 +207,7 @@ async function setReferenceFile(file: ImportFileHandle | undefined) {
   // storage only when it is mounted locally, which an S3 data library never is, so
   // those bytes come back through the prerun instead — see the watch below.
   if (!isImportFileHandleUpload(file)) {
-    awaitingRemoteFasta.value = true;
+    startRemoteFastaWait();
     app.model.data.vGenes = undefined;
     app.model.data.jGenes = undefined;
     return;
@@ -203,15 +241,35 @@ const remoteFastaContent = computed(() => {
   return reactiveFileContent.getContentString(exported.blob.handle)?.value;
 });
 
-// An `outputs -> data` write. It cannot loop: the watched output derives from
-// `referenceFileHandle` alone, which this never writes. Two clients with the
-// project open both derive identical genes from identical bytes, so the racing
-// writes are idempotent.
-watch(remoteFastaContent, (content) => {
-  if (content === undefined || app.model.data.referenceFileHandle === undefined) return;
-  awaitingRemoteFasta.value = false;
-  applyReferenceContent(content);
-});
+// An `outputs -> data` write, reconciling rather than edge-triggered: it fires
+// whenever either half of the pair moves, and derives genes only when none are
+// derived yet.
+//
+// Re-reading `derived` is what lets the same file be picked twice. The bytes and
+// their `source` stamp are then unchanged, so a watcher on the content alone
+// would never fire again and the cleared genes would never come back.
+//
+// `fileContent` is restored on every pass, not only the deriving one. It holds
+// the record list the panel renders and is local to the component, so a remount
+// starts it empty even when the genes are already in `data`.
+//
+// It settles rather than loops. Deriving writes genes, which are in `prerunArgs`,
+// so staging re-renders and the same file can return under a fresh blob handle —
+// but the second pass reads `derived` as true and stops.
+watch(
+  () => ({
+    content: remoteFastaContent.value,
+    derived: app.model.data.vGenes !== undefined,
+  }),
+  ({ content, derived }) => {
+    if (content === undefined || app.model.data.referenceFileHandle === undefined) return;
+    stopRemoteFastaWait();
+    fileContent.value = content;
+    if (derived) return;
+    applyReferenceContent(content);
+  },
+  { immediate: true },
+);
 
 // Watch for sequence changes and validate (only in fastaSequence mode)
 watch(
@@ -442,7 +500,7 @@ watch(stopCodonSelection, (selected) => {
       label="Reference sequence file (FASTA)"
       :extensions="['fasta', 'fa']"
       :error="fileError"
-      :helper="awaitingRemoteFasta ? 'Reading file from storage…' : undefined"
+      :helper="remoteFastaHelper"
       clearable
       @update:model-value="setReferenceFile"
     >
