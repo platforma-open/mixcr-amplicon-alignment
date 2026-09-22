@@ -3,10 +3,8 @@
 self := import("@platforma-sdk/workflow-tengo:tpl")
 
 render := import("@platforma-sdk/workflow-tengo:render")
-ll := import("@platforma-sdk/workflow-tengo:ll")
 assets := import("@platforma-sdk/workflow-tengo:assets")
 pframes := import("@platforma-sdk/workflow-tengo:pframes")
-slices := import("@platforma-sdk/workflow-tengo:slices")
 maps := import("@platforma-sdk/workflow-tengo:maps")
 
 json := import("json")
@@ -16,7 +14,7 @@ mixcrAnalyzeTpl := assets.importTemplate(":mixcr-analyze")
 mixcrExportTpl := assets.importTemplate(":mixcr-export")
 aggregateByClonotypeKeyTpl := assets.importTemplate(":aggregate-by-clonotype-key")
 exportReportTpl := assets.importTemplate(":export-report")
-calculateExportSpecs := import(":calculate-export-specs")
+exportSpecsLib := import(":calculate-export-specs")
 
 self.awaitState("InputsLocked")
 self.awaitState("params", "ResourceReady")
@@ -73,7 +71,7 @@ self.body(func(inputs) {
 	fileExtension := inputSpec.domain["pl7.app/fileExtension"]
 	sampleIdAxisSpec := inputSpec.axesSpec[0]
 
-	// Use calculateExportSpecs for output columns
+	// Use exportSpecsLib.calculateExportSpecs for output columns
 	presetSpecForBack := {
 		assemblingFeature: params.assemblingFeature,
 		imputeGermline: params.imputeGermline,
@@ -82,7 +80,7 @@ self.body(func(inputs) {
 		cellTags: []
 	}
 
-	exportSpecs := calculateExportSpecs(presetSpecForBack, blockId)
+	exportSpecs := exportSpecsLib.calculateExportSpecs(presetSpecForBack, blockId)
 
 	columnsSpecPerSample := exportSpecs.columnsSpecPerSample
 	columnsSpecPerClonotypeNoAggregates := exportSpecs.columnsSpecPerClonotypeNoAggregates
