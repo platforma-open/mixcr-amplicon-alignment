@@ -1,5 +1,12 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow
 
+## 1.22.3
+
+### Patch Changes
+
+- 2044115: Bump mixcr version to 4.7.0-365-develop
+- de60685: Update block-tools and tengo-builder to the versions CI requires
+
 ## 1.22.2
 
 ### Patch Changes
