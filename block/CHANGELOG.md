@@ -1,5 +1,12 @@
 ## 1.0.0
 
+## 1.10.2
+
+### Patch Changes
+
+- 2044115: Bump mixcr version to 4.7.0-365-develop
+- de60685: Update block-tools and tengo-builder to the versions CI requires
+
 ## 1.10.1
 
 ### Patch Changes
