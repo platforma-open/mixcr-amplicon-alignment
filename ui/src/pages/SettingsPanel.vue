@@ -1,7 +1,11 @@
 <script setup lang="ts">
 import type { ReferenceInputMode } from "@platforma-open/milaboratories.mixcr-amplicon-alignment.model";
 import type { ImportFileHandle, LocalImportFileHandle, PlRef } from "@platforma-sdk/model";
-import { getFilePathFromHandle, getRawPlatformaInstance } from "@platforma-sdk/model";
+import {
+  getFilePathFromHandle,
+  getRawPlatformaInstance,
+  isImportFileHandleUpload,
+} from "@platforma-sdk/model";
 import {
   PlAccordionSection,
   PlAlert,
@@ -22,6 +26,7 @@ import { computed, ref, watch } from "vue";
 import { useApp } from "../app";
 import { retentive } from "../retentive";
 import { parseFasta, parseFastaRecords } from "../utils/parseFasta";
+import { useRemoteFileBytes } from "../useRemoteFileBytes";
 import BuildLibraryPanel from "./BuildLibraryPanel.vue";
 
 const app = useApp();
@@ -130,12 +135,59 @@ function setInput(inputRef: PlRef | undefined) {
 
 const fileError = ref<string | undefined>();
 
+// Bytes of an `index://` reference file, re-exported by the prerun. The mode gate
+// stops a handle left behind by a mode switch overwriting genes that were derived
+// from a pasted sequence.
+const {
+  awaiting: awaitingRemoteFasta,
+  failure: remoteFastaFailure,
+  start: startRemoteFastaWait,
+  stop: stopRemoteFastaWait,
+} = useRemoteFileBytes({
+  exported: () => app.model.outputs.referenceFasta,
+  pick: () => app.model.data.referenceFileHandle,
+  enabled: () => refMode.value === "fastaFile",
+  isDerived: () => app.model.data.vGenes !== undefined,
+  // The record list is local to this component, so a remount starts it empty even
+  // when the genes are already in `data`.
+  onContent: (content) => {
+    fileContent.value = content;
+  },
+  onDerive: (content) => applyReferenceContent(content),
+});
+
+function applyReferenceContent(content: string) {
+  fileContent.value = content;
+  const result = processContent(content);
+
+  if (result.isValid) {
+    // Clear paste input when file is set
+    app.model.data.librarySequence = undefined;
+  } else {
+    fileError.value = result.error;
+  }
+}
+
 async function setReferenceFile(file: ImportFileHandle | undefined) {
+  fileError.value = undefined;
+  stopRemoteFastaWait();
+
   if (!file) {
-    fileError.value = undefined;
     app.model.data.vGenes = undefined;
     app.model.data.jGenes = undefined;
     clearRecordSelection();
+    return;
+  }
+
+  clearRecordSelection();
+
+  // An `index://` handle points into a pl-side storage. The desktop can read that
+  // storage only when it is mounted locally, which an S3 data library never is, so
+  // those bytes come back through the prerun instead — see the watch below.
+  if (!isImportFileHandleUpload(file)) {
+    startRemoteFastaWait();
+    app.model.data.vGenes = undefined;
+    app.model.data.jGenes = undefined;
     return;
   }
 
@@ -143,17 +195,7 @@ async function setReferenceFile(file: ImportFileHandle | undefined) {
     const data = await getRawPlatformaInstance().lsDriver.getLocalFileContent(
       file as LocalImportFileHandle,
     );
-    const content = new TextDecoder().decode(data);
-    fileContent.value = content;
-    app.model.data.selectedRecordHeaders = undefined;
-    const result = processContent(content);
-
-    if (result.isValid) {
-      // Clear paste input when file is set
-      app.model.data.librarySequence = undefined;
-    } else {
-      fileError.value = result.error;
-    }
+    applyReferenceContent(new TextDecoder().decode(data));
   } catch (e) {
     fileError.value = `Failed to read file: ${e instanceof Error ? e.message : "Unknown error"}`;
     app.model.data.vGenes = undefined;
@@ -390,7 +432,8 @@ watch(stopCodonSelection, (selected) => {
       v-model="app.model.data.referenceFileHandle"
       label="Reference sequence file (FASTA)"
       :extensions="['fasta', 'fa']"
-      :error="fileError"
+      :error="fileError ?? remoteFastaFailure"
+      :helper="awaitingRemoteFasta ? 'Reading file from storage…' : undefined"
       clearable
       @update:model-value="setReferenceFile"
     >

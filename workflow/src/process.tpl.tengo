@@ -3,10 +3,8 @@
 self := import("@platforma-sdk/workflow-tengo:tpl")
 
 render := import("@platforma-sdk/workflow-tengo:render")
-ll := import("@platforma-sdk/workflow-tengo:ll")
 assets := import("@platforma-sdk/workflow-tengo:assets")
 pframes := import("@platforma-sdk/workflow-tengo:pframes")
-slices := import("@platforma-sdk/workflow-tengo:slices")
 maps := import("@platforma-sdk/workflow-tengo:maps")
 
 math := import("math")
