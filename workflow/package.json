@@ -1,6 +1,6 @@
 {
   "name": "@platforma-open/milaboratories.mixcr-amplicon-alignment.workflow",
-  "version": "1.22.3",
+  "version": "1.22.4",
   "private": true,
   "description": "MiXCR Amplicon Alignment Workflow",
   "type": "module",
