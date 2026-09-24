@@ -6,7 +6,12 @@ import type {
   StopCodonReplacements,
   StopCodonType,
 } from "@platforma-open/milaboratories.mixcr-amplicon-alignment.kind";
-import type { ImportFileHandle, PlDataTableStateV2, PlRef } from "@platforma-sdk/model";
+import type {
+  BlobHandleAndSize,
+  ImportFileHandle,
+  PlDataTableStateV2,
+  PlRef,
+} from "@platforma-sdk/model";
 
 // The vocabulary lives in the kind: its init-params contract names these types
 // and a kind cannot import from the model. Re-exported so the UI keeps a single
@@ -118,3 +123,13 @@ export type LegacyBlockUiState = {
   buildLibraryFastaFile?: ImportFileHandle;
   tableState: PlDataTableStateV2;
 };
+
+/**
+ * What the prerun exports for one picked `index://` file: the handle it imported
+ * and either the bytes or the message the import failed with. The model holds
+ * the blob as a `FutureRef`; the UI sees it resolved, hence the parameter.
+ */
+export type ExportedFile<Blob = BlobHandleAndSize | undefined> = { source: string } & (
+  | { blob: Blob; error?: undefined }
+  | { blob?: undefined; error: string }
+);
