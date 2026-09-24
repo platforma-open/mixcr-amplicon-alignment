@@ -1,5 +1,11 @@
 import { kind } from "@platforma-open/milaboratories.mixcr-amplicon-alignment.kind";
-import type { InferHrefType, InferOutputsType } from "@platforma-sdk/model";
+import type {
+  FutureRef,
+  InferHrefType,
+  InferOutputsType,
+  LocalBlobHandleAndSize,
+  RenderCtx,
+} from "@platforma-sdk/model";
 import type { ImportFileHandle } from "@platforma-sdk/model";
 import {
   BlockModelV3,
@@ -11,7 +17,13 @@ import {
   parseResourceMap,
 } from "@platforma-sdk/model";
 import { ProgressPrefix } from "./progress";
-import type { BlockArgs, BlockData, LegacyBlockArgs, LegacyBlockUiState } from "./types";
+import type {
+  BlockArgs,
+  BlockData,
+  ExportedFile,
+  LegacyBlockArgs,
+  LegacyBlockUiState,
+} from "./types";
 
 export * from "./types";
 
@@ -86,6 +98,34 @@ const blockDataModel = new DataModelBuilder({ kind })
     perProcessCPUs: undefined,
     tableState: createPlDataTableStateV2(),
   }));
+
+// Reads one prerun export made by `exportIndexHandle` in `prerun.tpl.tengo`.
+//
+// A failed import (object missing from the storage, storage unknown to the
+// server) errors the blob field, and resolving an errored field throws. Caught
+// here so the message travels under the same `source` stamp as the bytes would:
+// the picker can then show it against the pick it belongs to and drop it once
+// the pick changes. Left to propagate, it lands in the block-wide error banner
+// with no link to the picker. The `source` resource is plain JSON and never
+// errors, so it is read outside the try.
+function exportedFile(
+  ctx: RenderCtx<BlockArgs, BlockData>,
+  fileField: string,
+  sourceField: string,
+): ExportedFile<FutureRef<LocalBlobHandleAndSize | undefined>> | undefined {
+  const source = ctx.prerun
+    ?.resolve({ field: sourceField, allowPermanentAbsence: true })
+    ?.getDataAsJsonOrUndefined<string>();
+  if (source === undefined) return undefined;
+  try {
+    const blob = ctx.prerun
+      ?.resolve({ field: fileField, assertFieldType: "Input", allowPermanentAbsence: true })
+      ?.getFileHandle();
+    return blob === undefined ? undefined : { source, blob };
+  } catch (e) {
+    return { source, error: e instanceof Error ? e.message : String(e) };
+  }
+}
 
 export const platforma = BlockModelV3.create({ dataModel: blockDataModel, kind })
 
@@ -215,38 +255,19 @@ export const platforma = BlockModelV3.create({ dataModel: blockDataModel, kind }
 
   // The FASTA the user picked, re-exported by the prerun. Only present for an
   // `index://` handle: a storage the desktop cannot read off disk is the one case
-  // where the UI has no other route to the bytes. See `SettingsPanel.vue`.
+  // where the UI has no other route to the bytes. Read by `useRemoteFileBytes`.
   //
-  // `source` is the handle the prerun imported. It travels with the blob because
-  // the UI must be able to drop bytes belonging to a pick the user has already
-  // replaced — see the byte-source computeds in both panels.
-  // Both halves or nothing: bytes whose origin is unknown cannot be matched
-  // against the current pick, and applying them unmatched is what loses a
-  // user's reference.
-  .output("referenceFasta", (ctx) => {
-    const blob = ctx.prerun
-      ?.resolve({ field: "referenceFasta", assertFieldType: "Input", allowPermanentAbsence: true })
-      ?.getFileHandle();
-    const source = ctx.prerun
-      ?.resolve({ field: "referenceFastaSource", allowPermanentAbsence: true })
-      ?.getDataAsJsonOrUndefined<string>();
-    return blob === undefined || source === undefined ? undefined : { blob, source };
-  })
+  // `source` is the handle the prerun imported. It travels with the blob, or with
+  // the failure, because the UI must be able to drop an export belonging to a
+  // pick the user has already replaced. Both halves or nothing: bytes whose
+  // origin is unknown cannot be matched against the current pick, and applying
+  // them unmatched is what loses a user's reference.
+  .output("referenceFasta", (ctx) => exportedFile(ctx, "referenceFasta", "referenceFastaSource"))
 
   // Same, for the Build Library tab's FASTA upload.
-  .output("buildLibraryFasta", (ctx) => {
-    const blob = ctx.prerun
-      ?.resolve({
-        field: "buildLibraryFasta",
-        assertFieldType: "Input",
-        allowPermanentAbsence: true,
-      })
-      ?.getFileHandle();
-    const source = ctx.prerun
-      ?.resolve({ field: "buildLibraryFastaSource", allowPermanentAbsence: true })
-      ?.getDataAsJsonOrUndefined<string>();
-    return blob === undefined || source === undefined ? undefined : { blob, source };
-  })
+  .output("buildLibraryFasta", (ctx) =>
+    exportedFile(ctx, "buildLibraryFasta", "buildLibraryFastaSource"),
+  )
 
   .output("prerunLibrary", (ctx) =>
     ctx.prerun

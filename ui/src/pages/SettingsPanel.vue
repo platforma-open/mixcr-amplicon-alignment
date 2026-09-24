@@ -140,6 +140,7 @@ const fileError = ref<string | undefined>();
 // from a pasted sequence.
 const {
   awaiting: awaitingRemoteFasta,
+  failure: remoteFastaFailure,
   start: startRemoteFastaWait,
   stop: stopRemoteFastaWait,
 } = useRemoteFileBytes({
@@ -431,7 +432,7 @@ watch(stopCodonSelection, (selected) => {
       v-model="app.model.data.referenceFileHandle"
       label="Reference sequence file (FASTA)"
       :extensions="['fasta', 'fa']"
-      :error="fileError"
+      :error="fileError ?? remoteFastaFailure"
       :helper="awaitingRemoteFasta ? 'Reading file from storage…' : undefined"
       clearable
       @update:model-value="setReferenceFile"

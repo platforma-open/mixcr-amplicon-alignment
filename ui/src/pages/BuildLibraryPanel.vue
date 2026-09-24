@@ -160,6 +160,7 @@ const prerunWait = ref<PrerunWaitState>("idle");
 // work.
 const {
   awaiting: awaitingRemoteFasta,
+  failure: remoteFastaFailure,
   start: startRemoteFastaWait,
   stop: stopRemoteFastaWait,
 } = useRemoteFileBytes({
@@ -261,7 +262,7 @@ watch(
     v-model="app.model.data.buildLibraryFastaFile"
     label="Upload VDJ FASTA to auto-fill entries (optional)"
     :extensions="['fasta', 'fa']"
-    :error="buildLibraryFastaError"
+    :error="buildLibraryFastaError ?? remoteFastaFailure"
     :helper="awaitingRemoteFasta ? 'Reading file from storage…' : undefined"
     clearable
     @update:model-value="onBuildLibraryFastaUpload"
