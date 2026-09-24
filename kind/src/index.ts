@@ -71,10 +71,13 @@ export type LibraryEntryDefinition = {
  * - `title` and `defaultBlockLabel`. Both are derived: the first from the label
  *   of the chosen dataset, the second from that label plus `chains` and
  *   `assemblingFeature`. The UI recomputes them from the dataset options.
- * - `referenceFileHandle` and `buildLibraryFastaFile`. These are `upload://`
- *   handles signed by the desktop that opened the file dialog and resolve
- *   nowhere else. What the UI parses out of them — `vGenes` / `jGenes` and
- *   `libraryEntries` — travels instead, so the recipe survives without them.
+ * - `referenceFileHandle` and `buildLibraryFastaFile`. Either may be an
+ *   `upload://` handle, signed by the desktop that opened the file dialog and
+ *   resolving nowhere else. Neither is worth carrying even when it is an
+ *   `index://` handle: what the UI parses out of them — `vGenes` / `jGenes` and
+ *   `libraryEntries` — travels instead and is what the workflow actually reads,
+ *   so the recipe survives without them and does not depend on a storage the
+ *   importing server may not register.
  * - `selectedRecordHeaders`, the subset of FASTA records the user kept. The
  *   settings page clears it and re-derives the gene sequences from the whole
  *   input whenever the reference is re-read, so a carried value would be
