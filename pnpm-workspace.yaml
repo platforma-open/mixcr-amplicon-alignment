@@ -42,5 +42,5 @@ catalog:
   'zod': ^3.23.8
   shx: ~0.4.0
   "@platforma-sdk/block-kind": 1.1.0
-  "@milaboratories/pl-model-common": 1.48.0
+  "@milaboratories/pl-model-common": 1.51.0
   "es-toolkit": 1.41.0
