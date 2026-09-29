@@ -9,8 +9,9 @@ import type {
 import type { ImportFileHandle } from "@platforma-sdk/model";
 import {
   BlockModelV3,
+  ColumnsCollection,
   createPlDataTableStateV2,
-  createPlDataTableV2,
+  createPlDataTableV3,
   DataModelBuilder,
   isImportFileHandleIndex,
   isPColumnSpec,
@@ -348,14 +349,28 @@ export const platforma = BlockModelV3.create({ dataModel: blockDataModel, kind }
       });
   })
 
+  // QC report table, keyed by sampleId. Every sample has a clonotype count (0 when
+  // nothing assembled), so that column carries the rows. Exactly one primary: the
+  // label columns (e.g. sample names) are looked up once per primary, so several
+  // would repeat them.
   .outputWithStatus("pt", (ctx) => {
-    const pCols = ctx.outputs
-      ?.resolve({ field: "qcReportTable", assertFieldType: "Input", allowPermanentAbsence: true })
-      ?.getPColumns();
-    if (pCols === undefined) {
+    const qcReport = ctx.outputs?.resolve({
+      field: "qcReportTable",
+      assertFieldType: "Input",
+      allowPermanentAbsence: true,
+    });
+    if (qcReport === undefined) {
       return undefined;
     }
-    return createPlDataTableV2(ctx, pCols, ctx.data.tableState);
+    const columns = ColumnsCollection([qcReport]);
+    const primary = {
+      name: [{ type: "exact" as const, value: "mixcr.com/reports/totalClonotypes" }],
+    };
+    return createPlDataTableV3(ctx, {
+      primaryColumns: columns.filter({ include: primary }).getColumns(),
+      columns: columns.filter({ exclude: primary }).getColumns(),
+      tableState: ctx.data.tableState,
+    });
   })
 
   .sections((_ctx) => {
