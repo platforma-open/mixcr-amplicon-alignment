@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow
 
+## 1.22.5
+
+### Patch Changes
+
+- 887acc0: Bump mixcr to 4.7.0-403-develop. Brings the built-in gene library to RepSeq.IO v6.5 (new species and chains, corrected rabbit and macaque references) and keeps up to 15 V gene candidates per read mate in amplicon presets, so near-identical V families (rabbit IGKV) no longer lose the true gene before mates are merged.
+
 ## 1.22.4
 
 ### Patch Changes
