@@ -1,15 +1,40 @@
+// Aggregates every sample's clonotype rows into one row per clonotypeKey, in shards.
+//
+// The shard plan, the letter buckets and the memory law are in :shard-plan. The plan is sized
+// from the blob size of the input TSVs, read through the backend's getBlobSize; a backend
+// without it gets a single shard.
+//
+// Every shard is one ptabler run over all input files, filtered to its letters, aggregated,
+// labelled and written. A single-shard plan runs the aggregation unfiltered, as the block did
+// before sharding. Several shards are concatenated by one more run; that run only appends
+// files, which polars streams to the sink.
+
 ll := import("@platforma-sdk/workflow-tengo:ll")
 self := import("@platforma-sdk/workflow-tengo:tpl")
 pConstants := import("@platforma-sdk/workflow-tengo:pframes.constants")
+slices := import("@platforma-sdk/workflow-tengo:slices")
 maps := import("@platforma-sdk/workflow-tengo:maps")
 units := import("@platforma-sdk/workflow-tengo:units")
+feats := import("@platforma-sdk/workflow-tengo:feats")
 pt := import("@platforma-sdk/workflow-tengo:pt")
-clonotypeLabel := import(":clonotype-label")
 
-math := import("math")
+clonotypeLabel := import(":clonotype-label")
+sp := import(":shard-plan")
+
 json := import("json")
 
 self.defineOutputs("tsv")
+
+// The concat grant does not follow the input size. The concat run is scan_csv per
+// shard file, then concat, then sink_csv, with inferSchema false. The plan has no
+// group-by, no window and no sort, so polars streams it end to end. Peak RAM is
+// bounded by the morsel size, not by the file size.
+// Measured: at a fixed total byte count, the aggregate plan used the same peak RAM
+// with 1 and with 128 read_csv inputs.
+// 16 GiB is a margin, not a fitted value. The concat-only plan is not measured at
+// cohort scale.
+CONCAT_MEM_GIB := 16
+CONCAT_CPU := 2
 
 self.body(func(inputs) {
 	inputData := inputs[pConstants.VALUE_FIELD_NAME]
@@ -26,106 +51,131 @@ self.body(func(inputs) {
 	schemaPerSample := params.schemaPerSample
 
 	inputMap := inputData.inputs()
-	numberOfSamples := len(inputMap)
+	ll.assert(len(inputMap) > 0, "no input files found")
 
-	baseMemGB := 32
-	if !is_undefined(inputs.perProcessMemGB) {
-		baseMemGB = inputs.perProcessMemGB / 2
+	totalBytes := undefined
+	if feats.hasBlobSize {
+		totalBytes = 0
+		for sKey in maps.getKeys(inputMap) {
+			totalBytes += ll.getBlobSize(inputMap[sKey].getValue().id)
+		}
 	}
-
-	perSampleMem := int(math.max(2, baseMemGB / 10))
-	effectiveSamples := int(math.max(numberOfSamples, 3))
-	memGB := int(math.min(312, math.max(baseMemGB * 3 / 2, effectiveSamples * perSampleMem)))
-
-	wf := pt.workflow().
-		inMediumQueue().
-		mem(memGB * units.GiB).
-		cpu(int(math.max(numberOfSamples, 32)))
-
-	dataFrames := []
+	shardPlan := sp.plan(totalBytes, inputs.perProcessMemGB)
+	ll.print("aggregate-by-clonotype-key shard plan: inputBytes=", totalBytes, " shards=", len(shardPlan.shards), " memGiB=", shardPlan.memGiB, " cpu=", shardPlan.cpu)
+	singleShard := len(shardPlan.shards) == 1
 
 	baseSchemaForRead := schemaPerSample + [ { column: "clonotypeKey", type: "String" } ]
 
-	for sKey in maps.getKeys(inputMap) {
-		inputFile := inputMap[sKey]
-		key := json.decode(sKey)
-		if len(key) != 1 {
-			ll.panic("malformed key: %v", sKey)
+	// Builds the aggregation of one shard on the given workflow and returns the frame to save.
+	// letters: the shard's bucket letters; catchAll: also take rows with an empty bucket.
+	//
+	// Every shard frames and filters every input TSV, so K shards parse the cohort K times:
+	// 26 shards over 260 GiB is about 6.6 TiB of CSV parsing and 26 bucket evaluations per
+	// row. The fix is a streaming pre-pass per sample that writes K bucket files, so each
+	// shard reads 1/K of the bytes. It would also lift the 26-shard ceiling of the one-letter
+	// bucket.
+	buildShard := func(wf, letters, catchAll) {
+		dataFrames := []
+		for sKey in maps.getKeys(inputMap) {
+			key := json.decode(sKey)
+			if len(key) != 1 {
+				ll.panic("malformed key: %v", sKey)
+			}
+			sampleId := key[0]
+
+			df := wf.frame({
+				file: inputMap[sKey],
+				xsvType: "tsv",
+				schema: baseSchemaForRead
+			}, {
+				id: "table_" + sampleId,
+				inferSchema: false
+			})
+			dataFrames = append(dataFrames, df)
 		}
-		sampleId := key[0]
-		dfId := "table_" + sampleId
 
-		df := wf.frame({
-			file: inputFile,
-			xsvType: "tsv",
-			schema: baseSchemaForRead
-		}, {
-			id: dfId,
-			inferSchema: false
-		})
-		dataFrames = append(dataFrames, df)
-	}
+		currentDf := len(dataFrames) == 1 ? dataFrames[0] : pt.concat(dataFrames)
 
-	currentDf := undefined
-	if len(dataFrames) == 0 {
-		ll.panic("no input files found")
-	} else if len(dataFrames) == 1 {
-		currentDf = dataFrames[0]
-	} else {
-		currentDf = pt.concat(dataFrames)
-	}
-
-	aggExpressions := []
-	hasFractionCDRMutations := false
-
-	for colDef in schemaPerClonotypeNoAggregates {
-		if colDef.column == "clonotypeLabel" {
-			continue
+		if !singleShard {
+			currentDf = currentDf.filter(sp.shardPredicate(pt, "clonotypeKey", letters, catchAll))
 		}
-		if colDef.column == "fractionCDRMutations" {
-			hasFractionCDRMutations = true
-			continue
+
+		aggExpressions := []
+		hasFractionCDRMutations := false
+
+		for colDef in schemaPerClonotypeNoAggregates {
+			if colDef.column == "clonotypeLabel" {
+				continue
+			}
+			if colDef.column == "fractionCDRMutations" {
+				hasFractionCDRMutations = true
+				continue
+			}
+			aggExpressions = append(aggExpressions,
+				pt.col(colDef.column).maxBy(pt.col(mainAbundanceColumnNormalized)).alias(colDef.column)
+			)
 		}
+
 		aggExpressions = append(aggExpressions,
-			pt.col(colDef.column).maxBy(pt.col(mainAbundanceColumnNormalized)).alias(colDef.column)
+			pt.col(mainAbundanceColumnNormalized).count().alias("sampleCount"),
+			pt.col(mainAbundanceColumnUnnormalized).sum().alias(mainAbundanceColumnUnnormalized + "Sum"),
+			pt.col(mainAbundanceColumnNormalized).mean().alias(mainAbundanceColumnNormalized + "Mean")
 		)
+
+		aggregatedDf := currentDf.groupBy("clonotypeKey").agg(aggExpressions...)
+
+		// CDR mutation fraction: CDR / (CDR + FWR); 1.0 when NA or zero denominator.
+		if hasFractionCDRMutations {
+			cdr := "aaMutationsCountCDR1,CDR2"
+			fwr := "aaMutationsCountFR1,FR2,FR3,FR4"
+			aggregatedDf = aggregatedDf.withColumns(
+				pt.when(
+					pt.col(cdr).isNotNull().
+						and(pt.col(fwr).isNotNull()).
+						and(pt.col(cdr).cast("Double").plus(pt.col(fwr).cast("Double")).gt(0.0))
+				).then(
+					pt.col(cdr).cast("Double").truediv(
+						pt.col(cdr).cast("Double").plus(pt.col(fwr).cast("Double"))
+					)
+				).otherwise(pt.lit(1.0)).
+					alias("fractionCDRMutations")
+			)
+		}
+
+		// The label ranks keys inside a five-letter prefix whose first letter is the shard
+		// letter, so every key of a prefix is in this shard.
+		return clonotypeLabel.addClonotypeLabelColumnsPt(aggregatedDf, "clonotypeKey", "clonotypeLabel", pt)
 	}
 
-	aggExpressions = append(aggExpressions,
-		pt.col(mainAbundanceColumnNormalized).count().alias("sampleCount"),
-		pt.col(mainAbundanceColumnUnnormalized).sum().alias(mainAbundanceColumnUnnormalized + "Sum"),
-		pt.col(mainAbundanceColumnNormalized).mean().alias(mainAbundanceColumnNormalized + "Mean")
-	)
+	shardFiles := []
+	for i, letters in shardPlan.shards {
+		wf := pt.workflow().
+			inMediumQueue().
+			mem(shardPlan.memGiB * units.GiB).
+			cpu(shardPlan.cpu)
 
-	aggregatedDf := currentDf.groupBy("clonotypeKey").agg(aggExpressions...)
+		buildShard(wf, letters, i == 0).save("output.tsv")
 
-	// Calculate CDR mutation fraction: CDR / (CDR + FWR), fallback 1.0 when NA or zero denominator
-	if hasFractionCDRMutations {
-		cdr := "aaMutationsCountCDR1,CDR2"
-		fwr := "aaMutationsCountFR1,FR2,FR3,FR4"
-		aggregatedDf = aggregatedDf.withColumns(
-			pt.when(
-				pt.col(cdr).isNotNull().
-					and(pt.col(fwr).isNotNull()).
-					and(pt.col(cdr).cast("Double").plus(pt.col(fwr).cast("Double")).gt(0.0))
-			).then(
-				pt.col(cdr).cast("Double").truediv(
-					pt.col(cdr).cast("Double").plus(pt.col(fwr).cast("Double"))
-				)
-			).otherwise(pt.lit(1.0)).
-				alias("fractionCDRMutations")
-		)
+		shardFiles = append(shardFiles, wf.run().getFile("output.tsv"))
 	}
 
-	aggregatedDf = clonotypeLabel.addClonotypeLabelColumnsPt(aggregatedDf, "clonotypeKey", "clonotypeLabel", pt)
+	if singleShard {
+		return {
+			tsv: shardFiles[0]
+		}
+	}
 
-	aggregatedDf.save("output.tsv")
+	concatWf := pt.workflow().
+		inMediumQueue().
+		mem(CONCAT_MEM_GIB * units.GiB).
+		cpu(CONCAT_CPU)
 
-	ptablerResult := wf.run()
-
-	processedTsv := ptablerResult.getFile("output.tsv")
+	shardFrames := slices.map(shardFiles, func(f) {
+		return concatWf.frame(f, { xsvType: "tsv", inferSchema: false })
+	})
+	pt.concat(shardFrames).save("output.tsv")
 
 	return {
-		tsv: processedTsv
+		tsv: concatWf.run().getFile("output.tsv")
 	}
-}) 
+})

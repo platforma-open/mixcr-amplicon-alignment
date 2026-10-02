@@ -251,12 +251,12 @@ self.body(func(inputs) {
 		ll.panic("clonotypeKeyColumns is undefined")
 	}
 
-	// Simplified PTabler processing for main TSV output
+	// PTabler processing for main TSV output. Left unsized so workflow-tengo sizes it from
+	// its own input volume, which tracks the exported TSV better than a fixed share of the
+	// mixcr step's budget. An explicit .mem()/.cpu() would suppress that.
 	wfMain := pt.workflow().
-		inMediumQueue().
-		mem(memGB(8, 4)).
-		cpu(2)
-		
+		inMediumQueue()
+
 	frameInputMap := {
 		file: unprocessedTsv,
 		xsvType: "tsv",
