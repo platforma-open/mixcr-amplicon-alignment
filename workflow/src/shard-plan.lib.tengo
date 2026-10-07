@@ -28,8 +28,9 @@
 // scanned; taken as 1.5 for margin.
 //
 // GROUP_RAM covers the concat + maxBy over the rows a shard keeps. Measured at 4.43 on a
-// 42-column bulk export with no repertoire overlap; taken as 6, the slope the SDK's default
-// ptabler sizing uses.
+// 42-column bulk export with no repertoire overlap; taken as 6, the default ptabler sizing
+// slope of workflow-tengo 6.11 to 6.13. 6.14 raised that default to 10; this constant is
+// pinned here and does not follow it.
 //
 // Blob sizes are the unit both laws are fitted in: ptabler writes these TSVs uncompressed.
 //

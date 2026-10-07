@@ -5,6 +5,7 @@ slices := import("@platforma-sdk/workflow-tengo:slices")
 assets := import("@platforma-sdk/workflow-tengo:assets")
 exec := import("@platforma-sdk/workflow-tengo:exec")
 pt := import("@platforma-sdk/workflow-tengo:pt")
+maps := import("@platforma-sdk/workflow-tengo:maps")
 clonotypeLabel := import(":clonotype-label")
 
 math := import("math")
@@ -98,8 +99,8 @@ applyStopCodonReplacementsPt := func(df, opts) {
 	translateNtToAaExpr := func(ntExpr, codonMap) {
 		seq := ntExpr.fillNull("").strToUpper()
 		seq = seq.strReplace("(.{3})", "$1|", { replaceAll: true })
-		for codon, aa in codonMap {
-			seq = seq.strReplace(codon + "|", aa + "|", { replaceAll: true, literal: true })
+		for codon in maps.getKeys(codonMap) {
+			seq = seq.strReplace(codon + "|", codonMap[codon] + "|", { replaceAll: true, literal: true })
 		}
 		seq = seq.strReplace("\\|$", "", { replaceAll: false })
 		seq = seq.strReplace("|", "", { replaceAll: true, literal: true })
