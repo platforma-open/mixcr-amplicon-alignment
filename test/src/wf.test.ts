@@ -119,8 +119,8 @@ blockTest(
     const alignOutputs1 = wrapOutputs(alignStableState1.outputs);
 
     // Configure the amplicon alignment block
-    const vGenesFasta = `>ref_heavy\n${referenceSequence}`;
-    const jGenesFasta = `>ref_heavy_j\n${referenceSequence.slice(-80)}`;
+    const vGenesFasta = `>ref_heavy\n${referenceSequence.slice(0, 298)}`;
+    const jGenesFasta = `>ref_heavy_j\n${referenceSequence.slice(-44)}`;
 
     await project.mutateBlockStorage(alignBlockId, {
       operation: "update-block-data",
@@ -175,6 +175,7 @@ blockTest(
     );
     expect(alignReport).toBeDefined();
     expect(alignReport.totalReadsProcessed).greaterThan(0);
+    expect(alignReport.aligned).greaterThan(0);
 
     // Verify QC
     const qcEntry = outputs3.qc!.data[0];
@@ -248,8 +249,8 @@ blockTest(
     const alignOutputs1 = wrapOutputs(alignStableState1.outputs);
 
     // Configure the amplicon alignment block
-    const vGenesFasta = `>ref_heavy\n${referenceSequence}`;
-    const jGenesFasta = `>ref_heavy_j\n${referenceSequence.slice(-80)}`;
+    const vGenesFasta = `>ref_heavy\n${referenceSequence.slice(0, 298)}`;
+    const jGenesFasta = `>ref_heavy_j\n${referenceSequence.slice(-44)}`;
 
     await project.mutateBlockStorage(alignBlockId, {
       operation: "update-block-data",
@@ -296,6 +297,7 @@ blockTest(
     );
     expect(alignReport).toBeDefined();
     expect(alignReport.totalReadsProcessed).greaterThan(0);
+    expect(alignReport.aligned).greaterThan(0);
 
     const qcEntry = outputs3.qc!.data[0];
     expect(qcEntry).toBeDefined();
@@ -361,8 +363,8 @@ blockTest(
     // long-CDR3 clone whose mates don't overlap there still assembles) and is germline-imputed
     // on export. Run on s1 to verify the mechanism + MiXCR's disjoint column naming independently
     // of a natural read gap (the disjoint feature excludes the window regardless of coverage).
-    const vGenesFasta = `>ref_heavy\n${referenceSequence}`;
-    const jGenesFasta = `>ref_heavy_j\n${referenceSequence.slice(-80)}`;
+    const vGenesFasta = `>ref_heavy\n${referenceSequence.slice(0, 298)}`;
+    const jGenesFasta = `>ref_heavy_j\n${referenceSequence.slice(-44)}`;
 
     await project.mutateBlockStorage(alignBlockId, {
       operation: "update-block-data",
@@ -411,6 +413,7 @@ blockTest(
     );
     expect(alignReport).toBeDefined();
     expect(alignReport.totalReadsProcessed).greaterThan(0);
+    expect(alignReport.aligned).greaterThan(0);
 
     const qcEntry = outputs3.qc!.data[0];
     expect(qcEntry).toBeDefined();
@@ -472,8 +475,8 @@ blockTest(
     const alignOutputs1 = wrapOutputs(alignStableState1.outputs);
 
     // Configure the amplicon alignment block with CDR1:CDR3 feature, no imputation
-    const vGenesFasta = `>ref_heavy\n${referenceSequence}`;
-    const jGenesFasta = `>ref_heavy_j\n${referenceSequence.slice(-80)}`;
+    const vGenesFasta = `>ref_heavy\n${referenceSequence.slice(0, 298)}`;
+    const jGenesFasta = `>ref_heavy_j\n${referenceSequence.slice(-44)}`;
 
     await project.mutateBlockStorage(alignBlockId, {
       operation: "update-block-data",
@@ -520,6 +523,7 @@ blockTest(
     );
     expect(alignReport).toBeDefined();
     expect(alignReport.totalReadsProcessed).greaterThan(0);
+    expect(alignReport.aligned).greaterThan(0);
 
     const qcEntry = outputs3.qc!.data[0];
     expect(qcEntry).toBeDefined();

@@ -6,8 +6,8 @@ render := import("@platforma-sdk/workflow-tengo:render")
 assets := import("@platforma-sdk/workflow-tengo:assets")
 pframes := import("@platforma-sdk/workflow-tengo:pframes")
 maps := import("@platforma-sdk/workflow-tengo:maps")
+execConstants := import("@platforma-sdk/workflow-tengo:exec.constants")
 
-math := import("math")
 json := import("json")
 text := import("text")
 
@@ -68,17 +68,6 @@ self.body(func(inputs) {
 	limitInput := inputs.limitInput
 	perProcessMemGB := params.perProcessMemGB
 	perProcessCPUs := params.perProcessCPUs
-
-	// Base memory for scheduling downstream operations, linked to user override
-	// with current hardcoded values as floors (see memGB helper below)
-	baseMemGB := 64
-	if !is_undefined(perProcessMemGB) {
-		baseMemGB = perProcessMemGB
-	}
-	// Returns max(floor, baseMemGB / divisor) as a string like "32GiB"
-	memGB := func(floorGB, divisor) {
-		return string(int(math.max(floorGB, baseMemGB / divisor))) + "GiB"
-	}
 
 	fileExtension := inputSpec.domain["pl7.app/fileExtension"]
 	sampleIdAxisSpec := inputSpec.axesSpec[0]
@@ -253,6 +242,9 @@ self.body(func(inputs) {
 		name: "clonotypeTable",
 		path: ["tsv"]
 	}, {
+		// Per-sample Parquet import. mem is left unset so the SDK sizes it from the blob size
+		// of the sample's TSV; a fixed request would replace that formula. Medium queue: the
+		// Xsv import default is the light queue, whose ceiling may be lower.
 		type: "Xsv",
 		xsvType: "tsv",
 		settings: {
@@ -261,7 +253,7 @@ self.body(func(inputs) {
 			storageFormat: "Parquet",
 			partitionKeyLength: 0
 		},
-		mem: memGB(16, 2),
+		queue: execConstants.MEDIUM_QUEUE,
 		cpu: 2,
 		name: "byCloneKeyBySample",
 		path: ["tsv"]
@@ -311,6 +303,12 @@ self.body(func(inputs) {
 		name: "clonotypeProperties",
 		path: ["tsv"]
 	}, {
+		// The cohort table is written to Parquet by one DuckDB sort. Its measured need is
+		// 4.13 x^0.68 GiB for x GiB of TSV. mem is left unset: the SDK sizes the run from the
+		// blob size of the aggregated TSV, above that need at every size it can express. The
+		// memory override does not apply here. The Xsv output passes no floor through to the
+		// import, and a fixed request would replace the formula. Medium queue, like every
+		// other cohort-sized run of this block.
 		type: "Xsv",
 		xsvType: "tsv",
 		settings: {
@@ -318,7 +316,7 @@ self.body(func(inputs) {
 			columns: columnsSpecPerClonotypeNoAggregates + columnsSpecPerClonotypeAggregates,
 			storageFormat: "Parquet"
 		},
-		mem: memGB(12, 4),
+		queue: execConstants.MEDIUM_QUEUE,
 		cpu: 2,
 		name: "aggregates",
 		path: ["tsv"]

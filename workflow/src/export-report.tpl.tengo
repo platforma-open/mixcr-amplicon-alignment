@@ -5,6 +5,8 @@ text := import("text")
 pframes := import("@platforma-sdk/workflow-tengo:pframes")
 xsv := import("@platforma-sdk/workflow-tengo:pframes.xsv")
 pt := import("@platforma-sdk/workflow-tengo:pt")
+maps := import("@platforma-sdk/workflow-tengo:maps")
+units := import("@platforma-sdk/workflow-tengo:units")
 qcReportColumns := import(":qc-report-columns")
 
 math := import("math")
@@ -14,6 +16,11 @@ self.defineOutputs("qcReportTable")
 
 mixcrSw := assets.importSoftware("@platforma-open/milaboratories.software-mixcr:main")
 ptablerSw := assets.importSoftware("@platforma-open/milaboratories.software-ptabler:main")
+
+// The one-row-per-sample counting runs leave memory to the SDK, which sizes each run from
+// the blob size of that sample's TSVs, with this floor.
+PER_SAMPLE_COUNTS_MEM_FLOOR_GIB := 8
+PER_SAMPLE_COUNTS_CPU := 2
 
 
 self.body(func(inputs) {
@@ -89,8 +96,8 @@ self.body(func(inputs) {
 	translateNtToAaExpr := func(ntExpr, codonMap) {
 		seq := ntExpr.fillNull("").strToUpper()
 		seq = seq.strReplace("(.{3})", "$1|", { replaceAll: true })
-		for codon, aa in codonMap {
-			seq = seq.strReplace(codon + "|", aa + "|", { replaceAll: true, literal: true })
+		for codon in maps.getKeys(codonMap) {
+			seq = seq.strReplace(codon + "|", codonMap[codon] + "|", { replaceAll: true, literal: true })
 		}
 		seq = seq.strReplace("\\|$", "", { replaceAll: false })
 		seq = seq.strReplace("|", "", { replaceAll: true, literal: true })
@@ -125,9 +132,9 @@ self.body(func(inputs) {
         arg("exportReportsTable")
     
     // Add all clns files as input
-    for i, clnsFile in clnsFiles {
-        fileName := json.decode(i)[0] + ".clns"
-        exportReportCmd.addFile(fileName, clnsFile)
+    for key in maps.getKeys(clnsFiles) {
+        fileName := json.decode(key)[0] + ".clns"
+        exportReportCmd.addFile(fileName, clnsFiles[key])
         exportReportCmd.arg(fileName)
     }
 
@@ -147,52 +154,7 @@ self.body(func(inputs) {
 
     rawTsvFile := result.getFile("qc-report.tsv")
     
-    // Use pTabler to remove ".clns" from fileName column
-    wf := pt.workflow().
-        inMediumQueue().
-        mem("8GiB").
-        cpu(2)
-    
-    // Load the raw TSV file as a DataFrame
-    df := wf.frame(rawTsvFile, {
-        xsvType: "tsv",
-        inferSchema: false
-    })
-    
-        // Add the sampleId column and remove ".clns" from fileName using pTabler string methods
-    processedDf := df.withColumns(
-        pt.col("fileName").strSlice(0, pt.col("fileName").strLenChars().minus(5)).alias("sampleId")
-    )
-
-    // Calculate real number of exported (productive) clonotypes per sample
-    // Use existing clonotype tables produced earlier; per-sample counts and read sums across chains
-    countDfs := []
-    for chain in chains {
-        chainData := clonotypeTablesData[chain]
-        if is_undefined(chainData) { continue }
-        for key, clonesFile in chainData.inputs() {
-            sampleId := json.decode(key)[0]
-            dfCountSource := wf.frame(clonesFile, { xsvType: "tsv", inferSchema: false, schema: [ { column: "readCount", type: "Double" } ] })
-            dfCount := dfCountSource.select(
-                pt.lit(sampleId).alias("sampleId"),
-                pt.col("clonotypeKey").count().alias("exportedClonotypes"),
-                pt.col("readCount").round().cast("Long").sum().alias("readsUsedInClonotypes")
-            )
-            countDfs = append(countDfs, dfCount)
-        }
-    }
-
-    countsDf := undefined
-    if len(countDfs) > 1 { countsDf = pt.concat(countDfs) } else { countsDf = countDfs[0] }
-    aggregatedCounts := countsDf.groupBy("sampleId").agg(
-        pt.col("exportedClonotypes").sum().alias("exportedClonotypes"),
-        pt.col("readsUsedInClonotypes").sum().alias("readsUsedInClonotypesNew")
-    )
-
-    // Join counts and overwrite totalClonotypes to reflect exported (productive) clones
-    joinedDf := processedDf.join(aggregatedCounts, { how: "left", on: ["sampleId"] })
-
-    // Memory for downstream operations, linked to user override with hardcoded floors
+    // Memory for the filter exports, linked to user override with hardcoded floors
 	baseMemGB := 64
 	if !is_undefined(perProcessMemGB) {
 		baseMemGB = perProcessMemGB
@@ -201,11 +163,15 @@ self.body(func(inputs) {
 		return string(int(math.max(floorGB, baseMemGB / divisor))) + "GiB"
 	}
 
-	// Count clonotypes filtered by stop codons and out-of-frame per sample
-	filterCountDfs := []
+    // Per-sample counts. One small ptabler run per sample reads that sample's clonotype TSVs
+    // (one per chain) and its filter TSV and writes a one-row table. The cohort run below
+    // frames only those rows, so its input does not grow with the clonotype count.
 	mixcrChainsArg := text.join(chainsForMixcr, ",")
-	for key, clnsFile in clnsFiles {
-		sampleId := json.decode(key)[0]
+
+	// Filter exports: one per sample.
+	filterTsvs := {}
+	for key in maps.getKeys(clnsFiles) {
+		clnsFile := clnsFiles[key]
 		exportFiltersCmd := exec.builder().
 			inMediumQueue().
 			mem(memGB(16, 2)).
@@ -242,71 +208,125 @@ self.body(func(inputs) {
 			}
 		}
 		exportFiltersResult := exportFiltersCmd.cacheHours(3).run()
-		filterTsv := exportFiltersResult.getFile("clones.tsv")
-		schema := [ { column: isOOFColumn, type: "String" }, { column: hasStopsColumn, type: "String" } ]
-		if useStopCodonReplacement {
-			schema = append(schema, { column: "nSeq" + featureForFlags, type: "String" })
-		}
-		dfFilters := wf.frame(filterTsv, { xsvType: "tsv", inferSchema: false, schema: schema })
+		filterTsvs[key] = exportFiltersResult.getFile("clones.tsv")
+	}
+
+	filterSchema := [ { column: isOOFColumn, type: "String" }, { column: hasStopsColumn, type: "String" } ]
+	if useStopCodonReplacement {
+		filterSchema = append(filterSchema, { column: "nSeq" + featureForFlags, type: "String" })
+	}
+
+	// Marks each row of a filter TSV: __oof = 1 when out of frame, __stop = 1 when the
+	// productive feature carries a stop codon (after the configured replacements).
+	flagFilterRows := func(df) {
 		stopExpr := pt.when(pt.col(hasStopsColumn).strToUpper().eq("TRUE")).then(pt.lit(1)).otherwise(pt.lit(0))
 		if useStopCodonReplacement {
 			translated := translateNtToAaExpr(pt.col("nSeq" + featureForFlags), codonMapReplace)
 			stopExpr = pt.when(translated.strContains("*", { literal: true })).then(pt.lit(1)).otherwise(pt.lit(0))
 		}
-		dfFilters = dfFilters.withColumns(
+		return df.withColumns(
 			pt.when(pt.col(isOOFColumn).strToUpper().eq("TRUE")).then(pt.lit(1)).otherwise(pt.lit(0)).alias("__oof"),
 			stopExpr.alias("__stop")
 		)
-		dfFilterCount := dfFilters.select(
+	}
+
+	// Columns of the one-row per-sample table, besides sampleId. All Long.
+	countColumns := [
+		"exportedClonotypes",
+		"readsUsedInClonotypesNew",
+		"assemble.clonotypesDroppedByOutOfFrame",
+		"assemble.clonotypesDroppedByStopCodons"
+	]
+	for chain in chains {
+		countColumns = append(countColumns, "clonotypesByChain." + chain)
+	}
+
+	countsFiles := []
+	for key in maps.getKeys(clnsFiles) {
+		sampleId := json.decode(key)[0]
+		swf := pt.workflow().
+			inMediumQueue().
+			memFloor(PER_SAMPLE_COUNTS_MEM_FLOOR_GIB * units.GiB).
+			cpu(PER_SAMPLE_COUNTS_CPU)
+
+		row := flagFilterRows(swf.frame(filterTsvs[key], { xsvType: "tsv", inferSchema: false, schema: filterSchema })).select(
 			pt.lit(sampleId).alias("sampleId"),
 			pt.col("__oof").sum().alias("assemble.clonotypesDroppedByOutOfFrame"),
 			pt.col("__stop").sum().alias("assemble.clonotypesDroppedByStopCodons")
 		)
-		filterCountDfs = append(filterCountDfs, dfFilterCount)
-	}
 
-	if len(filterCountDfs) > 0 {
-		filterCountsDf := len(filterCountDfs) > 1 ? pt.concat(filterCountDfs) : filterCountDfs[0]
-		joinedDf = joinedDf.join(filterCountsDf, { how: "left", on: ["sampleId"] })
-	} else {
-		joinedDf = joinedDf.withColumns(
-			pt.lit(0).alias("assemble.clonotypesDroppedByOutOfFrame"),
-			pt.lit(0).alias("assemble.clonotypesDroppedByStopCodons")
+		totalExpr := pt.lit(0)
+		readsExpr := pt.lit(0)
+		for chain in chains {
+			chainCol := "clonotypesByChain." + chain
+			readsCol := "__reads." + chain
+			chainData := clonotypeTablesData[chain]
+			clonesFile := is_undefined(chainData) ? undefined : chainData.inputs()[key]
+			if is_undefined(clonesFile) {
+				row = row.withColumns(pt.lit(0).alias(chainCol), pt.lit(0).alias(readsCol))
+			} else {
+				chainCounts := swf.frame(clonesFile, { xsvType: "tsv", inferSchema: false, schema: [ { column: "readCount", type: "Double" } ] }).select(
+					pt.lit(sampleId).alias("sampleId"),
+					pt.col("clonotypeKey").count().alias(chainCol),
+					pt.col("readCount").round().cast("Long").sum().alias(readsCol)
+				)
+				row = row.join(chainCounts, { how: "left", on: ["sampleId"] })
+			}
+			totalExpr = totalExpr.plus(pt.col(chainCol).fillNull(0))
+			readsExpr = readsExpr.plus(pt.col(readsCol).fillNull(0))
+		}
+		row = row.withColumns(
+			totalExpr.alias("exportedClonotypes"),
+			readsExpr.alias("readsUsedInClonotypesNew")
 		)
+
+		selectExprs := [ pt.col("sampleId") ]
+		for c in countColumns {
+			selectExprs = append(selectExprs, pt.col(c).cast("Long"))
+		}
+		row.select(selectExprs...).save("counts.tsv")
+
+		countsFiles = append(countsFiles, swf.run().getFile("counts.tsv"))
 	}
 
-    // Per-chain clonotype counts
-    perChainJoined := joinedDf
-    for chain in chains {
-        chainData := clonotypeTablesData[chain]
-        chainCol := "clonotypesByChain." + chain
-        if is_undefined(chainData) {
-            perChainJoined = perChainJoined.withColumns(pt.lit(0).alias(chainCol))
-            continue
+    // Cohort run: the qc report joined with the per-sample count rows. Every frame here has
+    // one row per sample, so the run stays flat in clonotype count.
+    wf := pt.workflow().
+        inMediumQueue().
+        mem("8GiB").
+        cpu(2)
+
+    df := wf.frame(rawTsvFile, {
+        xsvType: "tsv",
+        inferSchema: false
+    })
+
+    // Add the sampleId column: fileName without the ".clns" suffix
+    processedDf := df.withColumns(
+        pt.col("fileName").strSlice(0, pt.col("fileName").strLenChars().minus(5)).alias("sampleId")
+    )
+
+    countsSchema := [ { column: "sampleId", type: "String" } ]
+    for c in countColumns {
+        countsSchema = append(countsSchema, { column: c, type: "Long" })
+    }
+    countsDfs := []
+    for f in countsFiles {
+        countsDfs = append(countsDfs, wf.frame(f, { xsvType: "tsv", inferSchema: false, schema: countsSchema }))
+    }
+
+    joinedDf := processedDf
+    if len(countsDfs) > 0 {
+        countsAll := len(countsDfs) > 1 ? pt.concat(countsDfs) : countsDfs[0]
+        joinedDf = processedDf.join(countsAll, { how: "left", on: ["sampleId"] })
+    } else {
+        for c in countColumns {
+            joinedDf = joinedDf.withColumns(pt.lit(0).alias(c))
         }
-        perChainDfs := []
-        for key, clonesFile in chainData.inputs() {
-            sampleId := json.decode(key)[0]
-            dfSrc := wf.frame(clonesFile, { xsvType: "tsv", inferSchema: false })
-            dfCnt := dfSrc.select(
-                pt.lit(sampleId).alias("sampleId"),
-                pt.col("clonotypeKey").count().alias("__chainCount")
-            )
-            perChainDfs = append(perChainDfs, dfCnt)
-        }
-        if len(perChainDfs) == 0 {
-            perChainJoined = perChainJoined.withColumns(pt.lit(0).alias(chainCol))
-            continue
-        }
-        chainCountsDf := len(perChainDfs) > 1 ? pt.concat(perChainDfs) : perChainDfs[0]
-        chainAgg := chainCountsDf.groupBy("sampleId").agg(
-            pt.col("__chainCount").sum().alias(chainCol)
-        )
-        perChainJoined = perChainJoined.join(chainAgg, { how: "left", on: ["sampleId"] })
     }
 
     // Finalize: cast/fill totals and per-chain counts
-    finalDf := perChainJoined.withColumns(
+    finalDf := joinedDf.withColumns(
         pt.col("exportedClonotypes").fillNull(0).cast("Long").alias("totalClonotypes"),
         pt.col("readsUsedInClonotypesNew").fillNull(0).cast("Long").alias("readsUsedInClonotypes")
     )
