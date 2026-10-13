@@ -1,3 +1,4 @@
+//tengo:hash_override 6A4DAAAA-56F6-4D48-BD6E-64FE7D4C0DCB
 // Aggregates every sample's clonotype rows into one row per clonotypeKey, in shards.
 //
 // The shard plan, the letter buckets and the memory law are in :shard-plan. The plan is sized
