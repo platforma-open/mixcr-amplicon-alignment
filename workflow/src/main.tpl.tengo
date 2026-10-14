@@ -30,6 +30,7 @@ wf.body(func(args) {
 	limitInput := args.limitInput
 	perProcessMemGB := args.perProcessMemGB
 	perProcessCPUs := args.perProcessCPUs
+	stepResources := args.stepResources
 	cloneClusteringMode := args.cloneClusteringMode
 
 	chainInfos := {
@@ -135,6 +136,7 @@ wf.body(func(args) {
 			blockId: blockId,
 			perProcessMemGB: perProcessMemGB,
 			perProcessCPUs: perProcessCPUs,
+			stepResources: stepResources,
 			chains: chains,
 			mixcrChains: chainInfos[chains].mixcrFilter,
 			cloneClusteringMode: cloneClusteringMode,
