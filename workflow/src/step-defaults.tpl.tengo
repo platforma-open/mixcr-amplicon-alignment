@@ -1,0 +1,44 @@
+// The steps a run takes, each once, in run order, with the :resources row it is sized by.
+// :plan-steps renders this over the step list `analyze --dry-run-json` wrote.
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+smart := import("@platforma-sdk/workflow-tengo:smart")
+mixcrSteps := import(":mixcr-steps")
+resources := import(":resources")
+
+self.defineOutputs("stepDefaults")
+
+// The settings take a rule's fields, and never its scratch, queue or class.
+_ruleOf := func(row) {
+	return {
+		memFloor: row.memFloor,
+		memIntercept: row.memIntercept,
+		memSlope: row.memSlope,
+		cap: row.cap,
+		cpuIntercept: row.cpuIntercept,
+		cpuSlope: row.cpuSlope
+	}
+}
+
+self.body(func(inputs) {
+	blockFiles := {}
+	for name in inputs.blockFiles {
+		blockFiles[name] = true
+	}
+	plan := mixcrSteps.commands(mixcrSteps.stepsOf(inputs.steps.getDataAsJson()), blockFiles, inputs.readsPattern)
+	stepClass := inputs.stepClass
+
+	seen := {}
+	steps := []
+	for c in plan.commands {
+		row := resources.lookup(c.key, stepClass)
+		// Rows that take no override are not listed: the settings could not change them.
+		if seen[c.key] || row.override == false {
+			continue
+		}
+		seen[c.key] = true
+		steps = append(steps, { step: c.key, class: stepClass, defaultRule: _ruleOf(row) })
+	}
+
+	return { stepDefaults: smart.createJsonResource({ steps: steps }) }
+})
