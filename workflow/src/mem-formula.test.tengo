@@ -33,6 +33,9 @@ TestExportRam := func() {
 	// 8 + 30 x 1.3077 = 47.2 GiB grant, 40.1 GiB of heap at the 0.85 share.
 	test.isTrue(_evalClns(mf.exportRam(undefined, 24, 30), 1404164567) > _gib(47))
 
+	// The QC filter export's coefficient: 8 + 90 x 0.25 = 30.5, above the floor already.
+	test.isEqual(_gib(61) / 2, _evalClns(mf.exportRam(undefined, 24, 90), _gib(1) / 4))
+
 	// No ceiling: 8 + 30 x 10 = 308, 8 + 30 x 20 = 608.
 	test.isEqual(_gib(308), _evalClns(mf.exportRam(undefined, 24, 30), _gib(10)))
 	test.isEqual(_gib(608), _evalClns(mf.exportRam(undefined, 24, 30), _gib(20)))

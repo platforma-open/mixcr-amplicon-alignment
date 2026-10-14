@@ -159,13 +159,16 @@ self.body(func(inputs) {
     // frames only those rows, so its input does not grow with the clonotype count.
 	mixcrChainsArg := text.join(chainsForMixcr, ",")
 
-	// Filter exports: one per sample.
+	// Filter exports: one per sample. Reads the same .clns as the main clonotype export, so
+	// :mem-formula exportRam sizes it with the same rule, at 90 bytes of RAM per .clns byte: at 30,
+	// a .clns under 0.53 GiB gets the 24 GiB floor, and one such export died at that grant in a
+	// 60-sample bulk MiXCR Clonotyping run.
 	filterTsvs := {}
 	for key in maps.getKeys(clnsFiles) {
 		clnsFile := clnsFiles[key]
 		exportFiltersCmd := exec.builder().
 			inMediumQueue().
-			resources({ onCPU: { cpu: 2, ram: memf.exportRam(perProcessMemGB, 24, 30) } }).
+			resources({ onCPU: { cpu: 2, ram: memf.exportRam(perProcessMemGB, 24, 90) } }).
 			software(mixcrSw).
 			env("MI_USE_SYSTEM_CA", "true").
 			secret("MI_LICENSE", "MI_LICENSE").
