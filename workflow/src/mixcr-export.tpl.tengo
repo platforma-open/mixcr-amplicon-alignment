@@ -5,6 +5,7 @@ pConstants := import("@platforma-sdk/workflow-tengo:pframes.constants")
 slices := import("@platforma-sdk/workflow-tengo:slices")
 assets := import("@platforma-sdk/workflow-tengo:assets")
 exec := import("@platforma-sdk/workflow-tengo:exec")
+execName := import(":exec-name")
 pt := import("@platforma-sdk/workflow-tengo:pt")
 maps := import("@platforma-sdk/workflow-tengo:maps")
 clonotypeLabel := import(":clonotype-label")
@@ -187,6 +188,7 @@ self.body(func(inputs) {
 
 	createExport := func(additionalAction) {
 		mixcrCmdBuilder := exec.builder().
+			name(execName.of("mixcr exportClones")).
 			inMediumQueue().
 			resources({ onCPU: { cpu: 2, ram: memf.exportRam(inputs.perProcessMemGB, 24, 30) } }).
 			printErrStreamToStdout().

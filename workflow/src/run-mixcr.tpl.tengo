@@ -18,6 +18,7 @@ times := import("times")
 render := import("@platforma-sdk/workflow-tengo:render")
 maps := import("@platforma-sdk/workflow-tengo:maps")
 mixcrCmd := import(":mixcr-cmd")
+execName := import(":exec-name")
 resources := import(":resources")
 mixcrSteps := import(":mixcr-steps")
 presetArgs := import(":preset-args")
@@ -118,7 +119,7 @@ self.body(func(inputs) {
 	// so empty files under their names stand in for them. A library given as text is written
 	// here for real and saved, so the steps can stage it.
 	planCmd := mixcrCmd.builder(mixcrSw).
-		name("mixcr plan").
+		name(execName.of("mixcr plan")).
 		arg("analyze").
 		arg("--dry-run-json").arg(mixcrSteps.STEPS_FILE)
 	if !is_undefined(limitInput) {

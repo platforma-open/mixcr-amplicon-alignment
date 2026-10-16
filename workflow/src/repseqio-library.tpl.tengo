@@ -2,6 +2,7 @@
 
 self := import("@platforma-sdk/workflow-tengo:tpl")
 exec := import("@platforma-sdk/workflow-tengo:exec")
+execName := import(":exec-name")
 assets := import("@platforma-sdk/workflow-tengo:assets")
 
 repseqioSw := assets.importSoftware("@platforma-open/milaboratories.software-repseqio:main")
@@ -15,6 +16,7 @@ self.body(func(inputs) {
 	
 	// Create repseqio command to generate reference library
 	repseqioVgeneCmd := exec.builder().
+		name(execName.of("repseqio fromFasta V")).
 		software(repseqioSw).
 		arg("fromFasta").
 		arg("--chain").arg(inputs.chains).
@@ -36,6 +38,7 @@ self.body(func(inputs) {
 	vGeneFasta := repseqioVgeneResult.getFile("vGene.fasta")
 
 	repseqioJgeneCmd := exec.builder().
+		name(execName.of("repseqio fromFasta J")).
 		software(repseqioSw).
 		arg("fromFasta").
 		arg("--chain").arg(inputs.chains).
@@ -53,6 +56,7 @@ self.body(func(inputs) {
 	referenceLibraryJgene := repseqioJgeneResult.getFile("jGene.json")
 	jGeneFasta := repseqioJgeneResult.getFile("jGene.fasta")
 	repseqioMergeCmd := exec.builder().
+		name(execName.of("repseqio merge")).
 		software(repseqioSw).
 		arg("merge").
 		addFile("vGene.json", referenceLibraryVgene).
@@ -67,6 +71,7 @@ self.body(func(inputs) {
 	referenceLibrary := repseqioMergeResult.getFile("referenceLibrary.json")
 
 	repseqioInferPointsVCmd := exec.builder().
+		name(execName.of("repseqio inferPoints V")).
 		software(repseqioSw).
 		arg("inferPoints").
 		arg("--gene-feature").arg("VRegion").
@@ -83,6 +88,7 @@ self.body(func(inputs) {
 	referenceLibraryV := repseqioInferPointsVResult.getFile("referenceLibrary.out.json")
 	
 	repseqioInferPointsJCmd := exec.builder().
+		name(execName.of("repseqio inferPoints J")).
 		software(repseqioSw).
 		arg("inferPoints").
 		arg("--gene-feature").arg("JRegion").
@@ -99,6 +105,7 @@ self.body(func(inputs) {
 	referenceLibraryJ := repseqioInferPointsJResult.getFile("referenceLibrary.out.json")
 
 	repseqioCompileCmd := exec.builder().
+		name(execName.of("repseqio compile")).
 		software(repseqioSw).
 		arg("compile").
 		arg("--force").
@@ -114,6 +121,7 @@ self.body(func(inputs) {
 	referenceLibraryCompiled := repseqioCompileResult.getFile("referenceLibrary.out.json")
 	
 	repseqioDebugCmd := exec.builder().
+		name(execName.of("repseqio debug")).
 		software(repseqioSw).
 		arg("debug").
 		addFile("referenceLibrary.json", referenceLibraryCompiled).

@@ -14,6 +14,7 @@ assets := import("@platforma-sdk/workflow-tengo:assets")
 render := import("@platforma-sdk/workflow-tengo:render")
 times := import("times")
 mixcrCmd := import(":mixcr-cmd")
+execName := import(":exec-name")
 mixcrSteps := import(":mixcr-steps")
 presetArgs := import(":preset-args")
 resources := import(":resources")
@@ -34,7 +35,7 @@ self.body(func(inputs) {
 	libraryFile := presetArgs.libraryFileName(params)
 
 	cmd := mixcrCmd.builder(mixcrSw).
-		name("mixcr plan").
+		name(execName.of("mixcr plan")).
 		arg("analyze").
 		arg("--dry-run-json").arg(mixcrSteps.STEPS_FILE)
 	presetArgs.apply(cmd, params)

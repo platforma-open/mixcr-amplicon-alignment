@@ -1,5 +1,6 @@
 self := import("@platforma-sdk/workflow-tengo:tpl")
 exec := import("@platforma-sdk/workflow-tengo:exec")
+execName := import(":exec-name")
 assets := import("@platforma-sdk/workflow-tengo:assets")
 text := import("text")
 pframes := import("@platforma-sdk/workflow-tengo:pframes")
@@ -125,6 +126,7 @@ self.body(func(inputs) {
     
     // Build the exportReportsTable command
     exportReportCmd := exec.builder().
+        name(execName.of("mixcr exportReportsTable")).
         software(mixcrSw).
         env("MI_USE_SYSTEM_CA", "true").
         secret("MI_LICENSE", "MI_LICENSE").
@@ -167,6 +169,7 @@ self.body(func(inputs) {
 	for key in maps.getKeys(clnsFiles) {
 		clnsFile := clnsFiles[key]
 		exportFiltersCmd := exec.builder().
+			name(execName.of("mixcr QC filter export")).
 			inMediumQueue().
 			resources({ onCPU: { cpu: 2, ram: memf.exportRam(perProcessMemGB, 24, 90) } }).
 			software(mixcrSw).
