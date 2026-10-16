@@ -14,6 +14,7 @@ assets := import("@platforma-sdk/workflow-tengo:assets")
 pcolumn := import("@platforma-sdk/workflow-tengo:pframes.pcolumn")
 times := import("times")
 mixcrCmd := import(":mixcr-cmd")
+execName := import(":exec-name")
 mixcrSteps := import(":mixcr-steps")
 resources := import(":resources")
 
@@ -42,7 +43,7 @@ self.body(func(inputs) {
 	stepLogs := pcolumn.resourceMapBuilder( /* keyLength */ 1 )
 	for c in plan.commands {
 		// The name is the job's label on the backend (the k8s job name, the failure message).
-		cmd := mixcrCmd.builder(mixcrSw).name("mixcr " + c.key).arg(c.args[0])
+		cmd := mixcrCmd.builder(mixcrSw).name(execName.of("mixcr " + c.key)).arg(c.args[0])
 		if c.key == "align" {
 			// `--threads` reads the granted count back from the placeholder, so the flag and the
 			// request cannot diverge. `analyze` prints it only when it is given one.
