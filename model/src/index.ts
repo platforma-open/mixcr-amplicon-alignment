@@ -16,8 +16,13 @@ import {
   isImportFileHandleIndex,
   isPColumnSpec,
   parseResourceMap,
+  RT_RESOURCE_MAP,
+  type PColumnKey,
+  type PColumnResourceMapData,
+  type TreeNodeAccessor,
 } from "@platforma-sdk/model";
 import { ProgressPrefix } from "./progress";
+import { dropEmptyOverrides, StepResources, type StepDefaults } from "./step-resources";
 import type {
   BlockArgs,
   BlockData,
@@ -128,6 +133,38 @@ function exportedFile(
   }
 }
 
+/**
+ * Reads the per-sample `logs` column. A sample's value is one log stream, or a map of streams
+ * keyed by MiXCR step for a run split into one command per step. Entries are keyed [sampleId]
+ * or [sampleId, step].
+ */
+function parseSampleLogs<T>(
+  acc: TreeNodeAccessor | undefined,
+  parse: (acc: TreeNodeAccessor) => T | undefined,
+): PColumnResourceMapData<NonNullable<T>> | undefined {
+  if (acc === undefined) return undefined;
+  const data: { key: PColumnKey; value: NonNullable<T> }[] = [];
+  let isComplete = acc.getInputsLocked();
+  for (const sampleKey of acc.listInputFields()) {
+    const sample = acc.resolve({ field: sampleKey, assertFieldType: "Input" });
+    if (sample === undefined) {
+      isComplete = false;
+      continue;
+    }
+    const key = JSON.parse(sampleKey) as PColumnKey;
+    if (sample.resourceType.name === RT_RESOURCE_MAP) {
+      const steps = parseResourceMap(sample, parse, false);
+      isComplete &&= steps.isComplete;
+      for (const step of steps.data) data.push({ key: [...key, ...step.key], value: step.value });
+    } else {
+      const value = parse(sample);
+      if (value === undefined || value === null) isComplete = false;
+      else data.push({ key, value });
+    }
+  }
+  return { isComplete, data };
+}
+
 export const platforma = BlockModelV3.create({ dataModel: blockDataModel, kind })
 
   .args<BlockArgs>((data) => {
@@ -149,6 +186,11 @@ export const platforma = BlockModelV3.create({ dataModel: blockDataModel, kind }
       data.vGenes === undefined
     )
       throw new Error("A V/J reference is required");
+    const stepResources = StepResources.safeParse(data.stepResources ?? {});
+    if (!stepResources.success)
+      throw new Error(
+        `Per-step resources: ${stepResources.error.issues.map((i) => i.message).join("; ")}`,
+      );
 
     return toArgs(data);
   })
@@ -162,9 +204,15 @@ export const platforma = BlockModelV3.create({ dataModel: blockDataModel, kind }
   // re-runs — a picker the user swaps for a file with identical genes must not
   // invalidate an alignment. Only the prerun needs the handle, to import a
   // storage the desktop cannot read off disk.
+  //
+  // `stepResources` stays out: the prerun never reads it. The fields that shape the step list
+  // reach the prerun as the snapshot taken when the list was asked for, so the plan runs once per
+  // click and never for an operator who did not ask.
   .prerunArgs((data) => ({
     ...toArgs(data),
+    stepResources: undefined,
     buildLibraryFastaFile: data.buildLibraryFastaFile,
+    listSteps: data.listStepsParams,
   }))
 
   // Inverse of the kind's init-params contract.
@@ -195,6 +243,8 @@ export const platforma = BlockModelV3.create({ dataModel: blockDataModel, kind }
       stopCodonTypes: data.stopCodonTypes,
       stopCodonReplacements: data.stopCodonReplacements,
       limitInput: data.limitInput,
+      // `stepResources` stays out: a per-step override is tuned to one cluster, and a template
+      // may open on another.
     };
   })
 
@@ -208,21 +258,26 @@ export const platforma = BlockModelV3.create({ dataModel: blockDataModel, kind }
     parseResourceMap(ctx.outputs?.resolve("reports"), (acc) => acc.getFileHandle(), false),
   )
 
+  // Keys are [sampleId] for the single log of a result from before the split, and
+  // [sampleId, step] for a split run.
   .output("logs", (ctx) => {
     return ctx.outputs !== undefined
-      ? parseResourceMap(ctx.outputs?.resolve("logs"), (acc) => acc.getLogHandle(), false)
+      ? parseSampleLogs(ctx.outputs?.resolve("logs"), (acc) => acc.getLogHandle())
       : undefined;
   })
 
   .output("progress", (ctx) => {
     return ctx.outputs !== undefined
-      ? parseResourceMap(
-          ctx.outputs?.resolve("logs"),
-          (acc) => acc.getProgressLog(ProgressPrefix),
-          false,
-        )
+      ? parseSampleLogs(ctx.outputs?.resolve("logs"), (acc) => acc.getProgressLog(ProgressPrefix))
       : undefined;
   })
+
+  // The steps of a run with their default rules, planned before any run.
+  .output("stepDefaults", (ctx) =>
+    ctx.prerun
+      ?.resolve({ field: "stepDefaults", assertFieldType: "Input", allowPermanentAbsence: true })
+      ?.getDataAsJson<StepDefaults>(),
+  )
 
   .output("referenceLibrary", (ctx) => {
     return ctx.outputs !== undefined
@@ -402,6 +457,7 @@ export type Href = InferHrefType<typeof platforma>;
 export * from "./progress";
 export * from "./qc";
 export * from "./reports";
+export * from "./step-resources";
 
 // Internals
 
@@ -422,6 +478,7 @@ function toArgs(data: BlockData): BlockArgs {
     limitInput: data.limitInput,
     perProcessMemGB: data.perProcessMemGB,
     perProcessCPUs: data.perProcessCPUs,
+    stepResources: dropEmptyOverrides(data.stepResources),
     cloneClusteringMode: data.cloneClusteringMode,
     assemblingFeature: data.assemblingFeature,
     badQualityThreshold: data.badQualityThreshold,

@@ -6,6 +6,7 @@ smart := import("@platforma-sdk/workflow-tengo:smart")
 text := import("text")
 
 repseqioLibraryTpl := assets.importTemplate(":repseqio-library")
+planStepsTpl := assets.importTemplate(":plan-steps")
 
 // The desktop reads an `upload://` handle straight off disk. An `index://` handle
 // points into a pl-side storage, which the desktop can read only when that storage
@@ -57,6 +58,20 @@ wf.body(func(args) {
 			chains: chains
 		})
 		outputs.referenceLibrary = file.exportFile(repseqioResults.output("referenceLibrary"))
+	}
+
+	// The steps the "Per-step resources" settings list, planned only once the operator asks for
+	// them, from the settings as they stood then.
+	listSteps := args.listSteps
+	if !is_undefined(listSteps) {
+		planSteps := render.create(planStepsTpl, {
+			params: {
+				tagPattern: listSteps.tagPattern,
+				assemblingFeature: is_undefined(listSteps.assemblingFeature) ? "VDJRegion" : listSteps.assemblingFeature,
+				cloneClusteringMode: listSteps.cloneClusteringMode
+			}
+		})
+		outputs.stepDefaults = planSteps.output("stepDefaults", 24 * 60 * 60 * 1000)
 	}
 
 	return {

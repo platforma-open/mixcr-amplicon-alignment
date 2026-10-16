@@ -1,5 +1,5 @@
 self := import("@platforma-sdk/workflow-tengo:tpl")
-exec := import("@platforma-sdk/workflow-tengo:exec")
+execName := import(":exec-name")
 assets := import("@platforma-sdk/workflow-tengo:assets")
 text := import("text")
 pframes := import("@platforma-sdk/workflow-tengo:pframes")
@@ -8,13 +8,16 @@ pt := import("@platforma-sdk/workflow-tengo:pt")
 maps := import("@platforma-sdk/workflow-tengo:maps")
 units := import("@platforma-sdk/workflow-tengo:units")
 qcReportColumns := import(":qc-report-columns")
+memf := import(":mem-formula")
+mixcrCmd := import(":mixcr-cmd")
+presetArgs := import(":preset-args")
+stopCodonReplacement := import(":stop-codon-replacement")
 
-math := import("math")
 json := import("json")
 
 self.defineOutputs("qcReportTable")
 
-mixcrSw := assets.importSoftware("@platforma-open/milaboratories.software-mixcr:main")
+mixcrSw := assets.importSoftware("@platforma-open/milaboratories.software-mixcr:memory-from-limits")
 ptablerSw := assets.importSoftware("@platforma-open/milaboratories.software-ptabler:main")
 
 // The one-row-per-sample counting runs leave memory to the SDK, which sizes each run from
@@ -29,21 +32,13 @@ self.body(func(inputs) {
     presetSpecForBack := inputs.presetSpecForBack
     sampleIdAxisSpec := inputs.sampleIdAxisSpec
     chains := inputs.chains
-    library := inputs.library
-    isLibraryFileGzipped := inputs.isLibraryFileGzipped
+    libraryParams := { referenceLibrary: inputs.library, isLibraryFileGzipped: inputs.isLibraryFileGzipped }
     clonotypeTablesData := inputs.clonotypeTablesData
 
 	umiTags := inputs.umiTags
 	hasUmi := !is_undefined(umiTags) && len(umiTags) > 0
 	stopCodonTypes := inputs.stopCodonTypes
-	stopCodonReplacements := inputs.stopCodonReplacements
-	if is_undefined(stopCodonTypes) || !is_array(stopCodonTypes) {
-		stopCodonTypes = []
-	}
-	useStopCodonReplacement := !is_undefined(stopCodonTypes) && is_array(stopCodonTypes) && len(stopCodonTypes) > 0
-	if is_undefined(stopCodonReplacements) || !is_map(stopCodonReplacements) {
-		stopCodonReplacements = {}
-	}
+	useStopCodonReplacement := is_array(stopCodonTypes) && len(stopCodonTypes) > 0
 
 	featureForFlags := inputs.productiveFeature
 	if is_undefined(featureForFlags) || featureForFlags == "" {
@@ -55,55 +50,7 @@ self.body(func(inputs) {
 	isOOFColumn := "isOOF" + featureForFlags
 	hasStopsColumn := "hasStopsIn" + featureForFlags
 
-	contains := func(arr, value) {
-		for v in arr {
-			if v == value { return true }
-		}
-		return false
-	}
-
-	stopReplacement := func(stopType) {
-		if !contains(stopCodonTypes, stopType) {
-			return "*"
-		}
-		aa := stopCodonReplacements[stopType]
-		if is_undefined(aa) || aa == "" {
-			return "*"
-		}
-		return text.to_upper(aa)
-	}
-
-	codonMapReplace := {
-		"TTT": "F", "TTC": "F", "TTA": "L", "TTG": "L",
-		"TCT": "S", "TCC": "S", "TCA": "S", "TCG": "S",
-		"TAT": "Y", "TAC": "Y", "TAA": stopReplacement("ochre"),
-		"TAG": stopReplacement("amber"), "TGT": "C", "TGC": "C",
-		"TGA": stopReplacement("opal"), "TGG": "W",
-		"CTT": "L", "CTC": "L", "CTA": "L", "CTG": "L",
-		"CCT": "P", "CCC": "P", "CCA": "P", "CCG": "P",
-		"CAT": "H", "CAC": "H", "CAA": "Q", "CAG": "Q",
-		"CGT": "R", "CGC": "R", "CGA": "R", "CGG": "R",
-		"ATT": "I", "ATC": "I", "ATA": "I", "ATG": "M",
-		"ACT": "T", "ACC": "T", "ACA": "T", "ACG": "T",
-		"AAT": "N", "AAC": "N", "AAA": "K", "AAG": "K",
-		"AGT": "S", "AGC": "S", "AGA": "R", "AGG": "R",
-		"GTT": "V", "GTC": "V", "GTA": "V", "GTG": "V",
-		"GCT": "A", "GCC": "A", "GCA": "A", "GCG": "A",
-		"GAT": "D", "GAC": "D", "GAA": "E", "GAG": "E",
-		"GGT": "G", "GGC": "G", "GGA": "G", "GGG": "G"
-	}
-
-	translateNtToAaExpr := func(ntExpr, codonMap) {
-		seq := ntExpr.fillNull("").strToUpper()
-		seq = seq.strReplace("(.{3})", "$1|", { replaceAll: true })
-		for codon in maps.getKeys(codonMap) {
-			seq = seq.strReplace(codon + "|", codonMap[codon] + "|", { replaceAll: true, literal: true })
-		}
-		seq = seq.strReplace("\\|$", "", { replaceAll: false })
-		seq = seq.strReplace("|", "", { replaceAll: true, literal: true })
-		seq = seq.strReplace("[ACGT]{1,2}$", "", { replaceAll: true })
-		return seq
-	}
+	codonMapReplace := stopCodonReplacement.codonMap(stopCodonTypes, inputs.stopCodonReplacements)
 
     chainInfos := {
 	"IGHeavy": { mixcrFilter: "IGH", name: "IG Heavy", shortName: "Heavy" },
@@ -124,11 +71,8 @@ self.body(func(inputs) {
     clnsFiles := clnsData.inputs()
     
     // Build the exportReportsTable command
-    exportReportCmd := exec.builder().
-        software(mixcrSw).
-        env("MI_USE_SYSTEM_CA", "true").
-        secret("MI_LICENSE", "MI_LICENSE").
-        env("MI_LICENSE_DEBUG", "MI_LICENSE_DEBUG").
+    exportReportCmd := mixcrCmd.base(mixcrSw).
+        name(execName.of("mixcr exportReportsTable")).
         arg("exportReportsTable")
     
     // Add all clns files as input
@@ -139,47 +83,29 @@ self.body(func(inputs) {
     }
 
     exportReportCmd.arg("qc-report.tsv").saveFile("qc-report.tsv")
-    if library {
-        if is_string(library) {
-			exportReportCmd.writeFile("library.json", library).saveFile("library.json")
-		} else if isLibraryFileGzipped {
-			exportReportCmd.addFile("library.json.gz", library)
-		} else {
-			exportReportCmd.addFile("library.json", library)
-		}
-	}
+    presetArgs.stageLibrary(exportReportCmd, libraryParams)
     
     // Run the command
     result := exportReportCmd.run()
 
     rawTsvFile := result.getFile("qc-report.tsv")
     
-    // Memory for the filter exports, linked to user override with hardcoded floors
-	baseMemGB := 64
-	if !is_undefined(perProcessMemGB) {
-		baseMemGB = perProcessMemGB
-	}
-	memGB := func(floorGB, divisor) {
-		return string(int(math.max(floorGB, baseMemGB / divisor))) + "GiB"
-	}
-
     // Per-sample counts. One small ptabler run per sample reads that sample's clonotype TSVs
     // (one per chain) and its filter TSV and writes a one-row table. The cohort run below
     // frames only those rows, so its input does not grow with the clonotype count.
 	mixcrChainsArg := text.join(chainsForMixcr, ",")
 
-	// Filter exports: one per sample.
+	// Filter exports: one per sample. Reads the same .clns as the main clonotype export, so
+	// :mem-formula exportRam sizes it with the same rule, at 90 bytes of RAM per .clns byte: at 30,
+	// a .clns under 0.53 GiB gets the 24 GiB floor, and one such export died at that grant in a
+	// 60-sample bulk MiXCR Clonotyping run.
 	filterTsvs := {}
 	for key in maps.getKeys(clnsFiles) {
 		clnsFile := clnsFiles[key]
-		exportFiltersCmd := exec.builder().
+		exportFiltersCmd := mixcrCmd.base(mixcrSw).
+			name(execName.of("mixcr QC filter export")).
 			inMediumQueue().
-			mem(memGB(16, 2)).
-			cpu(2).
-			software(mixcrSw).
-			env("MI_USE_SYSTEM_CA", "true").
-			secret("MI_LICENSE", "MI_LICENSE").
-			env("MI_LICENSE_DEBUG", "MI_LICENSE_DEBUG").
+			resources({ onCPU: { cpu: 2, ram: memf.exportRam(perProcessMemGB, 24, 90) } }).
 			arg("exportClones").
 			arg("--dont-split-files").
 			arg("--drop-default-fields").
@@ -195,18 +121,10 @@ self.body(func(inputs) {
 		}
 		exportFiltersCmd = exportFiltersCmd.
 			arg("clones.clns").
-			addFile("clones.clns", clnsFile).
+			addFile("clones.clns", clnsFile, { tag: "clns" }).
 			arg("clones.tsv").
 			saveFile("clones.tsv")
-		if library {
-			if is_string(library) {
-				exportFiltersCmd.writeFile("library.json", library).saveFile("library.json")
-			} else if isLibraryFileGzipped {
-				exportFiltersCmd.addFile("library.json.gz", library)
-			} else {
-				exportFiltersCmd.addFile("library.json", library)
-			}
-		}
+		presetArgs.stageLibrary(exportFiltersCmd, libraryParams)
 		exportFiltersResult := exportFiltersCmd.cacheHours(3).run()
 		filterTsvs[key] = exportFiltersResult.getFile("clones.tsv")
 	}
@@ -221,7 +139,7 @@ self.body(func(inputs) {
 	flagFilterRows := func(df) {
 		stopExpr := pt.when(pt.col(hasStopsColumn).strToUpper().eq("TRUE")).then(pt.lit(1)).otherwise(pt.lit(0))
 		if useStopCodonReplacement {
-			translated := translateNtToAaExpr(pt.col("nSeq" + featureForFlags), codonMapReplace)
+			translated := stopCodonReplacement.translateNtToAaExpr(pt.col("nSeq" + featureForFlags), codonMapReplace)
 			stopExpr = pt.when(translated.strContains("*", { literal: true })).then(pt.lit(1)).otherwise(pt.lit(0))
 		}
 		return df.withColumns(

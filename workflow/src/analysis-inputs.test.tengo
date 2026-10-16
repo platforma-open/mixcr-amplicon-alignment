@@ -1,0 +1,43 @@
+test := import("@platforma-sdk/workflow-tengo:test")
+maps := import("@platforma-sdk/workflow-tengo:maps")
+ai := import(":analysis-inputs")
+
+// The keys of `params` in the published block. A new key re-runs every analysed sample on update.
+_PUBLISHED_PARAMS_KEYS := [
+	"assemblingFeature", "badQualityThreshold", "cloneClusteringMode", "disableLowQualityMapping",
+	"fileExtension", "hasUMI", "imputeGermline", "isLibraryFileGzipped", "referenceLibrary", "tagPattern"
+]
+
+TestParamsKeepThePublishedKeys := func() {
+	p := {
+		cloneClusteringMode: "off",
+		tagPattern: "^(R1:*)\\^(R2:*)",
+		assemblingFeature: "VDJRegion",
+		imputeGermline: false,
+		badQualityThreshold: 20,
+		disableLowQualityMapping: true,
+		isLibraryFileGzipped: false,
+		// Block params that must stay out of the analysis identity.
+		perProcessMemGB: 64,
+		perProcessCPUs: 16,
+		stepResources: { assemble: { memFloor: 80 } },
+		blockId: "b1"
+	}
+	test.isEqual(_PUBLISHED_PARAMS_KEYS, maps.getKeys(ai.params(p, "fastq.gz", "library-text", false)))
+}
+
+TestParamsDropUnsetFields := func() {
+	test.isEqual(["fileExtension", "hasUMI", "referenceLibrary"], maps.getKeys(ai.params({}, "fastq", "library-text", true)))
+}
+
+_ENTRY := {
+	name: "ab1",
+	vSequence: "CAGGTGCAGCTG",
+	jSequence: "TGGGGCCAG",
+	vAnchorPoints: { fr1Begin: 0, cdr1Begin: 1, fr2Begin: 2, cdr2Begin: 3, fr3Begin: 4, cdr3Begin: 5, vEnd: 12 },
+	jAnchorPoints: { jBegin: 0, fr4Begin: 3, fr4End: 9 }
+}
+
+TestBuildLibraryBytesArePinned := func() {
+	test.isEqual(`[{"checksumVersion":1,"genes":[{"anchorPoints":{"CDR1Begin":1,"CDR2Begin":3,"CDR3Begin":5,"FR1Begin":0,"FR2Begin":2,"FR3Begin":4,"VEnd":12},"baseSequence":"local://ab1_Vgene","chains":["IGH"],"geneType":"V","isFunctional":true,"name":"ab1_Vgene"},{"anchorPoints":{"FR4Begin":3,"FR4End":9,"JBegin":0},"baseSequence":"local://ab1_Jgene","chains":["IGH"],"geneType":"J","isFunctional":true,"name":"ab1_Jgene"}],"sequenceFragments":[{"range":{"from":0,"to":12},"sequence":"CAGGTGCAGCTG","uri":"local://ab1_Vgene"},{"range":{"from":0,"to":9},"sequence":"TGGGGCCAG","uri":"local://ab1_Jgene"}],"speciesNames":["custom"],"taxonId":1111}]`, ai.buildLibrary([_ENTRY], "IGH"))
+}

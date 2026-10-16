@@ -1,4 +1,8 @@
 //tengo:hash_override 6A4DAAAA-56F6-4D48-BD6E-64FE7D4C0DCB
+
+// The override also pins :clonotype-label and :shard-plan. A change to what :clonotype-label
+// computes needs a new UUID here and in :mixcr-export.
+
 // Aggregates every sample's clonotype rows into one row per clonotypeKey, in shards.
 //
 // The shard plan, the letter buckets and the memory law are in :shard-plan. The plan is sized

@@ -1,0 +1,13 @@
+// The name every exec of the block runs under. It shows in error messages, run records and
+// metrics, and, cut to about 34 characters of lowercase letters, digits and dashes, in the k8s
+// job name. The name is part of the exec's identity: renaming an exec re-runs it.
+
+PREFIX := "Amplicon: "
+
+of := func(name) {
+	return PREFIX + name
+}
+
+export {
+	of: of
+}

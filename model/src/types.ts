@@ -6,6 +6,7 @@ import type {
   StopCodonReplacements,
   StopCodonType,
 } from "@platforma-open/milaboratories.mixcr-amplicon-alignment.kind";
+import type { StepResources } from "./step-resources";
 import type {
   BlobHandleAndSize,
   ImportFileHandle,
@@ -72,9 +73,20 @@ export type BlockData = {
   limitInput?: number;
   perProcessMemGB?: number;
   perProcessCPUs?: number;
+  /** Per-step replacements of the workflow's sizing rules, keyed by MiXCR step. */
+  stepResources?: StepResources;
+  /** The fields the step list depends on, as they stood when the operator last asked the
+   * "Per-step resources" settings to list the steps. Absent until then. A snapshot, not the
+   * live fields: the plan runs once per click, not once per edit of the tag pattern. */
+  listStepsParams?: ListStepsParams;
 
   tableState: PlDataTableStateV2;
 };
+
+export type ListStepsParams = Pick<
+  BlockData,
+  "tagPattern" | "assemblingFeature" | "cloneClusteringMode"
+>;
 
 /**
  * Args consumed by the workflow.
@@ -96,6 +108,9 @@ export type BlockArgs = {
   limitInput?: number;
   perProcessMemGB?: number;
   perProcessCPUs?: number;
+  /** Absent unless the operator set one: an absent field leaves the args, and so the run, as
+   * they were before the field existed. */
+  stepResources?: StepResources;
   cloneClusteringMode?: CloneClusteringMode;
   assemblingFeature?: AssemblingFeature;
   badQualityThreshold?: number;
