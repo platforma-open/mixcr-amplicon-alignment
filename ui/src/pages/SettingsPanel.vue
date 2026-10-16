@@ -28,6 +28,7 @@ import { retentive } from "../retentive";
 import { parseFasta, parseFastaRecords } from "../utils/parseFasta";
 import { useRemoteFileBytes } from "../useRemoteFileBytes";
 import BuildLibraryPanel from "./BuildLibraryPanel.vue";
+import StepResourcesSettings from "./StepResourcesSettings.vue";
 
 const app = useApp();
 
@@ -634,5 +635,9 @@ ATCGATCGATCG..."
       :maxValue="999999"
       :validate="(v) => (Number.isInteger(v) ? undefined : 'Value must be an integer')"
     />
+
+    <PlAccordionSection label="Per-step resources">
+      <StepResourcesSettings />
+    </PlAccordionSection>
   </PlAccordionSection>
 </template>
