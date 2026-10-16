@@ -8,7 +8,7 @@ assets := import("@platforma-sdk/workflow-tengo:assets")
 smart := import("@platforma-sdk/workflow-tengo:smart")
 file := import("@platforma-sdk/workflow-tengo:file")
 pframes := import("@platforma-sdk/workflow-tengo:pframes")
-canonical := import("@platforma-sdk/workflow-tengo:canonical")
+analysisInputs := import(":analysis-inputs")
 
 processTpl := assets.importTemplate(":process")
 repseqioLibraryTpl := assets.importTemplate(":repseqio-library")
@@ -54,68 +54,16 @@ wf.body(func(args) {
 	}
 
 	if mode == "buildLibrary" {
-		// Build library mode — construct library.json from entry definitions
-		chainInfoForMixcr := chainInfos[chains].mixcrFilter
-		genes := []
-		fragments := []
-		for entry in args.libraryEntries {
-			vName := entry.name + "_Vgene"
-			jName := entry.name + "_Jgene"
-			vUri := "local://" + vName
-			jUri := "local://" + jName
-			genes = append(genes, {
-				baseSequence: vUri,
-				name: vName,
-				geneType: "V",
-				isFunctional: true,
-				chains: [chainInfoForMixcr],
-				anchorPoints: {
-					FR1Begin: entry.vAnchorPoints.fr1Begin,
-					CDR1Begin: entry.vAnchorPoints.cdr1Begin,
-					FR2Begin: entry.vAnchorPoints.fr2Begin,
-					CDR2Begin: entry.vAnchorPoints.cdr2Begin,
-					FR3Begin: entry.vAnchorPoints.fr3Begin,
-					CDR3Begin: entry.vAnchorPoints.cdr3Begin,
-					VEnd: entry.vAnchorPoints.vEnd
-				}
-			})
-			fragments = append(fragments, {
-				uri: vUri,
-				range: { from: 0, to: len(entry.vSequence) },
-				sequence: entry.vSequence
-			})
-			genes = append(genes, {
-				baseSequence: jUri,
-				name: jName,
-				geneType: "J",
-				isFunctional: true,
-				chains: [chainInfoForMixcr],
-				anchorPoints: {
-					JBegin: entry.jAnchorPoints.jBegin,
-					FR4Begin: entry.jAnchorPoints.fr4Begin,
-					FR4End: entry.jAnchorPoints.fr4End
-				}
-			})
-			fragments = append(fragments, {
-				uri: jUri,
-				range: { from: 0, to: len(entry.jSequence) },
-				sequence: entry.jSequence
-			})
-		}
-		library := [{
-			taxonId: 1111,
-			speciesNames: ["custom"],
-			genes: genes,
-			sequenceFragments: fragments,
-			checksumVersion: 1
-		}]
-		referenceLibrary = canonical.encode(library)
+		referenceLibrary = analysisInputs.buildLibrary(args.libraryEntries, chainInfos[chains].mixcrFilter)
 	} else if mode == "libraryFile" {
 		fImport := file.importFile(args.libraryFile)
     	libraryImportHandle = fImport.handle
     	referenceLibrary = fImport.file
 	} else {
 		// fastaSequence or fastaFile — both use vGenes/jGenes via repseqio
+		// The library is an input of every :mixcr-analyze run. Any byte change to
+		// :repseqio-library, a comment or an exec name included, re-runs every sample in these
+		// modes; it carries no hash override, so adding one does too.
 		repseqioResults := render.create(repseqioLibraryTpl, {
 			vGenes: args.vGenes,
 			jGenes: args.jGenes,
