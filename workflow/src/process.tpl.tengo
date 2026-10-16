@@ -16,6 +16,7 @@ aggregateByClonotypeKeyTpl := assets.importTemplate(":aggregate-by-clonotype-key
 exportReportTpl := assets.importTemplate(":export-report")
 calculateExportSpecs := import(":calculate-export-specs")
 presetArgs := import(":preset-args")
+analysisInputs := import(":analysis-inputs")
 
 self.awaitState("InputsLocked")
 self.awaitState("params", "ResourceReady")
@@ -29,7 +30,6 @@ self.body(func(inputs) {
 	referenceLibrary := inputs.referenceLibrary
 	chains := params.chains
 	mixcrChains := params.mixcrChains
-	cloneClusteringMode := params.cloneClusteringMode
 	tagPattern := params.tagPattern
 
 	umiTags := presetArgs.umiTags(tagPattern)
@@ -171,18 +171,7 @@ self.body(func(inputs) {
 			traceSteps: [{type: "milaboratories.mixcr-amplicon-alignment", id: blockId, importance: 20, label: "MiXCR generic amplicon"}],
 
 			extra: {
-				params: maps.clone({
-					fileExtension: fileExtension,
-					referenceLibrary: referenceLibrary,
-					cloneClusteringMode: cloneClusteringMode,
-					hasUMI: hasUMI,
-					tagPattern: tagPattern,
-					assemblingFeature: params.assemblingFeature,
-					imputeGermline: params.imputeGermline,
-					badQualityThreshold: params.badQualityThreshold,
-					disableLowQualityMapping: params.disableLowQualityMapping,
-					isLibraryFileGzipped: params.isLibraryFileGzipped
-				}, { removeUndefs: true }),
+				params: analysisInputs.params(params, fileExtension, referenceLibrary, hasUMI),
 				limitInput: limitInput
 			},
 

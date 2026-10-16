@@ -23,7 +23,8 @@ f := exec.formula
 //
 // perProcessMemGB is the "Advanced Settings" override. It raises the floor and does not
 // replace the rule: a value below floorGiB has no effect, and the data term still applies
-// above a raised floor. aggregate-by-clonotype-key treats the same override the same way.
+// above a raised floor. A planned shard of :aggregate-by-clonotype-key ignores the override;
+// see :shard-plan.
 exportRamInterceptGiB := 8
 
 exportRam := func(perProcessMemGB, floorGiB, perByte) {

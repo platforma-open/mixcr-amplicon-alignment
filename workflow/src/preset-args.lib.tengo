@@ -53,6 +53,20 @@ libraryFileName := func(params) {
 	return params.isLibraryFileGzipped ? "library.json.gz" : "library.json"
 }
 
+// stageLibrary stages params.referenceLibrary under libraryFileName(params) for a MiXCR command
+// that reads a MiXCR file: a .vdjca or .clns names its library but does not carry it. A Build
+// Library reference arrives as text and is written; any other library is a file.
+stageLibrary := func(builder, params) {
+	library := params.referenceLibrary
+	if is_undefined(library) {
+		return builder
+	}
+	if is_string(library) {
+		return builder.writeFile(libraryFileName(params), library)
+	}
+	return builder.addFile(libraryFileName(params), library)
+}
+
 // Format the assembling feature into MiXCR --assemble-clonotypes-by syntax.
 //   VDJRegion, CDR3      -> unchanged
 //   "X" / "X:Y"          -> {XBegin:XEnd} / {XBegin:YEnd}
@@ -129,6 +143,7 @@ export {
 	presetName: presetName,
 	stepClass: stepClass,
 	libraryFileName: libraryFileName,
+	stageLibrary: stageLibrary,
 	formatAssemblingFeature: formatAssemblingFeature,
 	apply: apply
 }
