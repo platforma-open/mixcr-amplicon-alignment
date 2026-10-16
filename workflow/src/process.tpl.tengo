@@ -300,7 +300,7 @@ self.body(func(inputs) {
 		aggregateByClonotypeKeyTpl,
 		aggregationOutputs,
 		{
-			aggregate: ["pl7.app/sampleId"],
+			aggregate: [{ name: "pl7.app/sampleId", anonymize: true }],
 			traceSteps: [{type: "milaboratories.mixcr-amplicon-alignment.aggregate", id: blockId + "." + chains, importance: 150, label: "Aggregate " + chains}],
 
 			extra: {
@@ -332,10 +332,11 @@ self.body(func(inputs) {
 		clonotypeTablesData: clonotypeTablesData,
 		hasUmi: hasUMI,
 		umiTags: umiTags,
-		perProcessMemGB: perProcessMemGB,
 		productiveFeature: productiveFeature,
 		stopCodonTypes: params.stopCodonTypes,
 		stopCodonReplacements: params.stopCodonReplacements
+	}, {
+		metaInputs: { perProcessMemGB: perProcessMemGB }
 	})
 
 	return {
