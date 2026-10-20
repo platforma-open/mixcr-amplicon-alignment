@@ -1,5 +1,13 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment.ui
 
+## 1.21.4
+
+### Patch Changes
+
+- d2a2d6d: Release every package through npm trusted publishing (OIDC) so each package's trusted publisher is used before it expires.
+- Updated dependencies [d2a2d6d]
+  - @platforma-open/milaboratories.mixcr-amplicon-alignment.model@1.21.4
+
 ## 1.21.3
 
 ### Patch Changes

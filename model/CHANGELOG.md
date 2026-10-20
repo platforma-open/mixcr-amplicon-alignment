@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment.model
 
+## 1.21.4
+
+### Patch Changes
+
+- d2a2d6d: Release every package through npm trusted publishing (OIDC) so each package's trusted publisher is used before it expires.
+
 ## 1.21.3
 
 ### Patch Changes
