@@ -6,9 +6,10 @@ f := exec.formula
 
 _gib := func(n) { return n * 1073741824 }
 
-_eval := func(node, sizeBytes) {
-	fileName := "input.fastq.gz"
-	resolved := f.resolveAst(node, { "reads": [fileName] }, [fileName])
+// Evaluate a resource formula against a fake ".clns" input of sizeBytes.
+_evalClns := func(node, sizeBytes) {
+	fileName := "clones.clns"
+	resolved := f.resolveAst(node, { "clns": [fileName] }, [fileName])
 	resolver := {
 		size:      func(files) { return sizeBytes },
 		lineCount: func(files) { return 0 }
@@ -16,17 +17,40 @@ _eval := func(node, sizeBytes) {
 	return f.evaluateResource(resolved, resolver, "test")
 }
 
-// 31.75 GiB of reads, so the data term 4 x size is exactly 127 GiB.
-_READS_31_75_GIB := 34091302912
+TestExportRam := func() {
+	// ram = max(8 GiB + perByte x size(clns), floor); no ceiling
 
-TestMemFormula := func() {
-	// mem = clamp(4 x size, 64 GiB, 256 GiB)
+	// The floor carries an empty or small .clns.
+	test.isEqual(_gib(24), _evalClns(mf.exportRam(undefined, 24, 30), 0))
+	test.isEqual(_gib(24), _evalClns(mf.exportRam(undefined, 24, 30), _gib(1) / 4))
+	test.isEqual(_gib(16), _evalClns(mf.exportRam(undefined, 16, 30), 0))
 
-	test.isEqual(_gib(127), _eval(mf.memFormula(64), _READS_31_75_GIB))  // linear region
-	test.isEqual(_gib(64),  _eval(mf.memFormula(64), 0))                 // floor binds
-	test.isEqual(_gib(128), _eval(mf.memFormula(64), _gib(32)))          // linear region
-	test.isEqual(_gib(256), _eval(mf.memFormula(64), _gib(64)))          // ceiling binds
-	test.isEqual(_gib(64),  _eval(mf.memFormula(64), _gib(8)))           // 4 x 8 = 32 -> floor binds
+	// Above the floor the fitted term stands alone: 8 + 30 x 1 = 38, 8 + 30 x 2 = 68.
+	test.isEqual(_gib(38), _evalClns(mf.exportRam(undefined, 24, 30), _gib(1)))
+	test.isEqual(_gib(68), _evalClns(mf.exportRam(undefined, 24, 30), _gib(2)))
 
-	test.isEqual("64GiB", f.fallbackOf(mf.memFormula(64)))
+	// The measured Library sample: 1.3077 GiB of .clns needed a 42.26 GiB peak.
+	// 8 + 30 x 1.3077 = 47.2 GiB grant, 40.1 GiB of heap at the 0.85 share.
+	test.isTrue(_evalClns(mf.exportRam(undefined, 24, 30), 1404164567) > _gib(47))
+
+	// The QC filter export's coefficient: 8 + 90 x 0.25 = 30.5, above the floor already.
+	test.isEqual(_gib(61) / 2, _evalClns(mf.exportRam(undefined, 24, 90), _gib(1) / 4))
+
+	// No ceiling: 8 + 30 x 10 = 308, 8 + 30 x 20 = 608.
+	test.isEqual(_gib(308), _evalClns(mf.exportRam(undefined, 24, 30), _gib(10)))
+	test.isEqual(_gib(608), _evalClns(mf.exportRam(undefined, 24, 30), _gib(20)))
+
+	// The Advanced Settings override raises the floor and does not replace the rule.
+	test.isEqual(_gib(48), _evalClns(mf.exportRam(48, 24, 30), 0))
+	test.isEqual(_gib(48), f.fallbackOf(mf.exportRam(48, 24, 30)))
+	test.isEqual(_gib(68), _evalClns(mf.exportRam(48, 24, 30), _gib(2)))
+	// An override below the floor has no effect.
+	test.isEqual(_gib(24), _evalClns(mf.exportRam(5, 24, 30), 0))
+	test.isEqual(_gib(38), _evalClns(mf.exportRam(5, 24, 30), _gib(1)))
+	// An override above any former cap is simply the floor.
+	test.isEqual(_gib(400), _evalClns(mf.exportRam(400, 24, 30), _gib(1)))
+	test.isEqual(_gib(400), f.fallbackOf(mf.exportRam(400, 24, 30)))
+
+	// Backends without formula support get the floor.
+	test.isEqual(_gib(24), f.fallbackOf(mf.exportRam(undefined, 24, 30)))
 }

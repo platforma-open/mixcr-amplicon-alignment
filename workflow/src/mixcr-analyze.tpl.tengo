@@ -1,266 +1,57 @@
 //tengo:hash_override BE6EBF10-B660-4B96-AAA5-B73959F6BFD0
 
-// mixcr analyze
+// Identity of this template for the platform's deduplication.
+//
+// CHANGING THE OVERRIDE ABOVE MEANS "RE-RUN EVERY SAMPLE ON THE NEXT BLOCK UPDATE".
+//
+// An override replaces the identity of the WHOLE subtree, not of this file: the backend renders
+// an overridden template as a `TengoTemplateOverride` resource carrying the UUID alone, with the
+// real template on a Service field. So a rotated UUID in a template this one renders —
+// :run-mixcr, :run-steps — has no effect while this UUID stands.
+//
+// The override, the inputs pframes.processColumn passes, and the output names must stay the
+// ones of the single `analyze` build, or every finished analysis runs again on update. A new
+// output name counts as a change. The step logs travel inside `log`.
 
 self := import("@platforma-sdk/workflow-tengo:tpl")
-pConstants := import("@platforma-sdk/workflow-tengo:pframes.constants")
-ll := import("@platforma-sdk/workflow-tengo:ll")
-exec := import("@platforma-sdk/workflow-tengo:exec")
+render := import("@platforma-sdk/workflow-tengo:render")
 assets := import("@platforma-sdk/workflow-tengo:assets")
-pcolumn := import("@platforma-sdk/workflow-tengo:pframes.pcolumn")
-maps := import("@platforma-sdk/workflow-tengo:maps")
-text := import("text")
-
-json := import("json")
-
-memf := import(":mem-formula")
-
-mixcrSw := assets.importSoftware("@platforma-open/milaboratories.software-mixcr:memory-from-limits")
+pConstants := import("@platforma-sdk/workflow-tengo:pframes.constants")
+times := import("times")
 
 self.defineOutputs("qc", "reports", "log", "clns")
 
-progressPrefix := "[==PROGRESS==]"
+runMixcrTpl := assets.importTemplate(":run-mixcr")
+
+CACHE_PERIOD := 48 * times.hour
 
 self.body(func(inputs) {
-	inputData := inputs[pConstants.VALUE_FIELD_NAME]
-	aggregationAxesNames := inputs[pConstants.AGGREGATION_AXES_NAMES_FIELD_NAME]
-
-	params := inputs.params
-	fileExtension := params.fileExtension
-	limitInput := inputs.limitInput
-	perProcessMemGB := inputs.perProcessMemGB
-	perProcessCPUs := inputs.perProcessCPUs
-	cloneClusteringMode := params.cloneClusteringMode
-
-	threePrimePrimer := inputs.threePrimePrimer
-	fivePrimePrimer := inputs.fivePrimePrimer
-
-	inputDataMeta := inputData.getDataAsJson()
-
-	clnsFileName := "result.clns"
-
-    reports := [
+	runInputs := {
+		"__value__": inputs[pConstants.VALUE_FIELD_NAME],
+		"__aggregation_axes_names__": inputs[pConstants.AGGREGATION_AXES_NAMES_FIELD_NAME],
+		params: inputs.params
+	}
+	if !is_undefined(inputs.limitInput) {
+		runInputs.limitInput = inputs.limitInput
+	}
+	runMixcr := render.create(
+		runMixcrTpl,
+		runInputs,
 		{
-			id: "align",
-			fileJson: "result.align.report.json",
-			fileTxt: "result.align.report.txt"
-		},
-		{
-			id: "assemble",
-			fileJson: "result.assemble.report.json",
-			fileTxt: "result.assemble.report.txt"
-		}
-	]
-
-	// Build MiXCR command
-	mixcrCmdBuilder := exec.builder().
-		printErrStreamToStdout().
-		env("MI_PROGRESS_PREFIX", progressPrefix).
-		software(mixcrSw).
-		secret("MI_LICENSE", "MI_LICENSE").
-		env("MI_LICENSE_DEBUG", "MI_LICENSE_DEBUG").
-		arg("analyze").
-		arg("--use-local-temp")
-
-	// Select preset based on UMI presence
-	if !is_undefined(params.hasUMI) && params.hasUMI {
-		mixcrCmdBuilder.arg("generic-amplicon-with-umi")
-	} else {
-		mixcrCmdBuilder.arg("generic-amplicon")
-	}
-
-	// Format the assembling feature into MiXCR --assemble-clonotypes-by syntax.
-	//   VDJRegion, CDR3      -> unchanged
-	//   "X" / "X:Y"          -> {XBegin:XEnd} / {XBegin:YEnd}
-	//   disjoint (has ",")   -> [{p1},{p2},...] with explicit reference points, e.g.
-	//     "FR1Begin:FR3Begin(+40),FR3Begin(+46):FR4End"
-	//     -> "[{FR1Begin:FR3Begin(+40)},{FR3Begin(+46):FR4End}]"
-	// NOTE: --assemble-clonotypes-by takes this LIST form. The export side
-	// (calculate-export-specs.lib.tengo) does NOT reference the composite feature at all — it keys
-	// the clonotype on the individual covered regions instead, because MiXCR renames a composite
-	// export column unpredictably.
-	formatAssemblingFeature := func(fstr) {
-		if fstr == "VDJRegion" || fstr == "CDR3" {
-			return fstr
-		}
-		if text.contains(fstr, ",") {
-			res := "["
-			for i, p in text.split(fstr, ",") {
-				pbe := text.split(p, ":")
-				if i > 0 {
-					res += ","
-				}
-				res += "{" + pbe[0] + ":" + pbe[1] + "}"
+			// Kept out of the deduplication key, the way process.tpl.tengo passes them to this
+			// template: a run may be recovered across a change of the CPU or memory override.
+			metaInputs: {
+				perProcessMemGB: inputs.perProcessMemGB,
+				perProcessCPUs: inputs.perProcessCPUs,
+				stepResources: inputs.stepResources
 			}
-			return res + "]"
 		}
-		parts := text.split(fstr, ":")
-		if len(parts) == 1 {
-			return "{" + parts[0] + "Begin:" + parts[0] + "End}"
-		}
-		return "{" + parts[0] + "Begin:" + parts[1] + "End}"
-	}
-
-	libraryFileName := "library.json"
-	if !is_undefined(params.isLibraryFileGzipped) && params.isLibraryFileGzipped {
-		libraryFileName = "library.json.gz"
-	}
-
-    mixcrCmdBuilder.
-        arg("--assemble-clonotypes-by").arg(formatAssemblingFeature(params.assemblingFeature)).
-        arg("--species").arg("custom").
-		arg("--library").arg(libraryFileName)
-
-	if is_string(params.referenceLibrary) {
-		mixcrCmdBuilder.writeFile(libraryFileName, params.referenceLibrary).saveFile(libraryFileName)
-	} else {
-		mixcrCmdBuilder.addFile(libraryFileName, params.referenceLibrary)
-	}
-
-    mixcrCmdBuilder.
-        arg("--rna").
-		arg("--force-overwrite").
-		arg("--rigid-left-alignment-boundary").
-		arg("--rigid-right-alignment-boundary").arg("J")
-
-	// Pass pattern if provided
-	if !is_undefined(params.tagPattern) && params.tagPattern != "" {
-		mixcrCmdBuilder.arg("--tag-pattern").arg(params.tagPattern)
-	}
-
-	// Clone clustering tuning
-	if cloneClusteringMode == "relaxed" {
-		mixcrCmdBuilder.arg("-Massemble.cloneAssemblerParameters.cloneClusteringParameters.searchParameters=oneMismatchOrIndel")
-	} else if cloneClusteringMode == "off" {
-		mixcrCmdBuilder.arg("-Massemble.cloneAssemblerParameters.cloneClusteringParameters=null")
-	}
-
-	// Assembly quality threshold
-	badQualityThreshold := params.badQualityThreshold
-	if !is_undefined(badQualityThreshold) {
-		mixcrCmdBuilder.arg("-Massemble.cloneAssemblerParameters.badQualityThreshold=" + string(int(badQualityThreshold)))
-		mixcrCmdBuilder.arg("-Massemble.cloneAssemblerParameters.minimalQuality=" + string(int(badQualityThreshold)))
-	}
-
-	// Disable the deferred-reads mapping phase
-	disableLowQualityMapping := params.disableLowQualityMapping
-	if !is_undefined(disableLowQualityMapping) && disableLowQualityMapping {
-		mixcrCmdBuilder.arg("-Massemble.cloneAssemblerParameters.maxBadPointsPercent=0")
-	}
-
-		// if (!is_undefined(threePrimePrimer)) {
-		// 	mixcrCmdBuilder.arg("--floating-left-alignment-boundary")
-		// } else {
-		// 	mixcrCmdBuilder.arg("--rigid-left-alignment-boundary")
-		// }
-
-		// if (!is_undefined(fivePrimePrimer)) {
-		// 	mixcrCmdBuilder.arg("--floating-right-alignment-boundary").arg("J")
-		// } else {
-		// 	mixcrCmdBuilder.arg("--rigid-right-alignment-boundary").arg("J")
-		// }
-
-	// RAM per process: an explicit "Advanced Settings" override (a static request), or sized
-	// from the input reads' file size.
-	//     mem = clamp(4 * size("reads"), 64 GiB, 256 GiB)
-	// size("reads") sums the stored (compressed) blob size of R1+R2 via getBlobSize — a
-	// metadata read, no pre-exec — so it tracks input volume without decompressing. The
-	// 64 GiB floor is a TOTAL-memory value, so it acts as the lower bound rather than a
-	// base to add data on top of.
-	// cpu is a constant and the ram formula carries a .staticFallback, so this resolves on
-	// backends without getBlobSize too: the formula falls back to the 64 GiB floor, and
-	// constant/static values are used as-is.
-	ram := undefined
-	if !is_undefined(perProcessMemGB) {
-		ram = string(perProcessMemGB) + "GiB"
-	} else {
-		baseMemGiB := 64
-		ram = memf.memFormula(baseMemGiB)
-	}
-	mixcrCmdBuilder.resources({
-		onCPU: {
-			cpu: is_undefined(perProcessCPUs) ? 16 : perProcessCPUs, // 16 = default CPUs per sample,
-			ram: ram
-		}
-	})
-
-	if !is_undefined(limitInput) {
-		mixcrCmdBuilder.arg("--limit-input").arg(string(limitInput))
-	}
-
-	// Handle input files
-	inputMap := inputData.inputs()
-	if inputDataMeta.keyLength == 0 {
-		ll.assert(aggregationAxesNames == [], "unexpected aggregation axes names")
-		// Assuming only one key "[]" exists here, no need for sorted iteration
-		inputFile := inputMap["[]"]
-		ll.assert(!is_undefined(inputFile), "unexpected agg group structure")
-		inputFileName := "input." + fileExtension
-		mixcrCmdBuilder.addFile(inputFileName, inputFile, { tag: "reads" })
-		mixcrCmdBuilder.arg(inputFileName)
-	} else if inputDataMeta.keyLength == 1 {
-		ll.assert(aggregationAxesNames == ["pl7.app/sequencing/readIndex"], "unexpected aggregation axes names")
-		for sKey in maps.getKeys(inputMap) {
-			inputFile := inputMap[sKey]
-			key := json.decode(sKey)
-			if len(key) != 1 {
-				ll.panic("malformed key: %v", sKey)
-			}
-			r := key[0]
-			if (r[0] != 'R' && r[0] != "I") || (r[1] != '1' && r[1] != '2') || len(r) != 2 {
-				ll.panic("malformed read index: %v", r)
-			}
-			mixcrCmdBuilder.addFile("input_" + r + "." + fileExtension, inputFile, { tag: "reads" })
-		}
-		mixcrCmdBuilder.arg("input_{{R}}." + fileExtension)
-	} else if inputDataMeta.keyLength == 2 {
-		ll.assert(aggregationAxesNames == ["pl7.app/sequencing/lane", "pl7.app/sequencing/readIndex"], "unexpected aggregation axes names")
-		for sKey in maps.getKeys(inputMap) {
-			inputFile := inputMap[sKey]
-			key := json.decode(sKey)
-			if len(key) != 2 {
-				ll.panic("malformed key: %v", sKey)
-			}
-			lane := key[0]
-			r := key[1]
-			if (r[0] != 'R' && r[0] != "I") || (r[1] != '1' && r[1] != '2') || len(r) != 2 {
-				ll.panic("malformed read index: %v", r)
-			}
-			if is_undefined(int(lane)) {
-				ll.panic("malformed lane: %v", lane)
-			}
-			mixcrCmdBuilder.addFile("input_L" + lane + "_" + r + "." + fileExtension, inputFile, { tag: "reads" })
-		}
-		mixcrCmdBuilder.arg("input_L{{n}}_{{R}}." + fileExtension)
-	} else {
-		ll.panic("too many axes / not supported")
-	}
-
-    mixcrCmdBuilder.arg("result")
-	mixcrCmdBuilder.saveFile("result.qc.json")
-
-    mixcrCmdBuilder.saveFile(clnsFileName)
-	mixcrCmdBuilder.saveStdoutStream()
-
-	for report in reports {
-		mixcrCmdBuilder.saveFile(report.fileJson)
-		mixcrCmdBuilder.saveFile(report.fileTxt)
-	}
-
-	mixcrCmd := mixcrCmdBuilder.run()
-
-	// Create reports data
-	reportsMap := pcolumn.resourceMapBuilder( /* keyLength */ 2 )
-		for report in reports {
-			reportsMap.add([report.id, "json"], mixcrCmd.getFile(report.fileJson))
-			reportsMap.add([report.id, "txt"], mixcrCmd.getFile(report.fileTxt))
-		}
-
+	)
 
 	return {
-		qc: mixcrCmd.getFile("result.qc.json"),
-		log: mixcrCmd.getStdoutStream(),
-		reports: reportsMap.build(),
-		clns: mixcrCmd.getFile(clnsFileName)
+		qc: runMixcr.output("qc", CACHE_PERIOD),
+		log: runMixcr.output("log", CACHE_PERIOD),
+		reports: runMixcr.output("reports", CACHE_PERIOD),
+		clns: runMixcr.output("clns", CACHE_PERIOD)
 	}
-}) 
+})

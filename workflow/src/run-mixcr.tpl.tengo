@@ -1,0 +1,170 @@
+//tengo:hash_override C54C0D30-856A-40F0-B581-F7D04D10F15C
+
+// Must stay unique across templates. :mixcr-analyze is the deduplication boundary: when a
+// sample is recovered, this template is never rendered.
+
+// Runs MiXCR on one sample, one exec per step.
+//
+// `mixcr analyze --dry-run-json` plans the run with the arguments `analyze` would get, and
+// :run-steps runs the steps it lists, each with its CPU and memory from :resources, in the order
+// `analyze` would run them.
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+smart := import("@platforma-sdk/workflow-tengo:smart")
+pConstants := import("@platforma-sdk/workflow-tengo:pframes.constants")
+ll := import("@platforma-sdk/workflow-tengo:ll")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+times := import("times")
+render := import("@platforma-sdk/workflow-tengo:render")
+maps := import("@platforma-sdk/workflow-tengo:maps")
+mixcrCmd := import(":mixcr-cmd")
+execName := import(":exec-name")
+resources := import(":resources")
+mixcrSteps := import(":mixcr-steps")
+presetArgs := import(":preset-args")
+
+json := import("json")
+
+self.defineOutputs("qc", "reports", "log", "clns")
+
+mixcrSw := assets.importSoftware("@platforma-open/milaboratories.software-mixcr:memory-from-limits")
+runStepsTpl := assets.importTemplate(":run-steps")
+
+CACHE_PERIOD := 48 * times.hour
+
+// The reports the block keeps, under the names `analyze` gives them.
+REPORTS := [
+	{ id: "align", fileJson: "result.align.report.json", fileTxt: "result.align.report.txt" },
+	{ id: "assemble", fileJson: "result.assemble.report.json", fileTxt: "result.assemble.report.txt" }
+]
+
+self.body(func(inputs) {
+	inputData := inputs[pConstants.VALUE_FIELD_NAME]
+	aggregationAxesNames := inputs[pConstants.AGGREGATION_AXES_NAMES_FIELD_NAME]
+
+	params := inputs.params
+	limitInput := inputs.limitInput
+	fileExtension := params.fileExtension
+	library := params.referenceLibrary
+	libraryFile := presetArgs.libraryFileName(params)
+
+	inputDataMeta := inputData.getDataAsJson()
+
+	// The "Advanced Settings" overrides.
+	res := {
+		perProcessMemGB: inputs.perProcessMemGB,
+		perProcessCPUs: inputs.perProcessCPUs,
+		stepResources: inputs.stepResources
+	}
+
+	// The sample's read files by the names the plan and the steps stage them under, and the
+	// pattern that names them all.
+	readFiles := func() {
+		files := {}
+		pattern := undefined
+		inputMap := inputData.inputs()
+		if inputDataMeta.keyLength == 0 {
+			ll.assert(aggregationAxesNames == [], "unexpected aggregation axes names")
+			// Assuming only one key "[]" exists here, no need for sorted iteration
+			inputFile := inputMap["[]"]
+			ll.assert(!is_undefined(inputFile), "unexpected agg group structure")
+			inputFileName := "input." + fileExtension
+			files[inputFileName] = inputFile
+			pattern = inputFileName
+		} else if inputDataMeta.keyLength == 1 {
+			ll.assert(aggregationAxesNames == ["pl7.app/sequencing/readIndex"], "unexpected aggregation axes names")
+			for sKey in maps.getKeys(inputMap) {
+				inputFile := inputMap[sKey]
+				key := json.decode(sKey)
+				if len(key) != 1 {
+					ll.panic("malformed key: %v", sKey)
+				}
+				r := key[0]
+				if (r[0] != 'R' && r[0] != "I") || (r[1] != '1' && r[1] != '2') || len(r) != 2 {
+					ll.panic("malformed read index: %v", r)
+				}
+				files["input_" + r + "." + fileExtension] = inputFile
+			}
+			pattern = "input_{{R}}." + fileExtension
+		} else if inputDataMeta.keyLength == 2 {
+			ll.assert(aggregationAxesNames == ["pl7.app/sequencing/lane", "pl7.app/sequencing/readIndex"], "unexpected aggregation axes names")
+			for sKey in maps.getKeys(inputMap) {
+				inputFile := inputMap[sKey]
+				key := json.decode(sKey)
+				if len(key) != 2 {
+					ll.panic("malformed key: %v", sKey)
+				}
+				lane := key[0]
+				r := key[1]
+				if (r[0] != 'R' && r[0] != "I") || (r[1] != '1' && r[1] != '2') || len(r) != 2 {
+					ll.panic("malformed read index: %v", r)
+				}
+				if is_undefined(int(lane)) {
+					ll.panic("malformed lane: %v", lane)
+				}
+				files["input_L" + lane + "_" + r + "." + fileExtension] = inputFile
+			}
+			pattern = "input_L{{n}}_{{R}}." + fileExtension
+		} else {
+			ll.panic("too many axes / not supported")
+		}
+		return { files: files, names: maps.getKeys(files), pattern: pattern }
+	}
+
+	stepClass := presetArgs.stepClass(params)
+
+	reads := readFiles()
+
+	// The planning command reads neither the reads nor the library, only checks that they exist,
+	// so empty files under their names stand in for them. A library given as text is written
+	// here for real and saved, so the steps can stage it.
+	planCmd := mixcrCmd.builder(mixcrSw).
+		name(execName.of("mixcr plan")).
+		arg("analyze").
+		arg("--dry-run-json").arg(mixcrSteps.STEPS_FILE)
+	if !is_undefined(limitInput) {
+		planCmd.arg("--limit-input").arg(string(limitInput))
+	}
+	presetArgs.apply(planCmd, params)
+	libraryIsText := is_string(library)
+	if libraryIsText {
+		planCmd.writeFile(libraryFile, library).saveFile(libraryFile)
+	} else {
+		planCmd.writeFile(libraryFile, "")
+	}
+	for name in reads.names {
+		planCmd.writeFile(name, "")
+	}
+	planCmd.arg(reads.pattern).arg(mixcrSteps.OUTPUT_PREFIX).saveFileContent(mixcrSteps.STEPS_FILE)
+	resources.apply(planCmd, resources.lookup("plan", stepClass), res)
+	planRun := planCmd.cache(CACHE_PERIOD).run()
+
+	// The block files the steps may stage by name: the reads and the library.
+	files := smart.mapBuilder()
+	for name in reads.names {
+		files.addRef(name, reads.files[name])
+	}
+	files.addRef(libraryFile, libraryIsText ? planRun.getFile(libraryFile) : library)
+
+	// The overrides go in as metaInputs, out of the deduplication key: a change to them must not
+	// re-run the sample.
+	stepsRun := render.create(
+		runStepsTpl,
+		{
+			steps: planRun.getFileContent(mixcrSteps.STEPS_FILE),
+			files: files.lockAndBuild(),
+			readNames: reads.names,
+			readsPattern: reads.pattern,
+			stepClass: stepClass,
+			reports: REPORTS
+		},
+		{ metaInputs: res }
+	)
+
+	return {
+		qc: stepsRun.output("qc", CACHE_PERIOD),
+		log: stepsRun.output("log", CACHE_PERIOD),
+		reports: stepsRun.output("reports", CACHE_PERIOD),
+		clns: stepsRun.output("clns", CACHE_PERIOD)
+	}
+})

@@ -37,7 +37,11 @@ const tabOptions: SimpleOption<TabId>[] = [
       :sample-data="sampleData"
     />
     <SampleReportPanelReports v-else-if="data.currentTab === 'reports'" :sample-id="sampleId" />
-    <SampleReportPanelLog v-else-if="data.currentTab === 'logs'" :sample-data="sampleData" />
+    <SampleReportPanelLog
+      v-else-if="data.currentTab === 'logs'"
+      :key="sampleId"
+      :sample-data="sampleData"
+    />
   </div>
   <div v-else>No sample selected</div>
 </template>
