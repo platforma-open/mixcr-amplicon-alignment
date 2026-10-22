@@ -1,0 +1,149 @@
+// The arguments that select the preset and every mixin that shapes the resolved parameter
+// bundle. `analyze` hands them to the first step of its plan, which packs the bundle into its
+// output's header; every later step reads it from there. :run-mixcr plans a run with them, and
+// :plan-steps plans the steps the settings list before any run.
+
+text := import("text")
+
+// umiTags lists the UMI tags a tag pattern names, in order, each once: the tags whose name starts
+// with "umi", case aside.
+umiTags := func(pattern) {
+	if is_undefined(pattern) || pattern == "" {
+		return []
+	}
+	tags := []
+	parts := text.split(pattern, "(")
+	for idx, part in parts {
+		if idx == 0 {
+			continue
+		}
+		if !text.contains(part, ":") {
+			continue
+		}
+		name := text.split(part, ":")[0]
+		if !text.has_prefix(text.to_lower(name), "umi") {
+			continue
+		}
+		exists := false
+		for tag in tags {
+			if tag == name {
+				exists = true
+				break
+			}
+		}
+		if !exists {
+			tags = append(tags, name)
+		}
+	}
+	return tags
+}
+
+// The preset the block runs: the UMI variant when the tag pattern names a UMI tag.
+presetName := func(params) {
+	return params.hasUMI ? "generic-amplicon-with-umi" : "generic-amplicon"
+}
+
+// The class :resources sizes the steps by.
+stepClass := func(params) {
+	return params.hasUMI ? "umi" : "none"
+}
+
+// The name the library is staged under.
+libraryFileName := func(params) {
+	return params.isLibraryFileGzipped ? "library.json.gz" : "library.json"
+}
+
+// stageLibrary stages params.referenceLibrary under libraryFileName(params) for a MiXCR command
+// that reads a MiXCR file: a .vdjca or .clns names its library but does not carry it. A Build
+// Library reference arrives as text and is written; any other library is a file.
+stageLibrary := func(builder, params) {
+	library := params.referenceLibrary
+	if is_undefined(library) {
+		return builder
+	}
+	if is_string(library) {
+		return builder.writeFile(libraryFileName(params), library)
+	}
+	return builder.addFile(libraryFileName(params), library)
+}
+
+// Format the assembling feature into MiXCR --assemble-clonotypes-by syntax.
+//   VDJRegion, CDR3      -> unchanged
+//   "X" / "X:Y"          -> {XBegin:XEnd} / {XBegin:YEnd}
+//   disjoint (has ",")   -> [{p1},{p2},...] with explicit reference points, e.g.
+//     "FR1Begin:FR3Begin(+40),FR3Begin(+46):FR4End"
+//     -> "[{FR1Begin:FR3Begin(+40)},{FR3Begin(+46):FR4End}]"
+// NOTE: --assemble-clonotypes-by takes this LIST form. The export side
+// (calculate-export-specs.lib.tengo) does NOT reference the composite feature at all — it keys
+// the clonotype on the individual covered regions instead, because MiXCR renames a composite
+// export column unpredictably.
+formatAssemblingFeature := func(fstr) {
+	if fstr == "VDJRegion" || fstr == "CDR3" {
+		return fstr
+	}
+	if text.contains(fstr, ",") {
+		res := "["
+		for i, p in text.split(fstr, ",") {
+			pbe := text.split(p, ":")
+			if i > 0 {
+				res += ","
+			}
+			res += "{" + pbe[0] + ":" + pbe[1] + "}"
+		}
+		return res + "]"
+	}
+	parts := text.split(fstr, ":")
+	if len(parts) == 1 {
+		return "{" + parts[0] + "Begin:" + parts[0] + "End}"
+	}
+	return "{" + parts[0] + "Begin:" + parts[1] + "End}"
+}
+
+// apply adds the preset arguments to `builder`. `params` carries hasUMI, assemblingFeature,
+// isLibraryFileGzipped, tagPattern, cloneClusteringMode, badQualityThreshold and
+// disableLowQualityMapping. The caller stages the library under libraryFileName(params).
+apply := func(builder, params) {
+	builder.
+		arg("--use-local-temp").
+		arg(presetName(params)).
+		arg("--assemble-clonotypes-by").arg(formatAssemblingFeature(params.assemblingFeature)).
+		arg("--species").arg("custom").
+		arg("--library").arg(libraryFileName(params)).
+		arg("--rna").
+		arg("--rigid-left-alignment-boundary").
+		arg("--rigid-right-alignment-boundary").arg("J")
+
+	if !is_undefined(params.tagPattern) && params.tagPattern != "" {
+		builder.arg("--tag-pattern").arg(params.tagPattern)
+	}
+
+	// Clone clustering tuning
+	if params.cloneClusteringMode == "relaxed" {
+		builder.arg("-Massemble.cloneAssemblerParameters.cloneClusteringParameters.searchParameters=oneMismatchOrIndel")
+	} else if params.cloneClusteringMode == "off" {
+		builder.arg("-Massemble.cloneAssemblerParameters.cloneClusteringParameters=null")
+	}
+
+	// Assembly quality threshold
+	badQualityThreshold := params.badQualityThreshold
+	if !is_undefined(badQualityThreshold) {
+		builder.arg("-Massemble.cloneAssemblerParameters.badQualityThreshold=" + string(int(badQualityThreshold)))
+		builder.arg("-Massemble.cloneAssemblerParameters.minimalQuality=" + string(int(badQualityThreshold)))
+	}
+
+	// Disable the deferred-reads mapping phase
+	if params.disableLowQualityMapping {
+		builder.arg("-Massemble.cloneAssemblerParameters.maxBadPointsPercent=0")
+	}
+	return builder
+}
+
+export {
+	umiTags: umiTags,
+	presetName: presetName,
+	stepClass: stepClass,
+	libraryFileName: libraryFileName,
+	stageLibrary: stageLibrary,
+	formatAssemblingFeature: formatAssemblingFeature,
+	apply: apply
+}

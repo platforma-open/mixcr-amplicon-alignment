@@ -1,0 +1,133 @@
+// Translation of nucleotide columns to amino acids in ptabler, with the stop codons the user
+// picked replaced by an amino acid. :mixcr-export and :export-report both translate with it.
+
+pt := import("@platforma-sdk/workflow-tengo:pt")
+maps := import("@platforma-sdk/workflow-tengo:maps")
+text := import("text")
+
+_CODONS := {
+	"TTT": "F", "TTC": "F", "TTA": "L", "TTG": "L",
+	"TCT": "S", "TCC": "S", "TCA": "S", "TCG": "S",
+	"TAT": "Y", "TAC": "Y", "TAA": "*", "TAG": "*",
+	"TGT": "C", "TGC": "C", "TGA": "*", "TGG": "W",
+	"CTT": "L", "CTC": "L", "CTA": "L", "CTG": "L",
+	"CCT": "P", "CCC": "P", "CCA": "P", "CCG": "P",
+	"CAT": "H", "CAC": "H", "CAA": "Q", "CAG": "Q",
+	"CGT": "R", "CGC": "R", "CGA": "R", "CGG": "R",
+	"ATT": "I", "ATC": "I", "ATA": "I", "ATG": "M",
+	"ACT": "T", "ACC": "T", "ACA": "T", "ACG": "T",
+	"AAT": "N", "AAC": "N", "AAA": "K", "AAG": "K",
+	"AGT": "S", "AGC": "S", "AGA": "R", "AGG": "R",
+	"GTT": "V", "GTC": "V", "GTA": "V", "GTG": "V",
+	"GCT": "A", "GCC": "A", "GCA": "A", "GCG": "A",
+	"GAT": "D", "GAC": "D", "GAA": "E", "GAG": "E",
+	"GGT": "G", "GGC": "G", "GGA": "G", "GGG": "G"
+}
+
+_STOPS := [
+	{ codon: "TAA", type: "ochre" },
+	{ codon: "TAG", type: "amber" },
+	{ codon: "TGA", type: "opal" }
+]
+
+// codonMap returns the codon table. A stop codon whose type is in stopCodonTypes translates to
+// its non-empty entry in stopCodonReplacements, upper-cased; every other stop codon to "*".
+codonMap := func(stopCodonTypes, stopCodonReplacements) {
+	m := copy(_CODONS)
+	if !is_array(stopCodonTypes) || !is_map(stopCodonReplacements) {
+		return m
+	}
+	for stop in _STOPS {
+		picked := false
+		for t in stopCodonTypes {
+			if t == stop.type {
+				picked = true
+			}
+		}
+		aa := stopCodonReplacements[stop.type]
+		if picked && !is_undefined(aa) && aa != "" {
+			m[stop.codon] = text.to_upper(aa)
+		}
+	}
+	return m
+}
+
+// translateNtToAaExpr translates a nucleotide expression codon by codon; a trailing partial
+// codon is dropped. Codons are replaced in sorted order, so equal inputs build equal expressions.
+translateNtToAaExpr := func(ntExpr, codons) {
+	seq := ntExpr.fillNull("").strToUpper()
+	seq = seq.strReplace("(.{3})", "$1|", { replaceAll: true })
+	for codon in maps.getKeys(codons) {
+		seq = seq.strReplace(codon + "|", codons[codon] + "|", { replaceAll: true, literal: true })
+	}
+	seq = seq.strReplace("\\|$", "", { replaceAll: false })
+	seq = seq.strReplace("|", "", { replaceAll: true, literal: true })
+	seq = seq.strReplace("[ACGT]{1,2}$", "", { replaceAll: true })
+	return seq
+}
+
+// applyStopCodonReplacementsPt re-translates each amino-acid column of `df` from its nucleotide
+// column with the picked replacements, marks the rows a replacement changed
+// (stopCodonReplaced, stopCodonReplacedColumns), and drops rows still carrying a stop codon or
+// with a CDR3 not covered.
+applyStopCodonReplacementsPt := func(df, opts) {
+	if is_undefined(opts) {
+		return df
+	}
+	aminoAcidSeqColumns := opts.aminoAcidSeqColumns
+	cdr3SeqColumns := opts.cdr3SeqColumns
+	stopCodonTypes := opts.stopCodonTypes
+
+	if is_undefined(aminoAcidSeqColumns) || len(aminoAcidSeqColumns) == 0 {
+		return df
+	}
+	if is_undefined(stopCodonTypes) || !is_array(stopCodonTypes) || len(stopCodonTypes) == 0 {
+		return df
+	}
+
+	codonsBase := codonMap([], undefined)
+	codonsReplace := codonMap(stopCodonTypes, opts.stopCodonReplacements)
+
+	expressions := []
+	replacedAnyExprs := []
+	replacedColsExprs := []
+	for aaCol in aminoAcidSeqColumns {
+		ntCol := text.replace(aaCol, "aaSeq", "nSeq", 1)
+		translatedBase := translateNtToAaExpr(pt.col(ntCol), codonsBase)
+		translatedReplaced := translateNtToAaExpr(pt.col(ntCol), codonsReplace)
+		expressions = append(expressions, translatedReplaced.alias(aaCol))
+		cond := translatedReplaced.neq(translatedBase)
+		replacedAnyExprs = append(replacedAnyExprs, cond)
+		replacedColsExprs = append(replacedColsExprs, pt.when(cond).then(pt.lit(aaCol)).otherwise(pt.lit("")))
+	}
+	df = df.withColumns(expressions...)
+
+	colsList := pt.concatStr(replacedColsExprs, { delimiter: "," })
+	colsList = colsList.strReplace(",+", ",", { replaceAll: true }).strReplace("^,|,$", "", { replaceAll: true })
+	df = df.withColumns(
+		pt.anyHorizontal(replacedAnyExprs...).alias("stopCodonReplaced"),
+		colsList.alias("stopCodonReplacedColumns")
+	)
+
+	stopChecks := []
+	for colName in aminoAcidSeqColumns {
+		stopChecks = append(stopChecks, pt.col(colName).strContains("*", { literal: true }))
+	}
+	df = df.filter(pt.anyHorizontal(stopChecks...).eq(false))
+
+	if !is_undefined(cdr3SeqColumns) && len(cdr3SeqColumns) > 0 {
+		regionChecks := []
+		for colName in cdr3SeqColumns {
+			regionChecks = append(regionChecks, pt.col(colName).strToUpper().eq("REGION_NOT_COVERED"))
+		}
+		df = df.filter(pt.anyHorizontal(regionChecks...).eq(false))
+	}
+
+	return df
+}
+
+export {
+	codonMap: codonMap,
+	translateNtToAaExpr: translateNtToAaExpr,
+	applyStopCodonReplacementsPt: applyStopCodonReplacementsPt
+}

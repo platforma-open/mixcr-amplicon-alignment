@@ -1,0 +1,88 @@
+// The values :mixcr-analyze is keyed by, besides the reads.
+//
+// A sample analysed before an update is recovered only while these stay byte-identical: a new
+// key in `params`, a changed value, or a library encoded differently re-runs every sample.
+// analysis-inputs.test.tengo pins both.
+
+maps := import("@platforma-sdk/workflow-tengo:maps")
+canonical := import("@platforma-sdk/workflow-tengo:canonical")
+
+// params returns the `params` input of :mixcr-analyze. `p` is the block's params;
+// referenceLibrary is the library :main resolved.
+params := func(p, fileExtension, referenceLibrary, hasUMI) {
+	return maps.clone({
+		fileExtension: fileExtension,
+		referenceLibrary: referenceLibrary,
+		cloneClusteringMode: p.cloneClusteringMode,
+		hasUMI: hasUMI,
+		tagPattern: p.tagPattern,
+		assemblingFeature: p.assemblingFeature,
+		imputeGermline: p.imputeGermline,
+		badQualityThreshold: p.badQualityThreshold,
+		disableLowQualityMapping: p.disableLowQualityMapping,
+		isLibraryFileGzipped: p.isLibraryFileGzipped
+	}, { removeUndefs: true })
+}
+
+// buildLibrary returns the Build Library reference as library.json text, with sorted keys so
+// equal entries give equal bytes. `chain` is the MiXCR chain the genes are tagged with.
+buildLibrary := func(entries, chain) {
+	genes := []
+	fragments := []
+	for entry in entries {
+		vName := entry.name + "_Vgene"
+		jName := entry.name + "_Jgene"
+		vUri := "local://" + vName
+		jUri := "local://" + jName
+		genes = append(genes, {
+			baseSequence: vUri,
+			name: vName,
+			geneType: "V",
+			isFunctional: true,
+			chains: [chain],
+			anchorPoints: {
+				FR1Begin: entry.vAnchorPoints.fr1Begin,
+				CDR1Begin: entry.vAnchorPoints.cdr1Begin,
+				FR2Begin: entry.vAnchorPoints.fr2Begin,
+				CDR2Begin: entry.vAnchorPoints.cdr2Begin,
+				FR3Begin: entry.vAnchorPoints.fr3Begin,
+				CDR3Begin: entry.vAnchorPoints.cdr3Begin,
+				VEnd: entry.vAnchorPoints.vEnd
+			}
+		})
+		fragments = append(fragments, {
+			uri: vUri,
+			range: { from: 0, to: len(entry.vSequence) },
+			sequence: entry.vSequence
+		})
+		genes = append(genes, {
+			baseSequence: jUri,
+			name: jName,
+			geneType: "J",
+			isFunctional: true,
+			chains: [chain],
+			anchorPoints: {
+				JBegin: entry.jAnchorPoints.jBegin,
+				FR4Begin: entry.jAnchorPoints.fr4Begin,
+				FR4End: entry.jAnchorPoints.fr4End
+			}
+		})
+		fragments = append(fragments, {
+			uri: jUri,
+			range: { from: 0, to: len(entry.jSequence) },
+			sequence: entry.jSequence
+		})
+	}
+	return canonical.encode([{
+		taxonId: 1111,
+		speciesNames: ["custom"],
+		genes: genes,
+		sequenceFragments: fragments,
+		checksumVersion: 1
+	}])
+}
+
+export {
+	params: params,
+	buildLibrary: buildLibrary
+}

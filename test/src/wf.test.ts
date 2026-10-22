@@ -119,8 +119,8 @@ blockTest(
     const alignOutputs1 = wrapOutputs(alignStableState1.outputs);
 
     // Configure the amplicon alignment block
-    const vGenesFasta = `>ref_heavy\n${referenceSequence}`;
-    const jGenesFasta = `>ref_heavy_j\n${referenceSequence.slice(-80)}`;
+    const vGenesFasta = `>ref_heavy\n${referenceSequence.slice(0, 298)}`;
+    const jGenesFasta = `>ref_heavy_j\n${referenceSequence.slice(-44)}`;
 
     await project.mutateBlockStorage(alignBlockId, {
       operation: "update-block-data",
@@ -175,6 +175,7 @@ blockTest(
     );
     expect(alignReport).toBeDefined();
     expect(alignReport.totalReadsProcessed).greaterThan(0);
+    expect(alignReport.aligned).greaterThan(0);
 
     // Verify QC
     const qcEntry = outputs3.qc!.data[0];
@@ -248,8 +249,8 @@ blockTest(
     const alignOutputs1 = wrapOutputs(alignStableState1.outputs);
 
     // Configure the amplicon alignment block
-    const vGenesFasta = `>ref_heavy\n${referenceSequence}`;
-    const jGenesFasta = `>ref_heavy_j\n${referenceSequence.slice(-80)}`;
+    const vGenesFasta = `>ref_heavy\n${referenceSequence.slice(0, 298)}`;
+    const jGenesFasta = `>ref_heavy_j\n${referenceSequence.slice(-44)}`;
 
     await project.mutateBlockStorage(alignBlockId, {
       operation: "update-block-data",
@@ -296,6 +297,7 @@ blockTest(
     );
     expect(alignReport).toBeDefined();
     expect(alignReport.totalReadsProcessed).greaterThan(0);
+    expect(alignReport.aligned).greaterThan(0);
 
     const qcEntry = outputs3.qc!.data[0];
     expect(qcEntry).toBeDefined();
@@ -361,8 +363,8 @@ blockTest(
     // long-CDR3 clone whose mates don't overlap there still assembles) and is germline-imputed
     // on export. Run on s1 to verify the mechanism + MiXCR's disjoint column naming independently
     // of a natural read gap (the disjoint feature excludes the window regardless of coverage).
-    const vGenesFasta = `>ref_heavy\n${referenceSequence}`;
-    const jGenesFasta = `>ref_heavy_j\n${referenceSequence.slice(-80)}`;
+    const vGenesFasta = `>ref_heavy\n${referenceSequence.slice(0, 298)}`;
+    const jGenesFasta = `>ref_heavy_j\n${referenceSequence.slice(-44)}`;
 
     await project.mutateBlockStorage(alignBlockId, {
       operation: "update-block-data",
@@ -411,6 +413,7 @@ blockTest(
     );
     expect(alignReport).toBeDefined();
     expect(alignReport.totalReadsProcessed).greaterThan(0);
+    expect(alignReport.aligned).greaterThan(0);
 
     const qcEntry = outputs3.qc!.data[0];
     expect(qcEntry).toBeDefined();
@@ -472,8 +475,8 @@ blockTest(
     const alignOutputs1 = wrapOutputs(alignStableState1.outputs);
 
     // Configure the amplicon alignment block with CDR1:CDR3 feature, no imputation
-    const vGenesFasta = `>ref_heavy\n${referenceSequence}`;
-    const jGenesFasta = `>ref_heavy_j\n${referenceSequence.slice(-80)}`;
+    const vGenesFasta = `>ref_heavy\n${referenceSequence.slice(0, 298)}`;
+    const jGenesFasta = `>ref_heavy_j\n${referenceSequence.slice(-44)}`;
 
     await project.mutateBlockStorage(alignBlockId, {
       operation: "update-block-data",
@@ -520,8 +523,111 @@ blockTest(
     );
     expect(alignReport).toBeDefined();
     expect(alignReport.totalReadsProcessed).greaterThan(0);
+    expect(alignReport.aligned).greaterThan(0);
 
     const qcEntry = outputs3.qc!.data[0];
     expect(qcEntry).toBeDefined();
+  },
+);
+
+blockTest(
+  "no read aligns",
+  { timeout: 300000 },
+  async ({ rawPrj: project, ml, helpers, expect }) => {
+    const sndBlockId = await project.addBlock("Samples & Data", samplesAndDataBlockSpec);
+    const alignBlockId = await project.addBlock("MiXCR Amplicon Alignment", myBlockSpec);
+
+    const sample1Id = uniquePlId();
+    const dataset1Id = uniquePlId();
+
+    const r1Handle = await helpers.getLocalFileHandle("./assets/s1_R1.fastq.gz");
+    const r2Handle = await helpers.getLocalFileHandle("./assets/s1_R2.fastq.gz");
+
+    await project.mutateBlockStorage(sndBlockId, {
+      operation: "update-block-data",
+      value: {
+        metadata: [],
+        sampleIds: [sample1Id],
+        sampleLabelColumnLabel: "Sample Name",
+        sampleLabels: { [sample1Id]: "Sample 1" },
+        datasets: [
+          {
+            id: dataset1Id,
+            label: "Dataset 1",
+            content: {
+              type: "Fastq",
+              readIndices: ["R1", "R2"],
+              gzipped: true,
+              data: {
+                [sample1Id]: {
+                  R1: r1Handle,
+                  R2: r2Handle,
+                },
+              },
+            },
+          },
+        ],
+        h5adFilesToPreprocess: [],
+        seuratFilesToPreprocess: [],
+        suggestedImport: false,
+      } satisfies SamplesAndDataBlockData,
+    });
+    await project.runBlock(sndBlockId);
+    await helpers.awaitBlockDoneAndGetStableBlockState(sndBlockId, 8000);
+
+    const alignStableState1 = (await awaitStableState(
+      project.getBlockState(alignBlockId),
+      25000,
+    )) as InferBlockState<typeof platforma>;
+    const alignOutputs1 = wrapOutputs(alignStableState1.outputs);
+
+    // The whole reference as the V and its last 80 nt as the J: V and J overlap, so no read
+    // aligns and every sample finishes with no clonotypes.
+    await project.mutateBlockStorage(alignBlockId, {
+      operation: "update-block-data",
+      value: alignData({
+        datasetRef: alignOutputs1.inputOptions[0].ref,
+        vGenes: `>ref_heavy\n${referenceSequence}`,
+        jGenes: `>ref_heavy_j\n${referenceSequence.slice(-80)}`,
+      }),
+    });
+    await awaitStableState(project.getBlockState(alignBlockId), 25000);
+
+    await project.runBlock(alignBlockId);
+    const alignStableState2 = await helpers.awaitBlockDoneAndGetStableBlockState(
+      alignBlockId,
+      250000,
+    );
+
+    // Export, aggregation and QC complete on empty tables instead of failing.
+    const failed = Object.entries(alignStableState2.outputs ?? {}).filter(
+      ([, output]) => output !== undefined && !output.ok,
+    );
+    expect(failed.map(([name]) => name)).toEqual([]);
+
+    const outputs2 = wrapOutputs<BlockOutputs>(
+      alignStableState2.outputs as unknown as BlockOutputs,
+    );
+    expect(outputs2.reports.isComplete).toEqual(true);
+
+    const alignJsonReportEntry = outputs2.reports.data.find(
+      (entry) => entry.key[1] === "align" && entry.key[2] === "json",
+    );
+    expect(alignJsonReportEntry).toBeDefined();
+    const alignReport = AlignReport.parse(
+      JSON.parse(
+        Buffer.from(
+          await ml.driverKit.blobDriver.getContent(
+            alignJsonReportEntry!.value!.handle as Parameters<
+              typeof ml.driverKit.blobDriver.getContent
+            >[0],
+          ),
+        ).toString("utf8"),
+      ),
+    );
+    expect(alignReport.totalReadsProcessed).greaterThan(0);
+    expect(alignReport.aligned).toEqual(0);
+
+    expect(outputs2.qc!.data).toHaveLength(1);
   },
 );
