@@ -1,5 +1,15 @@
 ## 1.0.0
 
+## 1.11.0
+
+### Minor Changes
+
+- 1f21b71: Run MiXCR as one exec per step, as in MiXCR Clonotyping. `mixcr analyze --dry-run-json` plans the run and the block runs each step it lists (`mixcr align`, `mixcr assemble`, `mixcr qc`, and `refineTagsAndSort` for UMI patterns), each with its own CPU and memory from one resources table, sized from the step's input. The memory and CPU overrides in Advanced Settings still apply to every step, and Advanced Settings → Per-step resources sets a memory floor per step; none of these re-runs a finished sample. The Log tab shows each step's log in run order. Samples analysed by the published block are recovered on update, not re-run, when the reference comes from FASTA or a library file. With a Build Library reference they re-run once: the library is now encoded with sorted keys, so equal entries give equal bytes. The per-sample QC filter export now runs the `memory-from-limits` MiXCR entrypoint, as the main export does, and is sized at 90 bytes of RAM per .clns byte instead of 30, so its grant rises above the 24 GiB floor from 0.18 GiB of .clns instead of 0.53 GiB. Every exec the block runs is named, prefixed "Amplicon: ", so jobs, error messages and run records say what is running; the name is part of an exec's identity, so updated projects re-run their exports once. The reference-library build is left unnamed and unchanged, so its library, an input of every MiXCR run, is reused. The cohort aggregation no longer depends on sample IDs, and the memory override no longer re-runs the QC report, so identical runs are reused across blocks and projects. Requires MiXCR 4.7.0-406.
+
+### Patch Changes
+
+- 847d95e: Size ptabler runs from their input bytes and aggregate the cohort clonotype table in shards, as in MiXCR Clonotyping. The cohort aggregation is split into up to 26 shards by clonotypeKey, each sized from the bytes it scans and keeps, so its peak memory no longer grows with cohort size. The per-sample export step and both Parquet imports are sized by the SDK from their input instead of a flat grant. QC counts are computed per sample, so the cohort QC run reads one row per sample instead of every clonotype table. Both exportClones runs (the main export and the per-sample QC filter export) are sized from the .clns size with a 24 GiB floor and no ceiling, instead of a flat grant; the memory override raises that floor.
+
 ## 1.10.7
 
 ### Patch Changes
