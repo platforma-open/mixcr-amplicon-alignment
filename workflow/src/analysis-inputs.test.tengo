@@ -30,6 +30,15 @@ TestParamsDropUnsetFields := func() {
 	test.isEqual(["fileExtension", "hasUMI", "referenceLibrary"], maps.getKeys(ai.params({}, "fastq", "library-text", true)))
 }
 
+TestParamsCarryVMinScoreOnlyWhenSet := func() {
+	// An unset vMinScore must stay out of the params, or every sample analysed before the
+	// field existed re-runs on update.
+	test.isEqual(["fileExtension", "hasUMI", "referenceLibrary"], maps.getKeys(ai.params({}, "fastq", "library-text", true)))
+	withScore := ai.params({ vMinScore: 60 }, "fastq", "library-text", true)
+	test.isEqual(["fileExtension", "hasUMI", "referenceLibrary", "vMinScore"], maps.getKeys(withScore))
+	test.isEqual(60, withScore.vMinScore)
+}
+
 _ENTRY := {
 	name: "ab1",
 	vSequence: "CAGGTGCAGCTG",

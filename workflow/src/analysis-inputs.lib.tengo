@@ -19,6 +19,7 @@ params := func(p, fileExtension, referenceLibrary, hasUMI) {
 		assemblingFeature: p.assemblingFeature,
 		imputeGermline: p.imputeGermline,
 		badQualityThreshold: p.badQualityThreshold,
+		vMinScore: p.vMinScore,
 		disableLowQualityMapping: p.disableLowQualityMapping,
 		isLibraryFileGzipped: p.isLibraryFileGzipped
 	}, { removeUndefs: true })

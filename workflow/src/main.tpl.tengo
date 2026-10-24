@@ -92,6 +92,7 @@ wf.body(func(args) {
 			assemblingFeature: args.assemblingFeature,
 			imputeGermline: args.imputeGermline,
 			badQualityThreshold: args.badQualityThreshold,
+			vMinScore: args.vMinScore,
 			disableLowQualityMapping: args.disableLowQualityMapping,
 			isLibraryFileGzipped: isLibraryFileGzipped,
 			stopCodonTypes: args.stopCodonTypes,

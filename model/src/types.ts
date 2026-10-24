@@ -65,6 +65,9 @@ export type BlockData = {
   cloneClusteringMode?: CloneClusteringMode;
   assemblingFeature?: AssemblingFeature;
   badQualityThreshold?: number;
+  /** MiXCR V `absoluteMinScore`. Lower it when the V segment inside the assembling feature is
+   * short enough that a correct alignment scores below the preset default and the read is dropped. */
+  vMinScore?: number;
   /** Passes `maxBadPointsPercent=0` to MiXCR, skipping the deferred-reads mapping phase. */
   disableLowQualityMapping?: boolean;
   imputeGermline?: boolean;
@@ -114,6 +117,7 @@ export type BlockArgs = {
   cloneClusteringMode?: CloneClusteringMode;
   assemblingFeature?: AssemblingFeature;
   badQualityThreshold?: number;
+  vMinScore?: number;
   disableLowQualityMapping?: boolean;
   stopCodonTypes?: StopCodonType[];
   stopCodonReplacements?: StopCodonReplacements;

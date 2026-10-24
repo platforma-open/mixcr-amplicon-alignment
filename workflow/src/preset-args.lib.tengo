@@ -100,7 +100,7 @@ formatAssemblingFeature := func(fstr) {
 }
 
 // apply adds the preset arguments to `builder`. `params` carries hasUMI, assemblingFeature,
-// isLibraryFileGzipped, tagPattern, cloneClusteringMode, badQualityThreshold and
+// isLibraryFileGzipped, tagPattern, cloneClusteringMode, badQualityThreshold, vMinScore and
 // disableLowQualityMapping. The caller stages the library under libraryFileName(params).
 apply := func(builder, params) {
 	builder.
@@ -125,6 +125,12 @@ apply := func(builder, params) {
 	}
 
 	// Assembly quality threshold
+	// V absoluteMinScore. MiXCR scores V and J separately, so a short V segment inside the
+	// assembling feature can score below the preset default and drop the read.
+	if !is_undefined(params.vMinScore) {
+		builder.arg("-Malign.parameters.vParameters.parameters.absoluteMinScore=" + string(int(params.vMinScore)))
+	}
+
 	badQualityThreshold := params.badQualityThreshold
 	if !is_undefined(badQualityThreshold) {
 		builder.arg("-Massemble.cloneAssemblerParameters.badQualityThreshold=" + string(int(badQualityThreshold)))

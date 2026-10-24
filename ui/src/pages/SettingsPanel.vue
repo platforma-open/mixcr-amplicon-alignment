@@ -575,6 +575,21 @@ ATCGATCGATCG..."
         clonotypes. Leave empty to use the MiXCR default (15).
       </template>
     </PlNumberField>
+    <PlNumberField
+      v-model="app.model.data.vMinScore"
+      label="V alignment min score"
+      placeholder="preset default"
+      :min-value="0"
+      :step="1"
+      :validate="(v) => (Number.isInteger(v) ? undefined : 'Value must be an integer')"
+    >
+      <template #tooltip>
+        Minimum alignment score for the V gene. MiXCR scores the V and J parts of a read separately,
+        so when the assembling feature covers only a short stretch of V, a correct alignment can
+        fall below the preset threshold and the read is dropped. Lower this value to keep those
+        reads. Leave empty to use the preset default.
+      </template>
+    </PlNumberField>
     <PlCheckbox v-model="disableLowQualityMapping">
       Skip low-quality read mapping
       <PlTooltip class="info" position="top">

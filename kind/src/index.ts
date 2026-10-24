@@ -111,6 +111,7 @@ export type BlockParams = {
   cloneClusteringMode?: CloneClusteringMode;
   assemblingFeature?: AssemblingFeature;
   badQualityThreshold?: number;
+  vMinScore?: number;
   disableLowQualityMapping?: boolean;
   imputeGermline?: boolean;
   stopCodonTypes?: StopCodonType[];
@@ -225,6 +226,7 @@ const CONTRACT = {
   cloneClusteringMode: check(isOneOf(CLONE_CLUSTERING_MODES), oneOfMust(CLONE_CLUSTERING_MODES)),
   assemblingFeature: check(isString, "a MiXCR gene feature expression"),
   badQualityThreshold: check(isIntAtLeast(0), "a whole number of 0 or more"),
+  vMinScore: check(isIntAtLeast(0), "a whole number of 0 or more"),
   disableLowQualityMapping: check(isBoolean, "a boolean"),
   imputeGermline: check(isBoolean, "a boolean"),
   stopCodonTypes: check(isArrayOf(isOneOf(STOP_CODON_TYPES)), oneOfMust(STOP_CODON_TYPES, true)),
