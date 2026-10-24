@@ -124,13 +124,13 @@ apply := func(builder, params) {
 		builder.arg("-Massemble.cloneAssemblerParameters.cloneClusteringParameters=null")
 	}
 
-	// Assembly quality threshold
 	// V absoluteMinScore. MiXCR scores V and J separately, so a short V segment inside the
 	// assembling feature can score below the preset default and drop the read.
 	if !is_undefined(params.vMinScore) {
 		builder.arg("-Malign.parameters.vParameters.parameters.absoluteMinScore=" + string(int(params.vMinScore)))
 	}
 
+	// Assembly quality threshold
 	badQualityThreshold := params.badQualityThreshold
 	if !is_undefined(badQualityThreshold) {
 		builder.arg("-Massemble.cloneAssemblerParameters.badQualityThreshold=" + string(int(badQualityThreshold)))
