@@ -1,5 +1,11 @@
 ## 1.0.0
 
+## 1.11.1
+
+### Patch Changes
+
+- 739e998: Update MiXCR, RepSeq.IO to the versions with the rebuilt Docker images. The old images trust the compromised eMudhra intermediate CAs.
+
 ## 1.11.0
 
 ### Minor Changes
