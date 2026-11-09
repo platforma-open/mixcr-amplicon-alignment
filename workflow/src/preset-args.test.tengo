@@ -1,0 +1,49 @@
+test := import("@platforma-sdk/workflow-tengo:test")
+presetArgs := import(":preset-args")
+
+_BASE := {
+	assemblingFeature: "VDJRegion",
+	cloneClusteringMode: "off",
+	isLibraryFileGzipped: false
+}
+
+// Collects the args `apply` emits, standing in for the exec command builder.
+_builder := func() {
+	args := []
+	b := undefined
+	b = {
+		arg: func(v) {
+			args = append(args, v)
+			return b
+		},
+		args: func() { return args }
+	}
+	return b
+}
+
+_has := func(args, want) {
+	for a in args {
+		if a == want {
+			return true
+		}
+	}
+	return false
+}
+
+TestVMinScoreIsEmittedOnlyWhenSet := func() {
+	without := presetArgs.apply(_builder(), _BASE).args()
+	test.isEqual(false, _has(without, "-Malign.parameters.vParameters.parameters.absoluteMinScore=60"))
+	for a in without {
+		test.isEqual(false, len(a) >= 8 && a[:8] == "-Malign.")
+	}
+
+	params := {}
+	for k, v in _BASE {
+		params[k] = v
+	}
+	params.vMinScore = 60
+	with := presetArgs.apply(_builder(), params).args()
+	test.isEqual(true, _has(with, "-Malign.parameters.vParameters.parameters.absoluteMinScore=60"))
+	// Setting it changes nothing else.
+	test.isEqual(len(without) + 1, len(with))
+}
