@@ -26,6 +26,7 @@ import { dropEmptyOverrides, StepResources, type StepDefaults } from "./step-res
 import type {
   BlockArgs,
   BlockData,
+  BlockDataV20260903,
   ExportedFile,
   LegacyBlockArgs,
   LegacyBlockUiState,
@@ -34,7 +35,7 @@ import type {
 export * from "./types";
 
 const blockDataModel = new DataModelBuilder({ kind })
-  .from<BlockData>("V20260903")
+  .from<BlockDataV20260903>("V20260903")
   .upgradeLegacy<LegacyBlockArgs, LegacyBlockUiState>(({ args, uiState }) => ({
     customBlockLabel: args?.customBlockLabel ?? "",
     defaultBlockLabel: args?.defaultBlockLabel ?? "",
@@ -68,14 +69,17 @@ const blockDataModel = new DataModelBuilder({ kind })
     perProcessCPUs: args?.perProcessCPUs,
     tableState: uiState?.tableState ?? createPlDataTableStateV2(),
   }))
+  // The old label joined `title` with chains and assembling feature; the
+  // subtitle now builds the same text from those fields.
+  .migrate<BlockData>("V20261106", ({ defaultBlockLabel: _, ...rest }) => rest)
   // A block created from a template starts on the params its kind accepted; one
   // created by hand gets the same defaults `withArgs`/`withUiState` used to set.
   // The fields the contract leaves out are all either derived by the UI from
-  // what is here (`title`, `defaultBlockLabel`, `selectedRecordHeaders`) or
-  // machine-local (`perProcessMemGB`, `perProcessCPUs`, `tableState`).
+  // what is here (`selectedRecordHeaders`), written when the user picks the
+  // dataset (`title`), or machine-local (`perProcessMemGB`, `perProcessCPUs`,
+  // `tableState`).
   .init(({ params }) => ({
     customBlockLabel: params?.customBlockLabel ?? "",
-    defaultBlockLabel: "",
     datasetRef: params?.datasetRef,
     title: undefined,
     chains: params?.chains ?? "IGHeavy",
@@ -448,7 +452,11 @@ export const platforma = BlockModelV3.create({ dataModel: blockDataModel, kind }
 
   .title(() => "MiXCR Amplicon Alignment")
 
-  .subtitle((ctx) => ctx.data.customBlockLabel || ctx.data.defaultBlockLabel || "")
+  .subtitle(
+    (ctx) =>
+      ctx.data.customBlockLabel ||
+      [ctx.data.title, labelFromParams(ctx.data)].filter(Boolean).join(" - "),
+  )
 
   .done();
 
@@ -467,7 +475,6 @@ export * from "./step-resources";
  */
 function toArgs(data: BlockData): BlockArgs {
   return {
-    defaultBlockLabel: data.defaultBlockLabel,
     customBlockLabel: data.customBlockLabel,
     datasetRef: data.datasetRef,
     chains: data.chains,
@@ -494,6 +501,11 @@ function toArgs(data: BlockData): BlockArgs {
     buildLibraryJGenes: data.buildLibraryJGenes,
     referenceInputMode: data.referenceInputMode,
   };
+}
+
+/** The settings that tell two alignments of the same dataset apart. */
+function labelFromParams(data: BlockData): string {
+  return [data.chains, data.assemblingFeature].filter(Boolean).join(" - ");
 }
 
 /** The handle when it can resolve on another machine, else undefined. */

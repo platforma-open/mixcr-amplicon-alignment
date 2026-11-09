@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { AgGridVue } from "ag-grid-vue3";
 
-import { plRefsEqual } from "@platforma-sdk/model";
 import type { PlAgHeaderComponentParams } from "@platforma-sdk/ui-vue";
 import {
   AgGridTheme,
@@ -20,7 +19,7 @@ import {
 import { whenever } from "@vueuse/core";
 import type { ColDef, GridApi, GridOptions, GridReadyEvent } from "ag-grid-enterprise";
 import { ClientSideRowModelModule, ModuleRegistry } from "ag-grid-enterprise";
-import { computed, reactive, ref, shallowRef, watch, watchEffect } from "vue";
+import { computed, reactive, ref, shallowRef, watch } from "vue";
 import { useApp } from "../app";
 import { getAlignmentChartSettings } from "../charts/alignmentChartSettings";
 import { parseProgressString } from "../parseProgress";
@@ -33,34 +32,6 @@ import { ExportRawBtn } from "../ExportRawBtn";
 import { ChunkedStreamReader } from "../ChunkedStreamReader";
 
 const app = useApp();
-
-// updating defaultBlockLabel
-watchEffect(() => {
-  const parts: string[] = [];
-  // Add dataset name if available
-  if (app.model.data.datasetRef) {
-    const inputOption = app.model.outputs.inputOptions?.find(
-      (p) => app.model.data.datasetRef && plRefsEqual(p.ref, app.model.data.datasetRef),
-    );
-    if (inputOption?.label) {
-      parts.push(inputOption.label);
-      // A block created from a template arrives with `datasetRef` set but no
-      // label — only the dataset picker's setter writes one. Take it from the
-      // options as soon as they resolve, so the export filename is right
-      // without the user re-opening the picker.
-      app.model.data.title = inputOption.label;
-    }
-  }
-  // Add chains if available
-  if (app.model.data.chains) {
-    parts.push(app.model.data.chains);
-  }
-  // Add assembling feature if available
-  if (app.model.data.assemblingFeature) {
-    parts.push(app.model.data.assemblingFeature);
-  }
-  app.model.data.defaultBlockLabel = parts.filter(Boolean).join(" - ");
-});
 
 const result = computed(() => (resultMap.value ? [...resultMap.value.values()] : undefined));
 
