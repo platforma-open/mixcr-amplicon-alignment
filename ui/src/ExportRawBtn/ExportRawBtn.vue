@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { PlBtnGhost, PlIcon16, PlIcon24, useClickOutside } from "@platforma-sdk/ui-vue";
 import { uniqueId } from "@milaboratories/helpers";
+import { plRefsEqual } from "@platforma-sdk/model";
 import { useApp } from "../app";
 import { ZipWriter, configure } from "@zip.js/zip.js";
 import { ChunkedStreamReader } from "../ChunkedStreamReader";
@@ -49,6 +50,14 @@ type ZipRequest = {
   stream: ChunkedStreamReader;
 };
 
+// A block created from a template stores no dataset label until the dataset is
+// picked again; the input options still name it.
+function datasetLabel(): string | undefined {
+  const ref = app.model.data.datasetRef;
+  if (ref === undefined) return undefined;
+  return app.model.outputs.inputOptions?.find((o) => plRefsEqual(o.ref, ref))?.label;
+}
+
 const exportRawTsvs = async () => {
   if (DEBUG_DOWNLOAD) console.debug("[ExportRaw] clicked; loading:", data.loading);
   if (data.loading) {
@@ -89,7 +98,7 @@ const exportRawTsvs = async () => {
         },
       },
     ],
-    suggestedName: `${new Date().toISOString().split("T")[0]}_AmpliconAlignmentResultsRaw_${app.model.data.title ?? "Untitled"}.zip`,
+    suggestedName: `${new Date().toISOString().split("T")[0]}_AmpliconAlignmentResultsRaw_${app.model.data.title ?? datasetLabel() ?? "Untitled"}.zip`,
   });
 
   data.loading = true;

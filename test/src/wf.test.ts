@@ -23,7 +23,6 @@ const referenceSequence = 'GAGGTGCAGCTCGTGGAGTCTGGGGGAGGCTTGGTCCAGCCTGGGGGGTCCCT
 function alignData(overrides: Partial<BlockData>): BlockData {
   return {
     customBlockLabel: "",
-    defaultBlockLabel: "",
     chains: "IGHeavy",
     tagPattern: "",
     referenceInputMode: "fastaSequence",

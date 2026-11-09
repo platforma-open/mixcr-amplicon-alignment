@@ -68,9 +68,8 @@ export type LibraryEntryDefinition = {
  * - `perProcessMemGB` / `perProcessCPUs`. Resource allocation belongs to the
  *   machine a block runs on, not to a recipe carried between machines.
  * - `tableState`, pure view state of the QC report table.
- * - `title` and `defaultBlockLabel`. Both are derived: the first from the label
- *   of the chosen dataset, the second from that label plus `chains` and
- *   `assemblingFeature`. The UI recomputes them from the dataset options.
+ * - `title`, the label of the chosen dataset, which the UI takes from the
+ *   dataset options when the dataset is picked.
  * - `referenceFileHandle` and `buildLibraryFastaFile`. Either may be an
  *   `upload://` handle, signed by the desktop that opened the file dialog and
  *   resolving nowhere else. Neither is worth carrying even when it is an

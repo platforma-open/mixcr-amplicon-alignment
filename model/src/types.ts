@@ -27,12 +27,10 @@ export type * from "@platforma-open/milaboratories.mixcr-amplicon-alignment.kind
  * into args so the workflow could read it. One field replaces the pair here.
  */
 export type BlockData = {
-  /** Label the user typed. Wins over {@link defaultBlockLabel} in the subtitle. */
+  /** Label the user typed. Wins over everything else in the subtitle. */
   customBlockLabel: string;
-  /** Dataset, chains and assembling feature joined; recomputed by the main page. */
-  defaultBlockLabel: string;
   datasetRef?: PlRef;
-  /** Label of the chosen dataset, snapshotted from the input options. */
+  /** Label of the chosen dataset, written when the user picks it; the subtitle's first part. */
   title?: string;
   chains: string;
   tagPattern: string;
@@ -94,10 +92,10 @@ export type ListStepsParams = Pick<
  * Deliberately the same shape the block sent before V3, down to the label
  * fields the workflow never reads: args are hashed to decide whether a block
  * must re-run, so dropping a field here would re-run MiXCR on every project
- * that upgrades.
+ * that upgrades. The dataset-derived label is the exception: the UI rewrote it
+ * from the result pool whenever the block was opened, which changed the args.
  */
 export type BlockArgs = {
-  defaultBlockLabel?: string;
   customBlockLabel?: string;
   datasetRef?: PlRef;
   chains?: string;
@@ -128,7 +126,13 @@ export type BlockArgs = {
 };
 
 /** Pre-V3 args shape, frozen snapshot for `upgradeLegacy`. */
-export type LegacyBlockArgs = BlockArgs;
+export type LegacyBlockArgs = BlockArgs & { defaultBlockLabel?: string };
+
+/** Data of version `V20260903`, frozen snapshot for the migration that follows it. */
+export type BlockDataV20260903 = BlockData & {
+  /** Dataset, chains and assembling feature joined; recomputed by the main page. */
+  defaultBlockLabel: string;
+};
 
 /** Pre-V3 UI state shape, frozen snapshot for `upgradeLegacy`. */
 export type LegacyBlockUiState = {
