@@ -27,6 +27,7 @@ self.body(func(inputs) {
 	}
 	plan := mixcrSteps.commands(mixcrSteps.stepsOf(inputs.steps.getDataAsJson()), blockFiles, inputs.readsPattern)
 	stepClass := inputs.stepClass
+	features := inputs.assemblingFeatures
 
 	seen := {}
 	steps := []
@@ -37,7 +38,14 @@ self.body(func(inputs) {
 			continue
 		}
 		seen[c.key] = true
-		steps = append(steps, { step: c.key, class: stepClass, defaultRule: _ruleOf(row) })
+		step := { step: c.key, class: stepClass, defaultRule: _ruleOf(row) }
+		// The floor of the clone-estimate sizing, which the step takes once the align report
+		// carries an estimate. A memFloor override replaces it.
+		clone := resources.cloneRow(c.key, stepClass, features)
+		if !is_undefined(clone) {
+			step.cloneFloor = clone.memFloor
+		}
+		steps = append(steps, step)
 	}
 
 	return { stepDefaults: smart.createJsonResource({ steps: steps }) }
