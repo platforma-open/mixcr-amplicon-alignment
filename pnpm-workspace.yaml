@@ -24,7 +24,7 @@ catalog:
   # lets pnpm resolve a second copy (3.5.25), causing duplicate-Vue type errors.
   'vue': 3.5.44
   'typescript': ~5.6.3
-  'turbo': ^2.6.3
+  'turbo': ~2.11.10
   'vitest': ^4.0.18
   'eslint': ^9.25.1
   '@changesets/cli': ^2.29.8
@@ -44,3 +44,15 @@ catalog:
   "@platforma-sdk/block-kind": 1.1.1
   "@milaboratories/pl-model-common": 1.51.0
   "es-toolkit": 1.41.0
+  cross-env: ~10.1.0
+minimumReleaseAgeExclude:
+  - "@milaboratories/*"
+  - "@platforma-sdk/*"
+  - "@platforma-open/*"
+allowBuilds:
+  "@milaboratories/tengo-tester": false
+  esbuild: false
+  protobufjs: false
+  "@milaboratories/pframes-rs-node": true
+  "@platforma-open/milaboratories.software-mixcr": true
+  "@platforma-open/milaboratories.software-repseqio": true
