@@ -60,15 +60,15 @@ _ROWS := [
 	{ step: "mitool-consensus", class: "any", cpuIntercept: 16, memFloor: 32, memIntercept: 2, memSlope: 8 },
 
 	// `align` streams its input, so the grant does not grow with the sample.
-	{ step: "align", class: "any", cpuIntercept: 16, memFloor: 32, memIntercept: 0, memSlope: 0 },
+	{ step: "align", class: "any", cpuIntercept: 16, memFloor: 16, memIntercept: 0, memSlope: 0 },
 	{ step: "refineTagsAndSort", class: "any", cpuIntercept: 16, memFloor: 32, memIntercept: 6, memSlope: 14 },
 	{ step: "assemblePartial", class: "any", cpuIntercept: 16, memFloor: 32, memIntercept: 4, memSlope: 15 },
 	{ step: "extend", class: "any", cpuIntercept: 16, memFloor: 32, memIntercept: 4, memSlope: 10 },
 	{ step: "assembleContigs", class: "any", cpuIntercept: 24, memFloor: 32, memIntercept: 4, memSlope: 18 },
 	{ step: "assembleCells", class: "any", cpuIntercept: 16, memFloor: 32, memIntercept: 4, memSlope: 15 },
 
-	// Sized from the .vdjca. On "none" and "longRead", a row of _CLONE_ROWS replaces the memory
-	// when the align report carries a clone estimate and no override sets the memory.
+	// Sized from the .vdjca. On "none", a row of _CLONE_ROWS replaces the memory when the align
+	// report carries a clone estimate and no override sets the memory.
 	{ step: "assemble", class: "none", cpuIntercept: 16, memFloor: 64, memIntercept: 4, memSlope: 25 },
 	{ step: "assemble", class: "umi", cpuIntercept: 16, memFloor: 32, memIntercept: 0, memSlope: 10 },
 	{ step: "assemble", class: "cell", cpuIntercept: 16, memFloor: 32, memIntercept: 0, memSlope: 10 },
@@ -88,15 +88,14 @@ DEFAULT := { step: "default", class: "any", cpuIntercept: 16, memFloor: 64, memI
 // `M aligned reads` its `aligned`, in millions. `feature` is "CDR3" for a run that assembles
 // clones by CDR3 alone, "any" otherwise.
 //
-// The rows are the ones mixcr-clonotyping sizes by. The floor of a sample is the least memory
-// that ran without OOM at no more than 1.5 x the uncapped wall time. Each row is at least 1.6 x
-// the floor of every profiled sample of its class and feature. The jobs have no retry, so the
-// margin covers the scatter of the floors. The "any" rows were fitted on VDJRegion and are taken
-// as an upper bound for the shorter features; no amplicon feature other than CDR3 is profiled.
+// The rows are the bulk rows mixcr-clonotyping sizes by. The floor of a sample is the least
+// memory that ran without OOM at no more than 1.5 x the uncapped wall time. Each row is at least
+// 1.6 x the floor of every profiled sample of its class and feature. The jobs have no retry, so
+// the margin covers the scatter of the floors. The "any" row was fitted on VDJRegion and is taken
+// as an upper bound for the shorter features; of those, only CDR3 is profiled.
 _CLONE_ROWS := [
 	{ class: "none", feature: "CDR3", memFloor: 32, memIntercept: 26, memPerMClones: 8.3, memPerMReads: 0 },
-	{ class: "none", feature: "any", memFloor: 32, memIntercept: 10, memPerMClones: 16, memPerMReads: 0.32 },
-	{ class: "longRead", feature: "any", memFloor: 32, memIntercept: 6, memPerMClones: 5.4, memPerMReads: 0 }
+	{ class: "none", feature: "any", memFloor: 32, memIntercept: 10, memPerMClones: 16, memPerMReads: 0.32 }
 ]
 
 _byKey := {}
