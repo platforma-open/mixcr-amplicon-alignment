@@ -8,23 +8,23 @@ packages:
 
 catalog:
   # SDK packages - EXACT VERSIONS (no ^ or ~)
-  '@milaboratories/ts-builder': 1.7.2
-  '@milaboratories/ts-configs': 1.4.0
-  '@platforma-sdk/workflow-tengo': 6.15.0
-  '@platforma-sdk/model': 1.84.10
-  '@platforma-sdk/ui-vue': 1.84.14
-  '@platforma-sdk/tengo-builder': 4.1.10
-  '@platforma-sdk/package-builder': 3.16.0
-  '@platforma-sdk/block-tools': 2.17.7
-  '@platforma-sdk/test': 1.84.15
-  '@milaboratories/helpers': 1.14.5
+  '@milaboratories/ts-builder': 1.8.0
+  '@milaboratories/ts-configs': 1.4.1
+  '@platforma-sdk/workflow-tengo': 6.22.2
+  '@platforma-sdk/model': 1.88.16
+  '@platforma-sdk/ui-vue': 1.88.16
+  '@platforma-sdk/tengo-builder': 4.1.21
+  '@platforma-sdk/package-builder': 3.17.0
+  '@platforma-sdk/block-tools': 2.19.1
+  '@platforma-sdk/test': 1.88.16
+  '@milaboratories/helpers': 1.14.7
 
   # Common dependencies - can use ^ or ~
   # vue pinned exactly: @platforma-sdk/ui-vue depends on vue 3.5.24, and a ^ range
   # lets pnpm resolve a second copy (3.5.25), causing duplicate-Vue type errors.
-  'vue': 3.5.24
+  'vue': 3.5.44
   'typescript': ~5.6.3
-  'turbo': ^2.6.3
+  'turbo': ~2.11.10
   'vitest': ^4.0.18
   'eslint': ^9.25.1
   '@changesets/cli': ^2.29.8
@@ -41,6 +41,18 @@ catalog:
   '@platforma-open/milaboratories.samples-and-data': ^1.18.0
   'zod': ^3.23.8
   shx: ~0.4.0
-  "@platforma-sdk/block-kind": 1.1.0
+  "@platforma-sdk/block-kind": 1.1.1
   "@milaboratories/pl-model-common": 1.51.0
   "es-toolkit": 1.41.0
+  cross-env: ~10.1.0
+minimumReleaseAgeExclude:
+  - "@milaboratories/*"
+  - "@platforma-sdk/*"
+  - "@platforma-open/*"
+allowBuilds:
+  "@platforma-open/milaboratories.software-repseqio": false
+  "@platforma-open/milaboratories.software-mixcr": false
+  "@milaboratories/tengo-tester": false
+  esbuild: false
+  protobufjs: false
+  "@milaboratories/pframes-rs-node": true
