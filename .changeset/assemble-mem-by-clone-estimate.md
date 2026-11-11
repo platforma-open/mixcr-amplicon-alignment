@@ -10,3 +10,5 @@ Size bulk (`generic-amplicon`) `assemble` memory from align's clone estimate (`e
 `align` memory floor 32 → 16 GiB, as in mixcr-clonotyping: align streams its input, and its profiled floors were 4 GiB or less.
 
 The sample log keeps the streams of align and the steps before it, and nests the streams of the later steps under one entry.
+
+Update the SDK: workflow-tengo 6.22.2, model, ui-vue and test 1.88.16, block-tools 2.19.1.
