@@ -29,8 +29,13 @@ export type StepRule = {
   cpuSlope?: number;
 };
 
-/** What `step-defaults.tpl.tengo` reports: the planned steps. */
-export type StepDefaults = { steps: { step: string; class: string; defaultRule: StepRule }[] };
+/**
+ * What `step-defaults.tpl.tengo` reports: the planned steps. `cloneFloor` is set on a step sized
+ * from align's clone estimate: the least memory that sizing grants.
+ */
+export type StepDefaults = {
+  steps: { step: string; class: string; defaultRule: StepRule; cloneFloor?: number }[];
+};
 
 /** Drops steps whose override sets no field, so clearing a row leaves no trace in the args. */
 export function dropEmptyOverrides(o: StepResources | undefined): StepResources | undefined {

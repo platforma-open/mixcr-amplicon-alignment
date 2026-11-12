@@ -50,6 +50,7 @@ self.body(func(inputs) {
 	defaults := render.create(stepDefaultsTpl, {
 		steps: run.getFileContent(mixcrSteps.STEPS_FILE),
 		stepClass: presetArgs.stepClass(params),
+		assemblingFeatures: presetArgs.assemblingFeatures(params),
 		blockFiles: READ_NAMES + [libraryFile],
 		readsPattern: READS_PATTERN
 	})
