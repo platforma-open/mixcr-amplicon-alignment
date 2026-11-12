@@ -1,4 +1,4 @@
-## 1.0.0
+# @platforma-open/milaboratories.mixcr-amplicon-alignment
 
 ## 1.11.1
 
@@ -652,5 +652,7 @@
   - @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow@1.0.1
   - @platforma-open/milaboratories.mixcr-amplicon-alignment.model@1.0.1
   - @platforma-open/milaboratories.mixcr-amplicon-alignment.ui@1.0.1
+
+## 1.0.0
 
 Initial release.
