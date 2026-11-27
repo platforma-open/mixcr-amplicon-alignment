@@ -99,6 +99,22 @@ formatAssemblingFeature := func(fstr) {
 	return "{" + parts[0] + "Begin:" + parts[1] + "End}"
 }
 
+// assemblingFeatures lists the regions clones are assembled by, each as MiXCR names it: one for a
+// single feature, one per part for a disjoint list. Only "CDR3" stays "CDR3"; "CDR3:CDR3" is
+// "{CDR3Begin:CDR3End}".
+assemblingFeatures := func(params) {
+	fstr := params.assemblingFeature
+	if !text.contains(fstr, ",") {
+		return [formatAssemblingFeature(fstr)]
+	}
+	features := []
+	for p in text.split(fstr, ",") {
+		pbe := text.split(p, ":")
+		features = append(features, "{" + pbe[0] + ":" + pbe[1] + "}")
+	}
+	return features
+}
+
 // apply adds the preset arguments to `builder`. `params` carries hasUMI, assemblingFeature,
 // isLibraryFileGzipped, tagPattern, cloneClusteringMode, badQualityThreshold and
 // disableLowQualityMapping. The caller stages the library under libraryFileName(params).
@@ -145,5 +161,6 @@ export {
 	libraryFileName: libraryFileName,
 	stageLibrary: stageLibrary,
 	formatAssemblingFeature: formatAssemblingFeature,
+	assemblingFeatures: assemblingFeatures,
 	apply: apply
 }

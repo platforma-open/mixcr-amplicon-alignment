@@ -1,4 +1,4 @@
-## 1.0.0
+# @platforma-open/milaboratories.mixcr-amplicon-alignment
 
 ## 1.11.1
 
@@ -69,6 +69,16 @@
 
 - 487157f: Bump SDK dependencies: model 1.83.9, ui-vue 1.83.13, workflow-tengo 6.10.0,
   tengo-builder 4.0.26, package-builder 3.16.0, block-tools 2.15.1, test 1.83.16.
+- 49ee373: A reference FASTA header with a description no longer breaks the reference library.
+
+  repseqio reads each gene name as the fragment of a `file://<file>#<geneName>` URI, so
+  spaces and most punctuation are illegal. The UI passed the whole header through as the
+  gene name, reported the input as valid, and repseqio then failed with
+  `URISyntaxException: Illegal character in fragment`.
+
+  The gene name is now the first whitespace-delimited field of the header, with characters
+  outside `[A-Za-z0-9_.-]` removed. Two headers that reduce to the same name get a counter
+  suffix, so distinct references never merge into one gene.
 
 ## 1.10.0
 
@@ -102,6 +112,18 @@
 ### Patch Changes
 
 - bacc8e1: Bump `@platforma-sdk/block-tools` to 2.14.3.
+- 31c428d: Analyze counts input size once when sizing its memory request, cutting a run with
+  31.75 GiB of reads from 191 GiB to 127 GiB.
+
+  The 64 GiB floor is already a total-memory value for the run, so adding a
+  `4 x size("reads")` term on top of it counted the input twice. RAM is now
+  `clamp(4 x size("reads"), 64 GiB, 256 GiB)`. The floor, the 256 GiB ceiling, and the
+  `64GiB` static fallback all behave as before.
+
+  The analyze template's `hash_override` UUID also changes, which forces a one-time
+  recompute of results cached against the previous hash. That UUID was identical to the
+  one in mixcr-clonotyping, letting the backend treat two different templates as
+  interchangeable; the two are now distinct.
 
 ## 1.9.0
 
@@ -131,6 +153,7 @@
 
 ### Patch Changes
 
+- de84c27: Fix imputeGermline having no effect when assemblingFeature is CDR3. parseAssemblingFeature returned an empty imputed-feature list for CDR3, so no germline columns or MiXCR imputed export args were ever produced. CDR3 assembly now imputes the surrounding features (FR1, CDR1, FR2, CDR2, FR3, FR4, VDJRegion) from germline.
 - Updated dependencies [de84c27]
   - @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow@1.21.15
 
@@ -138,6 +161,7 @@
 
 ### Patch Changes
 
+- c11e84c: Size MiXCR analyze memory from the input reads' file size instead of a fixed 64 GiB. The 64 GiB baseline becomes a floor; memory then grows linearly with the R1+R2 FASTQ blob size (4 bytes of RAM per byte), clamped to 256 GiB. File size is read from blob metadata (getBlobSize) with no pre-exec. The explicit "Advanced Settings" memory override is unchanged; on backends that can't evaluate resource formulas the 64 GiB floor is the static fallback.
 - Updated dependencies [c11e84c]
   - @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow@1.21.14
 
@@ -145,6 +169,7 @@
 
 ### Patch Changes
 
+- 481accd: Fix downstream Sequence Liabilities and Lead Selection errors with range assembling features by exporting the aminoacid assembling feature sequence.
 - Updated dependencies [481accd]
   - @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow@1.21.13
 
@@ -162,6 +187,7 @@
 
 ### Patch Changes
 
+- a44cc33: Add an option to disable low-quality read mapping
 - Updated dependencies [a44cc33]
   - @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow@1.21.11
   - @platforma-open/milaboratories.mixcr-amplicon-alignment.model@1.19.4
@@ -171,6 +197,7 @@
 
 ### Patch Changes
 
+- d26daa1: Make axis label visible by default
 - Updated dependencies [d26daa1]
   - @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow@1.21.10
 
@@ -178,6 +205,7 @@
 
 ### Patch Changes
 
+- b3d0382: Fix `FileNotFoundException: referenceLibrary.json (Permission denied)` when running on the localfs backend. The reference-library workflow invoked `repseqio inferPoints` and `repseqio compile` with the same path for input and output (`referenceLibrary.json`). On localfs, input files are mounted read-only, so the tool could read them but the final write back failed. The output is now written to a separate file (`referenceLibrary.out.json`).
 - Updated dependencies [b3d0382]
   - @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow@1.21.9
 
@@ -185,6 +213,12 @@
 
 ### Patch Changes
 
+- a9c8cec: Input dropdown now requires a `pl7.app/sampleId` axis on the dataset — multiplexed (pre-demux) datasets, which carry a `pl7.app/sampleGroupId` axis instead, no longer appear as valid inputs.
+
+  When the dropdown would be empty, the settings panel now shows an inline hint:
+
+  - multiplexed FASTQ detected → suggest adding a `FASTQ Demultiplexing` block;
+  - no FASTQ at all → suggest adding/running a `Samples & Data` block.
 - Updated dependencies [a9c8cec]
   - @platforma-open/milaboratories.mixcr-amplicon-alignment.model@1.19.3
   - @platforma-open/milaboratories.mixcr-amplicon-alignment.ui@1.19.3
@@ -193,6 +227,7 @@
 
 ### Patch Changes
 
+- 2ac36c0: Bump mixr version to 4.7.0-347-develop (switch back to default GC)
 - Updated dependencies [2ac36c0]
   - @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow@1.21.8
 
@@ -200,6 +235,7 @@
 
 ### Patch Changes
 
+- b67eb61: Upgrade MiXCR to 4.7.0-343-develop — packed NucleotideSequence storage for 4x memory reduction
 - Updated dependencies [b67eb61]
   - @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow@1.21.7
 
@@ -207,6 +243,7 @@
 
 ### Patch Changes
 
+- a463f4f: Fix memory allocation for aggregation step and correct GB/GiB unit mismatch across all workflow templates
 - Updated dependencies [a463f4f]
   - @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow@1.21.6
 
@@ -214,6 +251,7 @@
 
 ### Patch Changes
 
+- 4a61ea6: update limits
 - Updated dependencies [4a61ea6]
   - @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow@1.21.5
 
@@ -221,6 +259,7 @@
 
 ### Patch Changes
 
+- b93d463: fix memory for export
 - Updated dependencies [b93d463]
   - @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow@1.21.4
 
@@ -228,6 +267,7 @@
 
 ### Patch Changes
 
+- 637e770: fix memory for export
 - Updated dependencies [637e770]
   - @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow@1.21.3
 
@@ -235,6 +275,7 @@
 
 ### Patch Changes
 
+- c1af0a6: Set default error correction to none/off
 - Updated dependencies [c1af0a6]
   - @platforma-open/milaboratories.mixcr-amplicon-alignment.model@1.19.2
   - @platforma-open/milaboratories.mixcr-amplicon-alignment.ui@1.19.2
@@ -243,6 +284,7 @@
 
 ### Patch Changes
 
+- 86a06b3: Update clone label to id
 - Updated dependencies [86a06b3]
   - @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow@1.21.2
   - @platforma-open/milaboratories.mixcr-amplicon-alignment.model@1.19.1
@@ -252,6 +294,7 @@
 
 ### Patch Changes
 
+- bbefce5: Upgrade MiXCR to 4.7.0-317-develop — increases JVM non-heap memory headroom to fix OOM on export
 - Updated dependencies [bbefce5]
   - @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow@1.21.1
 
@@ -259,6 +302,7 @@
 
 ### Patch Changes
 
+- 00ded91: Support custom reference library
 - Updated dependencies [00ded91]
   - @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow@1.21.0
   - @platforma-open/milaboratories.mixcr-amplicon-alignment.model@1.19.0
@@ -278,6 +322,7 @@
 
 ### Patch Changes
 
+- 92da66c: Format reference json file
 - Updated dependencies [92da66c]
   - @platforma-open/milaboratories.mixcr-amplicon-alignment.ui@1.18.1
 
@@ -285,6 +330,7 @@
 
 ### Patch Changes
 
+- e2b65c7: Support custom reference library file
 - Updated dependencies [e2b65c7]
   - @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow@1.20.0
   - @platforma-open/milaboratories.mixcr-amplicon-alignment.model@1.18.0
@@ -294,6 +340,16 @@
 
 ### Patch Changes
 
+- 2149d28: Fix column naming for range assembling features (e.g. CDR1:CDR3, FR2:FR4) without imputation.
+
+  When using a range assembling feature without "Impute non-covered part", the workflow would fail with
+  "column nSeqVDJRegion does not exist in export" because VDJRegion is never exported for non-full-range features.
+
+  Changes:
+
+  - Use the assembling feature itself as clonotype key column when VDJRegion is unavailable
+  - Fix column naming to match MiXCR output format (e.g. `CDR1_TO_FR4` instead of `{CDR1Begin:FR4End}`)
+  - Add unit tests covering column naming for all assembling feature variants with/without imputation
 - Updated dependencies [2149d28]
   - @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow@1.19.9
 
@@ -301,6 +357,7 @@
 
 ### Patch Changes
 
+- cd0f414: Support custom assembling feature and imputation in amplicon alignment
 - Updated dependencies [cd0f414]
   - @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow@1.19.8
   - @platforma-open/milaboratories.mixcr-amplicon-alignment.model@1.17.1
@@ -310,6 +367,7 @@
 
 ### Patch Changes
 
+- 0b08dfc: Support wildcards in reference sequence, allow to select sequences from references
 - Updated dependencies [0b08dfc]
   - @platforma-open/milaboratories.mixcr-amplicon-alignment.model@1.17.0
   - @platforma-open/milaboratories.mixcr-amplicon-alignment.ui@1.17.0
@@ -319,6 +377,7 @@
 
 ### Patch Changes
 
+- 8fb37ed: Increase memory limit for mixcr export step to avoid OOM
 - Updated dependencies [8fb37ed]
   - @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow@1.19.6
 
@@ -326,6 +385,7 @@
 
 ### Patch Changes
 
+- 3881c3e: Upgrade MiXCR to 4.7.0-309-develop
 - Updated dependencies [3881c3e]
   - @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow@1.19.5
 
@@ -333,6 +393,7 @@
 
 ### Patch Changes
 
+- 0f80c38: Add minimalQuality arg to mixcr tool
 - Updated dependencies [0f80c38]
   - @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow@1.19.4
 
@@ -340,6 +401,7 @@
 
 ### Patch Changes
 
+- 8685e8d: Add new mutation columns
 - Updated dependencies [8685e8d]
   - @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow@1.19.3
 
@@ -347,6 +409,7 @@
 
 ### Patch Changes
 
+- 0af1197: Allow to upload reference sequence from file
 - Updated dependencies [0af1197]
   - @platforma-open/milaboratories.mixcr-amplicon-alignment.model@1.16.0
   - @platforma-open/milaboratories.mixcr-amplicon-alignment.ui@1.16.0
@@ -355,6 +418,7 @@
 
 ### Patch Changes
 
+- 4aeac00: Link memory limits of downstream operations (XSV conversion, MiXCR export, PTabler) to user-specified perProcessMemGB override to prevent over-scheduling on local runs
 - Updated dependencies [4aeac00]
   - @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow@1.19.2
 
@@ -362,6 +426,7 @@
 
 ### Patch Changes
 
+- f8abb41: Switch MiXCR software endpoint from `main` to `memory-from-limits` for analyze and export steps to respect block memory quota instead of using MaxRAMPercentage
 - Updated dependencies [f8abb41]
   - @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow@1.19.1
 
@@ -382,6 +447,7 @@
 
 ### Patch Changes
 
+- 5198666: Upgrade MiXCR to 4.7.0-300-develop, add MI_LICENSE_DEBUG env, use --use-local-temp, show loading spinner while sample list loads
 - Updated dependencies [5198666]
   - @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow@1.18.1
   - @platforma-open/milaboratories.mixcr-amplicon-alignment.model@1.14.1
@@ -430,6 +496,7 @@
 
 ### Patch Changes
 
+- a08b796: multiple UMI bug fix
 - Updated dependencies [a08b796]
   - @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow@1.15.0
 
@@ -437,6 +504,7 @@
 
 ### Patch Changes
 
+- 8c5c9ff: Support custom block title and running status
 - Updated dependencies [8c5c9ff]
   - @platforma-open/milaboratories.mixcr-amplicon-alignment.model@1.11.0
   - @platforma-open/milaboratories.mixcr-amplicon-alignment.ui@1.11.0
@@ -458,6 +526,7 @@
 
 ### Patch Changes
 
+- f4d0ddb: Fix issue after update
 - Updated dependencies [f4d0ddb]
   - @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow@1.13.2
 
@@ -481,6 +550,7 @@
 
 ### Patch Changes
 
+- 0b637f1: Possibility to choose clonotype assembling feature - VDJRegion or CDR3
 - Updated dependencies [0b637f1]
   - @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow@1.13.0
   - @platforma-open/milaboratories.mixcr-amplicon-alignment.model@1.9.0
@@ -490,6 +560,7 @@
 
 ### Patch Changes
 
+- 75ca0ce: change isProductive column values to true and false, sdk update
 - Updated dependencies [75ca0ce]
   - @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow@1.12.0
 
@@ -499,6 +570,7 @@
 
 - 3d3e04d: updating dependencies
 - Updated dependencies [3d3e04d]
+- 4f1e226: export of raw mixcr data added
 - Updated dependencies [4f1e226]
   - @platforma-open/milaboratories.mixcr-amplicon-alignment.model@1.8.0
   - @platforma-open/milaboratories.mixcr-amplicon-alignment.ui@1.8.0
@@ -508,6 +580,7 @@
 
 ### Patch Changes
 
+- fb7d933: Support parquet format (update SDK)
 - Updated dependencies [fb7d933]
   - @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow@1.10.3
   - @platforma-open/milaboratories.mixcr-amplicon-alignment.ui@1.7.4
@@ -550,6 +623,7 @@
 
 ### Patch Changes
 
+- 07e7fc7: Update frame shift behaviour, general refactoring
 - Updated dependencies [07e7fc7]
   - @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow@1.10.0
   - @platforma-open/milaboratories.mixcr-amplicon-alignment.model@1.7.0
@@ -599,6 +673,7 @@
 
 ### Patch Changes
 
+- 2af4406: Removed unused software import
 - Updated dependencies [2af4406]
   - @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow@1.6.0
 
@@ -606,6 +681,7 @@
 
 ### Patch Changes
 
+- af0cbb1: Support batch system
 - Updated dependencies [af0cbb1]
   - @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow@1.5.0
   - @platforma-open/milaboratories.mixcr-amplicon-alignment.model@1.3.0
@@ -615,6 +691,7 @@
 
 ### Patch Changes
 
+- d17799a: support multiple sequences in fasta format as reference
 - Updated dependencies [d17799a]
   - @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow@1.4.0
   - @platforma-open/milaboratories.mixcr-amplicon-alignment.model@1.2.0
@@ -624,6 +701,7 @@
 
 ### Patch Changes
 
+- b3bcb06: support lanes and index read
 - Updated dependencies [b3bcb06]
   - @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow@1.3.0
 
@@ -631,6 +709,7 @@
 
 ### Patch Changes
 
+- 86528bc: add only productive option to mixcr export
 - Updated dependencies [86528bc]
   - @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow@1.2.0
 
@@ -638,6 +717,7 @@
 
 ### Patch Changes
 
+- 2ac7c87: Wildcards in reference sequence and --limit-input option in MiXCR
 - Updated dependencies [2ac7c87]
   - @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow@1.1.0
   - @platforma-open/milaboratories.mixcr-amplicon-alignment.model@1.1.0
@@ -652,5 +732,7 @@
   - @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow@1.0.1
   - @platforma-open/milaboratories.mixcr-amplicon-alignment.model@1.0.1
   - @platforma-open/milaboratories.mixcr-amplicon-alignment.ui@1.0.1
+
+## 1.0.0
 
 Initial release.

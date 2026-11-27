@@ -8,6 +8,8 @@
 //   - a block file (the library, a preset file) is staged by its name, and a preset argument
 //     `local:NAME` or `local#NAME` stages NAME.yaml;
 //   - a custom library is staged for every MiXCR step, named in its arguments or not;
+//   - the value of `--report` or `--json-report` is a file the step writes, even when an
+//     earlier round of the step wrote the same name;
 //   - any other argument under OUTPUT_PREFIX is a file the step writes, and is saved: every
 //     output, not only the ones a later step or the block reads.
 //
@@ -49,13 +51,23 @@ _presetFile := func(arg) {
 	return undefined
 }
 
+// The options whose value is a report the step writes. A repeated step names the same reports as
+// the round before it and appends to them; staged, they are read-only, so each round writes its
+// own.
+REPORT_OPTIONS := { "--report": true, "--json-report": true }
+
 // _command sorts the arguments of one step into what to stage and what to save. `written` is
 // the set of files earlier steps wrote; `blockFiles` is keyed by the files the block provides.
 _command := func(args, written, blockFiles, readsPattern) {
 	c := { key: key(args), args: args, stageSteps: [], stageReads: false, stageBlock: [], save: [] }
-	for arg in args {
+	for i, arg in args {
 		preset := _presetFile(arg)
-		if written[arg] {
+		if i > 0 && REPORT_OPTIONS[args[i - 1]] {
+			c.save = append(c.save, arg)
+			if args[i - 1] == "--json-report" {
+				c.jsonReport = arg
+			}
+		} else if written[arg] {
 			c.stageSteps = append(c.stageSteps, arg)
 		} else if arg == readsPattern {
 			c.stageReads = true
@@ -91,10 +103,11 @@ stepsOf := func(stepsFile) {
 
 // commands returns { commands, clns, qcJson } for a step list.
 //
-// Each command is { key, logKey, args, stageSteps, stageReads, stageBlock, save,
+// Each command is { key, logKey, args, stageSteps, stageReads, stageBlock, save, jsonReport,
 // writesFinalOutput }: stageSteps and stageBlock list file names, stageReads is true when the
-// step reads the reads, save lists the files the step writes, and writesFinalOutput is true when
-// one of them is the clones or the qc result. logKey leads with the run position, zero-padded,
+// step reads the reads, save lists the files the step writes, jsonReport is the one of them the
+// step's `--json-report` names (undefined without that option), and writesFinalOutput is true
+// when one of them is the clones or the qc result. logKey leads with the run position, zero-padded,
 // so the step that has got furthest sorts last. clns is the file `qc` reads, qcJson the report
 // `qc` writes.
 //
