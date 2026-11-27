@@ -1,5 +1,21 @@
 # @platforma-open/milaboratories.mixcr-amplicon-alignment
 
+## 1.24.0
+
+### Minor Changes
+
+- 5b95396: Size bulk (`generic-amplicon`) `assemble` memory from align's clone estimate (`estimatedInitialClones`) and aligned read count instead of the .vdjca size. An assembling feature of exactly `CDR3` takes the CDR3 row; every other feature takes the row fitted on VDJRegion. UMI runs, a global memory override, and a step override that sets more than the memory floor keep the .vdjca sizing. A step memory floor alone replaces the floor of the clone-estimate sizing, and the per-step settings show that floor for the steps it sizes.
+
+  `align` memory floor 32 → 16 GiB, as in mixcr-clonotyping: align streams its input, and its profiled floors were 4 GiB or less.
+
+  The sample log keeps the streams of align and the steps before it, and nests the streams of the later steps under one entry.
+
+  Update the SDK: workflow-tengo 6.22.2, model, ui-vue and test 1.88.16, block-tools 2.19.1.
+
+### Patch Changes
+
+- 398cc6b: Compute the block subtitle without opening the block. The subtitle (input dataset, chains, assembling feature) is now computed by the model from the block's settings, so a block that was never opened shows it too. Existing blocks keep their subtitle and show as stale once after the update because the arguments change shape.
+
 ## 1.11.1
 
 ### Patch Changes
@@ -219,6 +235,7 @@
 
   - multiplexed FASTQ detected → suggest adding a `FASTQ Demultiplexing` block;
   - no FASTQ at all → suggest adding/running a `Samples & Data` block.
+
 - Updated dependencies [a9c8cec]
   - @platforma-open/milaboratories.mixcr-amplicon-alignment.model@1.19.3
   - @platforma-open/milaboratories.mixcr-amplicon-alignment.ui@1.19.3
@@ -350,6 +367,7 @@
   - Use the assembling feature itself as clonotype key column when VDJRegion is unavailable
   - Fix column naming to match MiXCR output format (e.g. `CDR1_TO_FR4` instead of `{CDR1Begin:FR4End}`)
   - Add unit tests covering column naming for all assembling feature variants with/without imputation
+
 - Updated dependencies [2149d28]
   - @platforma-open/milaboratories.mixcr-amplicon-alignment.workflow@1.19.9
 
